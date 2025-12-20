@@ -1,96 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
-    --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Core palette - Premium dark with warm amber accents */
+    --background: 240 6% 7%;
+    --foreground: 40 33% 96%;
+    
+    --card: 240 5% 10%;
+    --card-foreground: 40 33% 96%;
+    
+    --popover: 240 5% 12%;
+    --popover-foreground: 40 33% 96%;
+    
+    /* Warm amber gold - primary brand */
+    --primary: 30 52% 65%;
+    --primary-foreground: 240 6% 7%;
+    
+    /* Muted cream secondary */
+    --secondary: 35 30% 92%;
+    --secondary-foreground: 240 6% 7%;
+    
+    --muted: 240 5% 18%;
+    --muted-foreground: 30 10% 60%;
+    
+    /* Accent - rich gold */
+    --accent: 38 65% 55%;
+    --accent-foreground: 240 6% 7%;
+    
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 40 33% 96%;
+    
+    --border: 240 5% 20%;
+    --input: 240 5% 15%;
+    --ring: 30 52% 65%;
+    
+    --radius: 1rem;
+    
+    /* Custom tokens */
+    --gold-glow: 30 70% 50%;
+    --cream: 40 33% 96%;
+    --deep-charcoal: 240 6% 7%;
+    --surface-elevated: 240 5% 12%;
+    --surface-glass: 240 5% 15%;
+    
+    /* Gradients */
+    --gradient-gold: linear-gradient(135deg, hsl(30 52% 65%), hsl(38 65% 55%));
+    --gradient-dark: linear-gradient(180deg, hsl(240 6% 7%), hsl(240 5% 12%));
+    --gradient-glass: linear-gradient(135deg, hsl(240 5% 15% / 0.8), hsl(240 5% 10% / 0.6));
+    
+    /* Shadows */
+    --shadow-gold: 0 0 60px hsl(30 70% 50% / 0.3);
+    --shadow-elevated: 0 20px 40px hsl(0 0% 0% / 0.4);
+    --shadow-card: 0 4px 20px hsl(0 0% 0% / 0.3);
+    
+    /* Sidebar */
+    --sidebar-background: 240 5% 10%;
+    --sidebar-foreground: 40 33% 96%;
+    --sidebar-primary: 30 52% 65%;
+    --sidebar-primary-foreground: 240 6% 7%;
+    --sidebar-accent: 240 5% 18%;
+    --sidebar-accent-foreground: 40 33% 96%;
+    --sidebar-border: 240 5% 20%;
+    --sidebar-ring: 30 52% 65%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --background: 240 6% 7%;
+    --foreground: 40 33% 96%;
   }
 }
 
@@ -98,8 +78,101 @@ All colors MUST be HSL.
   * {
     @apply border-border;
   }
-
+  
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'DM Sans', sans-serif;
   }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-surface-glass/80 backdrop-blur-xl border border-border/50 rounded-2xl;
+  }
+  
+  .gold-text {
+    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+  }
+  
+  .gold-glow {
+    box-shadow: var(--shadow-gold);
+  }
+  
+  .elevated-card {
+    @apply bg-card rounded-2xl border border-border/30;
+    box-shadow: var(--shadow-card);
+  }
+}
+
+@layer utilities {
+  .animate-pulse-gold {
+    animation: pulse-gold 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+  
+  .safe-area-inset {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+@keyframes pulse-gold {
+  0%, 100% {
+    box-shadow: 0 0 20px hsl(30 70% 50% / 0.4), 0 0 60px hsl(30 70% 50% / 0.2);
+  }
+  50% {
+    box-shadow: 0 0 40px hsl(30 70% 50% / 0.6), 0 0 80px hsl(30 70% 50% / 0.3);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 20px hsl(30 70% 50% / 0.3);
+  }
+  to {
+    box-shadow: 0 0 40px hsl(30 70% 50% / 0.5), 0 0 60px hsl(30 70% 50% / 0.2);
+  }
+}
+
+/* Mobile optimizations */
+@supports (padding: max(0px)) {
+  .safe-top {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+  .safe-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* Smooth scrolling for mobile */
+.scroll-smooth {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Remove tap highlight on mobile */
+* {
+  -webkit-tap-highlight-color: transparent;
 }
