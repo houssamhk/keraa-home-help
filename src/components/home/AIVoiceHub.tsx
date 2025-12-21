@@ -6,11 +6,12 @@ import {
   Home, 
   Wrench, 
   Map, 
-  AlertTriangle,
   Sparkles,
   Send,
   MessageSquare,
-  Loader2
+  Loader2,
+  Settings,
+  MessageCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useChat } from "@/hooks/useChat";
@@ -91,6 +92,20 @@ export function AIVoiceHub({ userName = "Guest", onNavigate }: AIVoiceHubProps) 
           </div>
           <div className="flex items-center gap-2">
             {/* Mode Toggle */}
+            <Button
+              variant="glass"
+              size="icon"
+              onClick={() => onNavigate('/chat')}
+            >
+              <MessageCircle className="w-5 h-5" />
+            </Button>
+            <Button
+              variant="glass"
+              size="icon"
+              onClick={() => onNavigate('/settings')}
+            >
+              <Settings className="w-5 h-5" />
+            </Button>
             <Button
               variant="glass"
               size="sm"
@@ -379,23 +394,6 @@ export function AIVoiceHub({ userName = "Guest", onNavigate }: AIVoiceHubProps) 
         </motion.div>
       )}
 
-      {/* SOS Button */}
-      <motion.div 
-        className="px-6 pb-8"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-      >
-        <Button 
-          variant="sos" 
-          size="lg" 
-          className="w-full"
-          onClick={() => onNavigate('/emergency')}
-        >
-          <AlertTriangle className="w-5 h-5" />
-          طوارئ SOS - حرفي عاجل
-        </Button>
-      </motion.div>
     </div>
   );
 }
