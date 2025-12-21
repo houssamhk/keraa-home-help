@@ -31,9 +31,9 @@ export function AIVoiceHub({ userName = "Guest", onNavigate }: AIVoiceHubProps) 
   const { isListening, transcript, isSupported, startListening, stopListening, resetTranscript } = useVoiceRecognition();
 
   const quickActions = [
-    { id: 'properties', icon: Home, label: 'Find Home', route: '/properties' },
-    { id: 'handymen', icon: Wrench, label: 'Hire Help', route: '/handymen' },
-    { id: 'map', icon: Map, label: 'Explore Map', route: '/map' },
+    { id: 'properties', icon: Home, label: 'العقارات', route: '/properties' },
+    { id: 'handymen', icon: Wrench, label: 'الحرفيون', route: '/handymen' },
+    { id: 'map', icon: Map, label: 'الخريطة', route: '/map' },
   ];
 
   const suggestions = [
@@ -371,7 +371,7 @@ export function AIVoiceHub({ userName = "Guest", onNavigate }: AIVoiceHubProps) 
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <div className="flex justify-center gap-4">
+          <div className="flex justify-center gap-4 flex-wrap">
             {quickActions.map((action, i) => (
               <motion.button
                 key={action.id}
@@ -390,6 +390,28 @@ export function AIVoiceHub({ userName = "Guest", onNavigate }: AIVoiceHubProps) 
                 </span>
               </motion.button>
             ))}
+          </div>
+          
+          {/* Role-based Dashboard Links */}
+          <div className="mt-6 flex justify-center gap-3">
+            <Button
+              variant="glass"
+              size="sm"
+              onClick={() => onNavigate('/owner-dashboard')}
+              className="gap-2"
+            >
+              <Home className="w-4 h-4" />
+              <span>لوحة المالك</span>
+            </Button>
+            <Button
+              variant="glass"
+              size="sm"
+              onClick={() => onNavigate('/handyman-dashboard')}
+              className="gap-2"
+            >
+              <Wrench className="w-4 h-4" />
+              <span>لوحة الحرفي</span>
+            </Button>
           </div>
         </motion.div>
       )}

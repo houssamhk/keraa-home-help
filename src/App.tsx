@@ -14,38 +14,39 @@ import { SettingsPage } from "@/pages/SettingsPage";
 import { PropertiesPage } from "@/pages/PropertiesPage";
 import { HandymenPage } from "@/pages/HandymenPage";
 import { ChatPage } from "@/pages/ChatPage";
+import { OwnerDashboard } from "@/pages/OwnerDashboard";
+import { AddPropertyPage } from "@/pages/AddPropertyPage";
+import { HandymanDashboard } from "@/pages/HandymanDashboard";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import type { UserRole } from "@/types/user";
 
 const queryClient = new QueryClient();
 
-type AppScreen = 'splash' | 'auth' | 'role-selection' | 'kyc' | 'home' | 'map' | 'settings' | 'properties' | 'handymen' | 'chat';
+type AppScreen = 
+  | 'splash' 
+  | 'auth' 
+  | 'role-selection' 
+  | 'kyc' 
+  | 'home' 
+  | 'map' 
+  | 'settings' 
+  | 'properties' 
+  | 'handymen' 
+  | 'chat'
+  | 'owner-dashboard'
+  | 'add-property'
+  | 'handyman-dashboard';
 
 function AppContent() {
   const { user, profile, isLoading } = useAuth();
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('splash');
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [chatUserId, setChatUserId] = useState<string | undefined>();
+  const [editPropertyId, setEditPropertyId] = useState<string | undefined>();
 
-  // Handle auth state changes
   useEffect(() => {
-    if (!isLoading) {
-      if (user && profile) {
-        // User is logged in and has profile
-        if (profile.kyc_verified) {
-          setCurrentScreen('home');
-        } else if (profile.role_type) {
-          setCurrentScreen('kyc');
-        } else {
-          setCurrentScreen('role-selection');
-        }
-      } else if (user && !profile) {
-        // User logged in but no profile yet (just signed up)
-        setCurrentScreen('role-selection');
-      } else if (currentScreen !== 'splash') {
-        // Not logged in
-        setCurrentScreen('auth');
-      }
+    if (!isLoading && currentScreen === 'splash') {
+      // Only auto-navigate after splash completes
     }
   }, [user, profile, isLoading]);
 
@@ -53,11 +54,22 @@ function AppContent() {
     if (user) {
       if (profile?.kyc_verified) {
         setCurrentScreen('home');
+      } else if (profile?.role_type) {
+        setCurrentScreen('kyc');
       } else {
         setCurrentScreen('role-selection');
       }
     } else {
       setCurrentScreen('auth');
+    }
+  };
+
+  const handleAuthSuccess = () => {
+    // After auth, check if user needs to complete onboarding
+    if (profile?.kyc_verified) {
+      setCurrentScreen('home');
+    } else {
+      setCurrentScreen('role-selection');
     }
   };
 
@@ -85,7 +97,14 @@ function AppContent() {
         setCurrentScreen('settings');
         break;
       case '/chat':
+        setChatUserId(undefined);
         setCurrentScreen('chat');
+        break;
+      case '/owner-dashboard':
+        setCurrentScreen('owner-dashboard');
+        break;
+      case '/handyman-dashboard':
+        setCurrentScreen('handyman-dashboard');
         break;
       default:
         setCurrentScreen('home');
@@ -97,12 +116,22 @@ function AppContent() {
     setCurrentScreen('chat');
   };
 
+  const handleAddProperty = () => {
+    setEditPropertyId(undefined);
+    setCurrentScreen('add-property');
+  };
+
+  const handleEditProperty = (id: string) => {
+    setEditPropertyId(id);
+    setCurrentScreen('add-property');
+  };
+
   const renderScreen = () => {
     switch (currentScreen) {
       case 'splash':
         return <SplashScreen onComplete={handleSplashComplete} />;
       case 'auth':
-        return <AuthPage onSuccess={() => setCurrentScreen('role-selection')} />;
+        return <AuthPage onSuccess={handleAuthSuccess} />;
       case 'role-selection':
         return <RoleSelection onSelectRole={handleRoleSelect} />;
       case 'kyc':
@@ -142,6 +171,28 @@ function AppContent() {
           <ChatPage 
             onBack={() => setCurrentScreen('home')} 
             otherUserId={chatUserId}
+          />
+        );
+      case 'owner-dashboard':
+        return (
+          <OwnerDashboard
+            onBack={() => setCurrentScreen('home')}
+            onAddProperty={handleAddProperty}
+            onEditProperty={handleEditProperty}
+          />
+        );
+      case 'add-property':
+        return (
+          <AddPropertyPage
+            onBack={() => setCurrentScreen('owner-dashboard')}
+            onSuccess={() => setCurrentScreen('owner-dashboard')}
+            editPropertyId={editPropertyId}
+          />
+        );
+      case 'handyman-dashboard':
+        return (
+          <HandymanDashboard
+            onBack={() => setCurrentScreen('home')}
           />
         );
       default:
