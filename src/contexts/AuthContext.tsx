@@ -22,7 +22,7 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   isLoading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName: string, phone?: string, birthDate?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
@@ -91,19 +91,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, phone?: string, birthDate?: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: redirectUrl,
         data: {
-          full_name: fullName
+          full_name: fullName,
+          phone: phone,
+          birth_date: birthDate
         }
       }
     });
+
+    // Update profile with phone if signup successful
+    if (!error && data.user) {
+      setTimeout(async () => {
+        await supabase
+          .from('profiles')
+          .update({ phone: phone })
+          .eq('user_id', data.user!.id);
+      }, 500);
+    }
     
     return { error: error as Error | null };
   };
