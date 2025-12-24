@@ -14,6 +14,83 @@ export type Database = {
   }
   public: {
     Tables: {
+      contracts: {
+        Row: {
+          contract_type: string
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          handyman_id: string | null
+          id: string
+          landlord_id: string
+          landlord_signed: boolean | null
+          landlord_signed_at: string | null
+          monthly_amount: number | null
+          property_id: string | null
+          start_date: string
+          status: string
+          tenant_id: string
+          tenant_signed: boolean | null
+          tenant_signed_at: string | null
+          terms: string | null
+          title: string
+          total_amount: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          contract_type: string
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          handyman_id?: string | null
+          id?: string
+          landlord_id: string
+          landlord_signed?: boolean | null
+          landlord_signed_at?: string | null
+          monthly_amount?: number | null
+          property_id?: string | null
+          start_date: string
+          status?: string
+          tenant_id: string
+          tenant_signed?: boolean | null
+          tenant_signed_at?: string | null
+          terms?: string | null
+          title: string
+          total_amount?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          contract_type?: string
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          handyman_id?: string | null
+          id?: string
+          landlord_id?: string
+          landlord_signed?: boolean | null
+          landlord_signed_at?: string | null
+          monthly_amount?: number | null
+          property_id?: string | null
+          start_date?: string
+          status?: string
+          tenant_id?: string
+          tenant_signed?: boolean | null
+          tenant_signed_at?: string | null
+          terms?: string | null
+          title?: string
+          total_amount?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           created_at: string | null
