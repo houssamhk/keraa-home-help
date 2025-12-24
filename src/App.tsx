@@ -17,25 +17,18 @@ import { ChatPage } from "@/pages/ChatPage";
 import { OwnerDashboard } from "@/pages/OwnerDashboard";
 import { AddPropertyPage } from "@/pages/AddPropertyPage";
 import { HandymanDashboard } from "@/pages/HandymanDashboard";
+import { ContractsPage } from "@/pages/ContractsPage";
+import { CreateContractPage } from "@/pages/CreateContractPage";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import type { UserRole } from "@/types/user";
 
 const queryClient = new QueryClient();
 
 type AppScreen = 
-  | 'splash' 
-  | 'auth' 
-  | 'role-selection' 
-  | 'kyc' 
-  | 'home' 
-  | 'map' 
-  | 'settings' 
-  | 'properties' 
-  | 'handymen' 
-  | 'chat'
-  | 'owner-dashboard'
-  | 'add-property'
-  | 'handyman-dashboard';
+  | 'splash' | 'auth' | 'role-selection' | 'kyc' | 'home' | 'map' 
+  | 'settings' | 'properties' | 'handymen' | 'chat'
+  | 'owner-dashboard' | 'add-property' | 'handyman-dashboard'
+  | 'contracts' | 'create-contract';
 
 function AppContent() {
   const { user, profile, isLoading } = useAuth();
@@ -43,12 +36,6 @@ function AppContent() {
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [chatUserId, setChatUserId] = useState<string | undefined>();
   const [editPropertyId, setEditPropertyId] = useState<string | undefined>();
-
-  useEffect(() => {
-    if (!isLoading && currentScreen === 'splash') {
-      // Only auto-navigate after splash completes
-    }
-  }, [user, profile, isLoading]);
 
   const handleSplashComplete = () => {
     if (user) {
@@ -65,7 +52,6 @@ function AppContent() {
   };
 
   const handleAuthSuccess = () => {
-    // After auth, check if user needs to complete onboarding
     if (profile?.kyc_verified) {
       setCurrentScreen('home');
     } else {
@@ -78,149 +64,54 @@ function AppContent() {
     setCurrentScreen('kyc');
   };
 
-  const handleKYCComplete = () => {
-    setCurrentScreen('home');
-  };
-
   const handleNavigate = (route: string) => {
-    switch (route) {
-      case '/map':
-        setCurrentScreen('map');
-        break;
-      case '/properties':
-        setCurrentScreen('properties');
-        break;
-      case '/handymen':
-        setCurrentScreen('handymen');
-        break;
-      case '/settings':
-        setCurrentScreen('settings');
-        break;
-      case '/chat':
-        setChatUserId(undefined);
-        setCurrentScreen('chat');
-        break;
-      case '/owner-dashboard':
-        setCurrentScreen('owner-dashboard');
-        break;
-      case '/handyman-dashboard':
-        setCurrentScreen('handyman-dashboard');
-        break;
-      default:
-        setCurrentScreen('home');
-    }
-  };
-
-  const handleStartChat = (userId: string) => {
-    setChatUserId(userId);
-    setCurrentScreen('chat');
-  };
-
-  const handleAddProperty = () => {
-    setEditPropertyId(undefined);
-    setCurrentScreen('add-property');
-  };
-
-  const handleEditProperty = (id: string) => {
-    setEditPropertyId(id);
-    setCurrentScreen('add-property');
+    const routeMap: Record<string, AppScreen> = {
+      '/map': 'map', '/properties': 'properties', '/handymen': 'handymen',
+      '/settings': 'settings', '/chat': 'chat', '/owner-dashboard': 'owner-dashboard',
+      '/handyman-dashboard': 'handyman-dashboard', '/contracts': 'contracts'
+    };
+    setChatUserId(undefined);
+    setCurrentScreen(routeMap[route] || 'home');
   };
 
   const renderScreen = () => {
     switch (currentScreen) {
-      case 'splash':
-        return <SplashScreen onComplete={handleSplashComplete} />;
-      case 'auth':
-        return <AuthPage onSuccess={handleAuthSuccess} />;
-      case 'role-selection':
-        return <RoleSelection onSelectRole={handleRoleSelect} />;
-      case 'kyc':
-        return (
-          <KYCFlow 
-            onComplete={handleKYCComplete} 
-            onBack={() => setCurrentScreen('role-selection')} 
-          />
-        );
-      case 'home':
-        return (
-          <AIVoiceHub 
-            userName={profile?.full_name || user?.email?.split('@')[0] || "ضيف"} 
-            onNavigate={handleNavigate} 
-          />
-        );
-      case 'map':
-        return <InteractiveMap onBack={() => setCurrentScreen('home')} />;
-      case 'settings':
-        return <SettingsPage onBack={() => setCurrentScreen('home')} />;
-      case 'properties':
-        return (
-          <PropertiesPage 
-            onBack={() => setCurrentScreen('home')} 
-            onViewProperty={() => {}} 
-          />
-        );
-      case 'handymen':
-        return (
-          <HandymenPage 
-            onBack={() => setCurrentScreen('home')} 
-            onChat={handleStartChat}
-          />
-        );
-      case 'chat':
-        return (
-          <ChatPage 
-            onBack={() => setCurrentScreen('home')} 
-            otherUserId={chatUserId}
-          />
-        );
-      case 'owner-dashboard':
-        return (
-          <OwnerDashboard
-            onBack={() => setCurrentScreen('home')}
-            onAddProperty={handleAddProperty}
-            onEditProperty={handleEditProperty}
-          />
-        );
-      case 'add-property':
-        return (
-          <AddPropertyPage
-            onBack={() => setCurrentScreen('owner-dashboard')}
-            onSuccess={() => setCurrentScreen('owner-dashboard')}
-            editPropertyId={editPropertyId}
-          />
-        );
-      case 'handyman-dashboard':
-        return (
-          <HandymanDashboard
-            onBack={() => setCurrentScreen('home')}
-          />
-        );
-      default:
-        return null;
+      case 'splash': return <SplashScreen onComplete={handleSplashComplete} />;
+      case 'auth': return <AuthPage onSuccess={handleAuthSuccess} />;
+      case 'role-selection': return <RoleSelection onSelectRole={handleRoleSelect} />;
+      case 'kyc': return <KYCFlow onComplete={() => setCurrentScreen('home')} onBack={() => setCurrentScreen('role-selection')} />;
+      case 'home': return <AIVoiceHub userName={profile?.full_name || user?.email?.split('@')[0] || "ضيف"} onNavigate={handleNavigate} />;
+      case 'map': return <InteractiveMap onBack={() => setCurrentScreen('home')} />;
+      case 'settings': return <SettingsPage onBack={() => setCurrentScreen('home')} />;
+      case 'properties': return <PropertiesPage onBack={() => setCurrentScreen('home')} onViewProperty={() => {}} />;
+      case 'handymen': return <HandymenPage onBack={() => setCurrentScreen('home')} onChat={(id) => { setChatUserId(id); setCurrentScreen('chat'); }} />;
+      case 'chat': return <ChatPage onBack={() => setCurrentScreen('home')} otherUserId={chatUserId} />;
+      case 'owner-dashboard': return <OwnerDashboard onBack={() => setCurrentScreen('home')} onAddProperty={() => setCurrentScreen('add-property')} onEditProperty={(id) => { setEditPropertyId(id); setCurrentScreen('add-property'); }} />;
+      case 'add-property': return <AddPropertyPage onBack={() => setCurrentScreen('owner-dashboard')} onSuccess={() => setCurrentScreen('owner-dashboard')} editPropertyId={editPropertyId} />;
+      case 'handyman-dashboard': return <HandymanDashboard onBack={() => setCurrentScreen('home')} />;
+      case 'contracts': return <ContractsPage onBack={() => setCurrentScreen('home')} onCreateContract={() => setCurrentScreen('create-contract')} />;
+      case 'create-contract': return <CreateContractPage onBack={() => setCurrentScreen('contracts')} onSuccess={() => setCurrentScreen('contracts')} />;
+      default: return null;
     }
   };
 
   return (
     <div className="min-h-screen bg-background">
-      <AnimatePresence mode="wait">
-        {renderScreen()}
-      </AnimatePresence>
+      <AnimatePresence mode="wait">{renderScreen()}</AnimatePresence>
     </div>
   );
 }
 
-const App = () => {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <AppContent />
-        </TooltipProvider>
-      </AuthProvider>
-    </QueryClientProvider>
-  );
-};
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <AppContent />
+      </TooltipProvider>
+    </AuthProvider>
+  </QueryClientProvider>
+);
 
 export default App;

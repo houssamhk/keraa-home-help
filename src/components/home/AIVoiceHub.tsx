@@ -34,6 +34,7 @@ export function AIVoiceHub({ userName = "Guest", onNavigate }: AIVoiceHubProps) 
     { id: 'properties', icon: Home, label: 'العقارات', route: '/properties' },
     { id: 'handymen', icon: Wrench, label: 'الحرفيون', route: '/handymen' },
     { id: 'map', icon: Map, label: 'الخريطة', route: '/map' },
+    { id: 'contracts', icon: MessageSquare, label: 'العقود', route: '/contracts' },
   ];
 
   const suggestions = [
