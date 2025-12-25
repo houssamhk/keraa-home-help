@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Search, Filter, MapPin, Bed, Bath, Ruler, Heart } from 'lucide-react';
+import { ArrowRight, MapPin, Bed, Bath, Ruler, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { AISearchBar } from '@/components/search/AISearchBar';
 
 interface Property {
   id: string;
@@ -16,6 +17,17 @@ interface Property {
   bathrooms: number;
   area_sqm: number;
   images: string[];
+  amenities?: string[];
+}
+
+interface SearchFilters {
+  city?: string;
+  property_type?: string;
+  bedrooms?: number;
+  min_price?: number;
+  max_price?: number;
+  amenities?: string[];
+  search_text?: string;
 }
 
 interface PropertiesPageProps {
@@ -26,25 +38,60 @@ interface PropertiesPageProps {
 export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) {
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState<SearchFilters>({});
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchProperties();
-  }, []);
+  }, [filters]);
 
   const fetchProperties = async () => {
     setIsLoading(true);
-    const { data, error } = await supabase
+    
+    let query = supabase
       .from('properties')
       .select('*')
-      .eq('is_available', true)
-      .order('created_at', { ascending: false });
+      .eq('is_available', true);
+
+    // Apply filters
+    if (filters.city) {
+      query = query.ilike('city', `%${filters.city}%`);
+    }
+    if (filters.property_type) {
+      query = query.eq('property_type', filters.property_type);
+    }
+    if (filters.bedrooms) {
+      query = query.eq('bedrooms', filters.bedrooms);
+    }
+    if (filters.max_price) {
+      query = query.lte('price', filters.max_price);
+    }
+    if (filters.min_price) {
+      query = query.gte('price', filters.min_price);
+    }
+
+    query = query.order('created_at', { ascending: false });
+    
+    const { data, error } = await query;
     
     if (!error && data) {
-      setProperties(data as Property[]);
+      let filteredData = data as Property[];
+      
+      // Filter by amenities if specified
+      if (filters.amenities && filters.amenities.length > 0) {
+        filteredData = filteredData.filter(p => {
+          if (!p.amenities) return false;
+          return filters.amenities!.every(a => p.amenities!.includes(a));
+        });
+      }
+      
+      setProperties(filteredData);
     }
     setIsLoading(false);
+  };
+
+  const handleFiltersChange = (newFilters: SearchFilters) => {
+    setFilters(newFilters);
   };
 
   const toggleFavorite = (id: string) => {
@@ -58,12 +105,6 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
       return newSet;
     });
   };
-
-  const filteredProperties = properties.filter(p =>
-    p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.address.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   const formatPrice = (price: number, period: string) => {
     const periodText = {
@@ -87,45 +128,48 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
   };
 
   // Sample properties for demo if none exist
-  const displayProperties = filteredProperties.length > 0 ? filteredProperties : [
+  const displayProperties = properties.length > 0 ? properties : [
     {
       id: '1',
       title: 'شقة فاخرة في حيدرة',
       address: 'شارع ديدوش مراد',
-      city: 'الجزائر العاصمة',
+      city: 'الجزائر',
       price: 45000,
       price_period: 'month',
       property_type: 'apartment',
       bedrooms: 3,
       bathrooms: 2,
       area_sqm: 120,
-      images: []
+      images: [],
+      amenities: ['heating', 'balcony']
     },
     {
       id: '2',
       title: 'فيلا مع حديقة',
       address: 'بن عكنون',
-      city: 'الجزائر العاصمة',
+      city: 'الجزائر',
       price: 120000,
       price_period: 'month',
       property_type: 'villa',
       bedrooms: 5,
       bathrooms: 3,
       area_sqm: 350,
-      images: []
+      images: [],
+      amenities: ['garden', 'garage', 'pool']
     },
     {
       id: '3',
-      title: 'استوديو مفروش',
-      address: 'باب الزوار',
-      city: 'الجزائر العاصمة',
+      title: 'استوديو مفروش في وهران',
+      address: 'الجزيرة',
+      city: 'وهران',
       price: 25000,
       price_period: 'month',
       property_type: 'studio',
       bedrooms: 1,
       bathrooms: 1,
       area_sqm: 45,
-      images: []
+      images: [],
+      amenities: ['furnished', 'wifi']
     }
   ];
 
@@ -144,24 +188,16 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
           <h1 className="font-serif text-2xl font-bold text-foreground">العقارات</h1>
         </div>
 
-        {/* Search */}
-        <div className="flex gap-2">
-          <div className="flex-1 glass-card flex items-center gap-3 px-4 py-3">
-            <Search className="w-5 h-5 text-muted-foreground" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="ابحث عن عقار..."
-              className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground"
-              dir="auto"
-            />
-          </div>
-          <Button variant="glass" size="icon">
-            <Filter className="w-5 h-5" />
-          </Button>
-        </div>
+        {/* AI Search Bar */}
+        <AISearchBar onFiltersChange={handleFiltersChange} />
       </motion.header>
+
+      {/* Results Count */}
+      <div className="px-6 pb-2">
+        <p className="text-sm text-muted-foreground">
+          {displayProperties.length} نتيجة
+        </p>
+      </div>
 
       {/* Properties List */}
       <div className="px-6 pb-6 space-y-4">
