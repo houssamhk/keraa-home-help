@@ -14,6 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
+      arrabons: {
+        Row: {
+          amount: number
+          contract_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          owner_id: string
+          payment_method: string
+          payment_proof_url: string | null
+          payment_reference: string | null
+          rejection_reason: string | null
+          released_at: string | null
+          status: string
+          submitted_at: string | null
+          tenant_id: string
+          updated_at: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          amount: number
+          contract_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          owner_id: string
+          payment_method?: string
+          payment_proof_url?: string | null
+          payment_reference?: string | null
+          rejection_reason?: string | null
+          released_at?: string | null
+          status?: string
+          submitted_at?: string | null
+          tenant_id: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          amount?: number
+          contract_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          owner_id?: string
+          payment_method?: string
+          payment_proof_url?: string | null
+          payment_reference?: string | null
+          rejection_reason?: string | null
+          released_at?: string | null
+          status?: string
+          submitted_at?: string | null
+          tenant_id?: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arrabons_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contracts: {
         Row: {
           contract_type: string

@@ -11,7 +11,8 @@ import {
   MessageSquare,
   Loader2,
   Settings,
-  MessageCircle
+  MessageCircle,
+  CreditCard
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useChat } from "@/hooks/useChat";
@@ -35,6 +36,7 @@ export function AIVoiceHub({ userName = "Guest", onNavigate }: AIVoiceHubProps) 
     { id: 'handymen', icon: Wrench, label: 'الحرفيون', route: '/handymen' },
     { id: 'map', icon: Map, label: 'الخريطة', route: '/map' },
     { id: 'contracts', icon: MessageSquare, label: 'العقود', route: '/contracts' },
+    { id: 'arrabon', icon: CreditCard, label: 'العربون', route: '/arrabon' },
   ];
 
   const suggestions = [
