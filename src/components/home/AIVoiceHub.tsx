@@ -12,11 +12,13 @@ import {
   Loader2,
   Settings,
   MessageCircle,
-  CreditCard
+  CreditCard,
+  Bell
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useChat } from "@/hooks/useChat";
 import { useVoiceRecognition } from "@/hooks/useVoiceRecognition";
+import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 
 interface AIVoiceHubProps {
   userName?: string;
@@ -37,6 +39,7 @@ export function AIVoiceHub({ userName = "Guest", onNavigate }: AIVoiceHubProps) 
     { id: 'map', icon: Map, label: 'الخريطة', route: '/map' },
     { id: 'contracts', icon: MessageSquare, label: 'العقود', route: '/contracts' },
     { id: 'arrabon', icon: CreditCard, label: 'العربون', route: '/arrabon' },
+    { id: 'alerts', icon: Bell, label: 'التنبيهات', route: '/alerts' },
   ];
 
   const suggestions = [
@@ -94,6 +97,8 @@ export function AIVoiceHub({ userName = "Guest", onNavigate }: AIVoiceHubProps) 
             <h1 className="font-serif text-2xl font-bold text-foreground">{userName}</h1>
           </div>
           <div className="flex items-center gap-2">
+            {/* Notifications */}
+            <NotificationCenter />
             {/* Mode Toggle */}
             <Button
               variant="glass"
