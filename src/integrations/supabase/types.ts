@@ -277,6 +277,39 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          data: Json | null
+          id: string
+          is_read: boolean | null
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -382,6 +415,57 @@ export type Database = {
           property_type?: string | null
           title?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      search_alerts: {
+        Row: {
+          amenities: string[] | null
+          city: string | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          last_notified_at: string | null
+          max_bedrooms: number | null
+          max_price: number | null
+          min_bedrooms: number | null
+          min_price: number | null
+          name: string
+          property_type: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amenities?: string[] | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_notified_at?: string | null
+          max_bedrooms?: number | null
+          max_price?: number | null
+          min_bedrooms?: number | null
+          min_price?: number | null
+          name: string
+          property_type?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amenities?: string[] | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_notified_at?: string | null
+          max_bedrooms?: number | null
+          max_price?: number | null
+          min_bedrooms?: number | null
+          min_price?: number | null
+          name?: string
+          property_type?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

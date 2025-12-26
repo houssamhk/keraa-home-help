@@ -20,6 +20,7 @@ import { HandymanDashboard } from "@/pages/HandymanDashboard";
 import { ContractsPage } from "@/pages/ContractsPage";
 import { CreateContractPage } from "@/pages/CreateContractPage";
 import ArrabonPage from "@/pages/ArrabonPage";
+import AlertsPage from "@/pages/AlertsPage";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import type { UserRole } from "@/types/user";
 
@@ -29,7 +30,7 @@ type AppScreen =
   | 'splash' | 'auth' | 'role-selection' | 'kyc' | 'home' | 'map' 
   | 'settings' | 'properties' | 'handymen' | 'chat'
   | 'owner-dashboard' | 'add-property' | 'handyman-dashboard'
-  | 'contracts' | 'create-contract' | 'arrabon';
+  | 'contracts' | 'create-contract' | 'arrabon' | 'alerts';
 
 function AppContent() {
   const { user, profile, isLoading } = useAuth();
@@ -70,7 +71,7 @@ function AppContent() {
       '/map': 'map', '/properties': 'properties', '/handymen': 'handymen',
       '/settings': 'settings', '/chat': 'chat', '/owner-dashboard': 'owner-dashboard',
       '/handyman-dashboard': 'handyman-dashboard', '/contracts': 'contracts',
-      '/arrabon': 'arrabon'
+      '/arrabon': 'arrabon', '/alerts': 'alerts'
     };
     setChatUserId(undefined);
     setCurrentScreen(routeMap[route] || 'home');
@@ -94,6 +95,7 @@ function AppContent() {
       case 'contracts': return <ContractsPage onBack={() => setCurrentScreen('home')} onCreateContract={() => setCurrentScreen('create-contract')} />;
       case 'create-contract': return <CreateContractPage onBack={() => setCurrentScreen('contracts')} onSuccess={() => setCurrentScreen('contracts')} />;
       case 'arrabon': return <ArrabonPage onBack={() => setCurrentScreen('home')} />;
+      case 'alerts': return <AlertsPage />;
       default: return null;
     }
   };

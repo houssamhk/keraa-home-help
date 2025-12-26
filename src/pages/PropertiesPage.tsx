@@ -4,6 +4,7 @@ import { ArrowRight, MapPin, Bed, Bath, Ruler, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { AISearchBar } from '@/components/search/AISearchBar';
+import { SearchAlertDialog } from '@/components/alerts/SearchAlertDialog';
 
 interface Property {
   id: string;
@@ -190,6 +191,11 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
 
         {/* AI Search Bar */}
         <AISearchBar onFiltersChange={handleFiltersChange} />
+        
+        {/* Alert Button */}
+        <div className="mt-3 flex justify-end">
+          <SearchAlertDialog initialFilters={filters} />
+        </div>
       </motion.header>
 
       {/* Results Count */}
