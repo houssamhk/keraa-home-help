@@ -313,40 +313,49 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          avg_rating: number | null
           created_at: string | null
           full_name: string | null
           id: string
           kyc_data: Json | null
           kyc_verified: boolean | null
           phone: string | null
+          reputation_badges: string[] | null
           role_type: string | null
           settings: Json | null
+          total_reviews: number | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
           avatar_url?: string | null
+          avg_rating?: number | null
           created_at?: string | null
           full_name?: string | null
           id?: string
           kyc_data?: Json | null
           kyc_verified?: boolean | null
           phone?: string | null
+          reputation_badges?: string[] | null
           role_type?: string | null
           settings?: Json | null
+          total_reviews?: number | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
           avatar_url?: string | null
+          avg_rating?: number | null
           created_at?: string | null
           full_name?: string | null
           id?: string
           kyc_data?: Json | null
           kyc_verified?: boolean | null
           phone?: string | null
+          reputation_badges?: string[] | null
           role_type?: string | null
           settings?: Json | null
+          total_reviews?: number | null
           updated_at?: string | null
           user_id?: string
         }
@@ -417,6 +426,53 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      reviews: {
+        Row: {
+          badges: string[] | null
+          comment: string | null
+          contract_id: string
+          created_at: string
+          id: string
+          rating: number
+          reviewed_id: string
+          reviewer_id: string
+          reviewer_role: string
+          updated_at: string
+        }
+        Insert: {
+          badges?: string[] | null
+          comment?: string | null
+          contract_id: string
+          created_at?: string
+          id?: string
+          rating: number
+          reviewed_id: string
+          reviewer_id: string
+          reviewer_role: string
+          updated_at?: string
+        }
+        Update: {
+          badges?: string[] | null
+          comment?: string | null
+          contract_id?: string
+          created_at?: string
+          id?: string
+          rating?: number
+          reviewed_id?: string
+          reviewer_id?: string
+          reviewer_role?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       search_alerts: {
         Row: {

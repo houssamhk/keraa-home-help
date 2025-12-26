@@ -11,12 +11,14 @@ import {
   Calendar,
   DollarSign,
   Loader2,
-  Pen
+  Pen,
+  Star
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { ReviewDialog } from '@/components/reviews/ReviewDialog';
 
 interface Contract {
   id: string;
@@ -264,17 +266,28 @@ export function ContractsPage({ onBack, onCreateContract }: ContractsPageProps) 
                   </div>
 
                   {/* Action */}
-                  {canSign && (
-                    <Button
-                      variant="gold"
-                      size="sm"
-                      className="w-full gap-2"
-                      onClick={() => signContract(contract.id, isLandlord)}
-                    >
-                      <Pen className="w-4 h-4" />
-                      <span>توقيع العقد</span>
-                    </Button>
-                  )}
+                  <div className="flex gap-2">
+                    {canSign && (
+                      <Button
+                        variant="gold"
+                        size="sm"
+                        className="flex-1 gap-2"
+                        onClick={() => signContract(contract.id, isLandlord)}
+                      >
+                        <Pen className="w-4 h-4" />
+                        <span>توقيع العقد</span>
+                      </Button>
+                    )}
+                    {contract.status === 'completed' && (
+                      <ReviewDialog
+                        contractId={contract.id}
+                        reviewedId={isLandlord ? contract.tenant_id : contract.landlord_id}
+                        reviewedName={isLandlord ? 'المستأجر' : 'المالك'}
+                        reviewerRole={isLandlord ? 'owner' : 'tenant'}
+                        onSuccess={fetchContracts}
+                      />
+                    )}
+                  </div>
                 </motion.div>
               );
             })}
