@@ -12,6 +12,7 @@ import { InteractiveMap } from "@/components/map/InteractiveMap";
 import { AuthPage } from "@/pages/AuthPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { PropertiesPage } from "@/pages/PropertiesPage";
+import { PropertyDetailPage } from "@/pages/PropertyDetailPage";
 import { HandymenPage } from "@/pages/HandymenPage";
 import { ChatPage } from "@/pages/ChatPage";
 import { OwnerDashboard } from "@/pages/OwnerDashboard";
@@ -28,9 +29,26 @@ const queryClient = new QueryClient();
 
 type AppScreen = 
   | 'splash' | 'auth' | 'role-selection' | 'kyc' | 'home' | 'map' 
-  | 'settings' | 'properties' | 'handymen' | 'chat'
+  | 'settings' | 'properties' | 'property-detail' | 'handymen' | 'chat'
   | 'owner-dashboard' | 'add-property' | 'handyman-dashboard'
   | 'contracts' | 'create-contract' | 'arrabon' | 'alerts';
+
+interface PropertyData {
+  id: string;
+  title: string;
+  address: string;
+  city: string;
+  price: number;
+  price_period: string;
+  property_type: string;
+  bedrooms: number;
+  bathrooms: number;
+  area_sqm: number;
+  images: string[];
+  amenities?: string[];
+  description?: string;
+  owner_id?: string;
+}
 
 function AppContent() {
   const { user, profile, isLoading } = useAuth();
@@ -38,6 +56,8 @@ function AppContent() {
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [chatUserId, setChatUserId] = useState<string | undefined>();
   const [editPropertyId, setEditPropertyId] = useState<string | undefined>();
+  const [selectedProperty, setSelectedProperty] = useState<PropertyData | null>(null);
+  const [createContractPropertyId, setCreateContractPropertyId] = useState<string | undefined>();
 
   const handleSplashComplete = () => {
     if (user) {
@@ -77,6 +97,21 @@ function AppContent() {
     setCurrentScreen(routeMap[route] || 'home');
   };
 
+  const handleViewProperty = (property: PropertyData) => {
+    setSelectedProperty(property);
+    setCurrentScreen('property-detail');
+  };
+
+  const handleChatFromProperty = (ownerId: string) => {
+    setChatUserId(ownerId);
+    setCurrentScreen('chat');
+  };
+
+  const handleCreateContractFromProperty = (propertyId: string) => {
+    setCreateContractPropertyId(propertyId);
+    setCurrentScreen('create-contract');
+  };
+
   const renderScreen = () => {
     switch (currentScreen) {
       case 'splash': return <SplashScreen onComplete={handleSplashComplete} />;
@@ -86,15 +121,24 @@ function AppContent() {
       case 'home': return <AIVoiceHub userName={profile?.full_name || user?.email?.split('@')[0] || "ضيف"} onNavigate={handleNavigate} />;
       case 'map': return <InteractiveMap onBack={() => setCurrentScreen('home')} />;
       case 'settings': return <SettingsPage onBack={() => setCurrentScreen('home')} />;
-      case 'properties': return <PropertiesPage onBack={() => setCurrentScreen('home')} onViewProperty={() => {}} />;
+      case 'properties': return <PropertiesPage onBack={() => setCurrentScreen('home')} onViewProperty={handleViewProperty} />;
+      case 'property-detail': return selectedProperty ? (
+        <PropertyDetailPage 
+          property={selectedProperty}
+          onBack={() => setCurrentScreen('properties')}
+          onChat={handleChatFromProperty}
+          onCreateContract={handleCreateContractFromProperty}
+          onArrabon={() => setCurrentScreen('arrabon')}
+        />
+      ) : null;
       case 'handymen': return <HandymenPage onBack={() => setCurrentScreen('home')} onChat={(id) => { setChatUserId(id); setCurrentScreen('chat'); }} />;
-      case 'chat': return <ChatPage onBack={() => setCurrentScreen('home')} otherUserId={chatUserId} />;
+      case 'chat': return <ChatPage onBack={() => setCurrentScreen(selectedProperty ? 'property-detail' : 'home')} otherUserId={chatUserId} />;
       case 'owner-dashboard': return <OwnerDashboard onBack={() => setCurrentScreen('home')} onAddProperty={() => setCurrentScreen('add-property')} onEditProperty={(id) => { setEditPropertyId(id); setCurrentScreen('add-property'); }} />;
       case 'add-property': return <AddPropertyPage onBack={() => setCurrentScreen('owner-dashboard')} onSuccess={() => setCurrentScreen('owner-dashboard')} editPropertyId={editPropertyId} />;
       case 'handyman-dashboard': return <HandymanDashboard onBack={() => setCurrentScreen('home')} />;
       case 'contracts': return <ContractsPage onBack={() => setCurrentScreen('home')} onCreateContract={() => setCurrentScreen('create-contract')} />;
-      case 'create-contract': return <CreateContractPage onBack={() => setCurrentScreen('contracts')} onSuccess={() => setCurrentScreen('contracts')} />;
-      case 'arrabon': return <ArrabonPage onBack={() => setCurrentScreen('home')} />;
+      case 'create-contract': return <CreateContractPage onBack={() => setCurrentScreen('contracts')} onSuccess={() => setCurrentScreen('contracts')} preselectedPropertyId={createContractPropertyId} />;
+      case 'arrabon': return <ArrabonPage onBack={() => setCurrentScreen(selectedProperty ? 'property-detail' : 'home')} />;
       case 'alerts': return <AlertsPage />;
       default: return null;
     }
