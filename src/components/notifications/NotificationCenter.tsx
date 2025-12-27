@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Bell, X, Home, Check, CheckCheck } from 'lucide-react';
+import { Bell, Home, Check, CheckCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -20,9 +19,12 @@ interface Notification {
   created_at: string;
 }
 
-export function NotificationCenter() {
+interface NotificationCenterProps {
+  onNavigate?: (route: string) => void;
+}
+
+export function NotificationCenter({ onNavigate }: NotificationCenterProps) {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
@@ -109,9 +111,9 @@ export function NotificationCenter() {
   const handleNotificationClick = (notification: Notification) => {
     markAsRead(notification.id);
     
-    if (notification.type === 'property_alert' && notification.data?.property_id) {
+    if (notification.type === 'property_alert') {
       setOpen(false);
-      navigate(`/properties?highlight=${notification.data.property_id}`);
+      onNavigate?.('/properties');
     }
   };
 

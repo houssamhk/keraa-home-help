@@ -98,7 +98,7 @@ export function AIVoiceHub({ userName = "Guest", onNavigate }: AIVoiceHubProps) 
           </div>
           <div className="flex items-center gap-2">
             {/* Notifications */}
-            <NotificationCenter />
+            <NotificationCenter onNavigate={onNavigate} />
             {/* Mode Toggle */}
             <Button
               variant="glass"
