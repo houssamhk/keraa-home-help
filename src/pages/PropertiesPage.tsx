@@ -19,6 +19,8 @@ interface Property {
   area_sqm: number;
   images: string[];
   amenities?: string[];
+  description?: string;
+  owner_id?: string;
 }
 
 interface SearchFilters {
@@ -142,7 +144,9 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
       bathrooms: 2,
       area_sqm: 120,
       images: [],
-      amenities: ['heating', 'balcony']
+      amenities: ['heating', 'balcony'],
+      description: 'شقة فاخرة تتكون من 3 غرف نوم وصالون كبير ومطبخ مجهز',
+      owner_id: undefined
     },
     {
       id: '2',
@@ -156,7 +160,9 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
       bathrooms: 3,
       area_sqm: 350,
       images: [],
-      amenities: ['garden', 'garage', 'pool']
+      amenities: ['garden', 'garage', 'pool'],
+      description: 'فيلا فخمة مع حديقة واسعة ومسبح',
+      owner_id: undefined
     },
     {
       id: '3',
@@ -170,7 +176,9 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
       bathrooms: 1,
       area_sqm: 45,
       images: [],
-      amenities: ['furnished', 'wifi']
+      amenities: ['furnished', 'wifi'],
+      description: 'استوديو مفروش بالكامل قريب من البحر',
+      owner_id: undefined
     }
   ];
 
