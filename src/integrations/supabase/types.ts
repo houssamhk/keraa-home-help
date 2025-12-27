@@ -82,6 +82,119 @@ export type Database = {
           },
         ]
       }
+      bill_reminders: {
+        Row: {
+          bill_id: string | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          last_reminded_at: string | null
+          remind_days_before: number
+          user_id: string
+        }
+        Insert: {
+          bill_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_reminded_at?: string | null
+          remind_days_before?: number
+          user_id: string
+        }
+        Update: {
+          bill_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_reminded_at?: string | null
+          remind_days_before?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bill_reminders_bill_id_fkey"
+            columns: ["bill_id"]
+            isOneToOne: false
+            referencedRelation: "bills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bills: {
+        Row: {
+          amount: number
+          bill_type: string
+          contract_id: string | null
+          created_at: string
+          due_date: string
+          id: string
+          notes: string | null
+          paid_date: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          property_id: string | null
+          recurring: boolean | null
+          recurring_day: number | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          bill_type: string
+          contract_id?: string | null
+          created_at?: string
+          due_date: string
+          id?: string
+          notes?: string | null
+          paid_date?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          property_id?: string | null
+          recurring?: boolean | null
+          recurring_day?: number | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          bill_type?: string
+          contract_id?: string | null
+          created_at?: string
+          due_date?: string
+          id?: string
+          notes?: string | null
+          paid_date?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          property_id?: string | null
+          recurring?: boolean | null
+          recurring_day?: number | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bills_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bills_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contracts: {
         Row: {
           contract_type: string

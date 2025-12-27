@@ -38,7 +38,7 @@ export function AIVoiceHub({ userName = "Guest", onNavigate }: AIVoiceHubProps) 
     { id: 'handymen', icon: Wrench, label: 'الحرفيون', route: '/handymen' },
     { id: 'map', icon: Map, label: 'الخريطة', route: '/map' },
     { id: 'contracts', icon: MessageSquare, label: 'العقود', route: '/contracts' },
-    { id: 'arrabon', icon: CreditCard, label: 'العربون', route: '/arrabon' },
+    { id: 'bills', icon: CreditCard, label: 'الفواتير', route: '/bills' },
     { id: 'alerts', icon: Bell, label: 'التنبيهات', route: '/alerts' },
   ];
 
