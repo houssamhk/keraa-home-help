@@ -1,20 +1,24 @@
 import { motion } from "framer-motion";
 import { Home, Wrench } from "lucide-react";
+import { useEffect } from "react";
 
 interface SplashScreenProps {
   onComplete: () => void;
 }
 
 export function SplashScreen({ onComplete }: SplashScreenProps) {
+  useEffect(() => {
+    const timer = setTimeout(onComplete, 2500);
+    return () => clearTimeout(timer);
+  }, [onComplete]);
+
   return (
     <motion.div 
       className="fixed inset-0 bg-background flex flex-col items-center justify-center safe-area-inset"
-      initial={{ opacity: 1 }}
+      initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      onAnimationComplete={() => {
-        setTimeout(onComplete, 2500);
-      }}
+      transition={{ duration: 0.5 }}
     >
       {/* Ambient glow effect */}
       <div className="absolute inset-0 overflow-hidden">
