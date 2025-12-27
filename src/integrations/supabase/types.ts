@@ -355,6 +355,54 @@ export type Database = {
         }
         Relationships: []
       }
+      kyc_verifications: {
+        Row: {
+          created_at: string
+          id: string
+          id_back_url: string | null
+          id_front_url: string | null
+          id_type: string | null
+          rejection_reason: string | null
+          selfie_url: string | null
+          status: string
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          id_back_url?: string | null
+          id_front_url?: string | null
+          id_type?: string | null
+          rejection_reason?: string | null
+          selfie_url?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          user_id: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          id_back_url?: string | null
+          id_front_url?: string | null
+          id_type?: string | null
+          rejection_reason?: string | null
+          selfie_url?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          user_id?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string

@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Bell, Trash2, ToggleLeft, ToggleRight, ArrowRight, Plus } from 'lucide-react';
+import { Bell, Trash2, ToggleLeft, ToggleRight, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { SearchAlertDialog } from '@/components/alerts/SearchAlertDialog';
 import { formatDistanceToNow } from 'date-fns';
@@ -24,6 +23,10 @@ interface SearchAlert {
   is_active: boolean;
   last_notified_at: string | null;
   created_at: string;
+}
+
+interface AlertsPageProps {
+  onBack?: () => void;
 }
 
 const propertyTypeLabels: Record<string, string> = {
@@ -45,18 +48,15 @@ const amenityLabels: Record<string, string> = {
   furnished: 'مفروشة',
 };
 
-export default function AlertsPage() {
+export default function AlertsPage({ onBack }: AlertsPageProps) {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [alerts, setAlerts] = useState<SearchAlert[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) {
-      navigate('/auth');
-      return;
+    if (user) {
+      fetchAlerts();
     }
-    fetchAlerts();
   }, [user]);
 
   const fetchAlerts = async () => {
@@ -105,13 +105,23 @@ export default function AlertsPage() {
     }
   };
 
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">يجب تسجيل الدخول أولاً</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background p-4 pb-24">
+    <div className="min-h-screen bg-background p-4 pb-24 safe-area-inset">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-          <ArrowRight className="h-5 w-5" />
-        </Button>
+        {onBack && (
+          <Button variant="ghost" size="icon" onClick={onBack}>
+            <ArrowRight className="h-5 w-5" />
+          </Button>
+        )}
         <h1 className="text-xl font-bold">🔔 رادار البحث</h1>
         <SearchAlertDialog />
       </div>

@@ -140,7 +140,7 @@ function AppContent() {
       case 'contracts': return <ContractsPage onBack={() => setCurrentScreen('home')} onCreateContract={() => setCurrentScreen('create-contract')} />;
       case 'create-contract': return <CreateContractPage onBack={() => setCurrentScreen('contracts')} onSuccess={() => setCurrentScreen('contracts')} preselectedPropertyId={createContractPropertyId} />;
       case 'arrabon': return <ArrabonPage onBack={() => setCurrentScreen(selectedProperty ? 'property-detail' : 'home')} />;
-      case 'alerts': return <AlertsPage />;
+      case 'alerts': return <AlertsPage onBack={() => setCurrentScreen('home')} />;
       case 'bills': return <BillsPage onBack={() => setCurrentScreen('home')} />;
       default: return null;
     }
