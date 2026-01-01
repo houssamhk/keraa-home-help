@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Home, Wrench, Search, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Home, Wrench, Search, ArrowRight, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import type { UserRole } from "@/types/user";
 
 interface RoleSelectionProps {
@@ -44,6 +46,41 @@ const roles = [
 ];
 
 export function RoleSelection({ onSelectRole }: RoleSelectionProps) {
+  const { updateProfile } = useAuth();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+
+  const handleRoleSelect = async (role: UserRole) => {
+    setSelectedRole(role);
+    setIsLoading(true);
+
+    try {
+      // Save role to profile
+      const { error } = await updateProfile({ role_type: role });
+      
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "تم حفظ نوع الحساب",
+        description: "يمكنك الآن متابعة إعداد حسابك"
+      });
+
+      onSelectRole(role);
+    } catch (error: any) {
+      toast({
+        title: "خطأ",
+        description: error.message || "حدث خطأ أثناء حفظ نوع الحساب",
+        variant: "destructive"
+      });
+      setSelectedRole(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col safe-area-inset">
       {/* Header */}
@@ -67,18 +104,25 @@ export function RoleSelection({ onSelectRole }: RoleSelectionProps) {
         {roles.map((role, index) => (
           <motion.button
             key={role.id}
-            onClick={() => onSelectRole(role.id)}
-            className="w-full text-right group"
+            onClick={() => handleRoleSelect(role.id)}
+            disabled={isLoading}
+            className="w-full text-right group disabled:opacity-50"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 + index * 0.1, duration: 0.5 }}
             whileTap={{ scale: 0.98 }}
           >
-            <div className="elevated-card p-5 transition-all duration-300 group-hover:border-primary/50 group-hover:shadow-gold/20">
+            <div className={`elevated-card p-5 transition-all duration-300 group-hover:border-primary/50 group-hover:shadow-gold/20 ${
+              selectedRole === role.id ? 'border-primary bg-primary/5' : ''
+            }`}>
               <div className="flex items-start gap-4">
-                {/* Arrow */}
+                {/* Arrow or Loader */}
                 <div className="shrink-0 mt-2">
-                  <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:-translate-x-1 transition-all rotate-180" />
+                  {isLoading && selectedRole === role.id ? (
+                    <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                  ) : (
+                    <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:-translate-x-1 transition-all rotate-180" />
+                  )}
                 </div>
 
                 {/* Content */}

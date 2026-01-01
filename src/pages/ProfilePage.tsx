@@ -28,9 +28,10 @@ interface ProfilePageProps {
   userId?: string; // If not provided, show current user's profile
   onBack: () => void;
   onSettings?: () => void;
+  onNavigate?: (route: string) => void;
 }
 
-export function ProfilePage({ userId, onBack, onSettings }: ProfilePageProps) {
+export function ProfilePage({ userId, onBack, onSettings, onNavigate }: ProfilePageProps) {
   const { user, profile: currentUserProfile } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);

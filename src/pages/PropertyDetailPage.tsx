@@ -34,6 +34,7 @@ interface PropertyDetailPageProps {
   onChat: (ownerId: string) => void;
   onCreateContract: (propertyId: string) => void;
   onArrabon: () => void;
+  needsKYC?: boolean;
 }
 
 const amenityIcons: Record<string, any> = {
@@ -65,7 +66,8 @@ export function PropertyDetailPage({
   onBack, 
   onChat, 
   onCreateContract,
-  onArrabon 
+  onArrabon,
+  needsKYC
 }: PropertyDetailPageProps) {
   const { user } = useAuth();
   const [isFavorite, setIsFavorite] = useState(false);
@@ -108,6 +110,10 @@ export function PropertyDetailPage({
       toast.error('يجب تسجيل الدخول أولاً');
       return;
     }
+    if (needsKYC) {
+      toast.error('يجب تأكيد هويتك أولاً للتواصل مع المالك');
+      return;
+    }
     if (property.owner_id) {
       onChat(property.owner_id);
     } else {
@@ -120,12 +126,20 @@ export function PropertyDetailPage({
       toast.error('يجب تسجيل الدخول أولاً');
       return;
     }
+    if (needsKYC) {
+      toast.error('يجب تأكيد هويتك أولاً لإنشاء عقد');
+      return;
+    }
     onCreateContract(property.id);
   };
 
   const handlePayArrabon = () => {
     if (!user) {
       toast.error('يجب تسجيل الدخول أولاً');
+      return;
+    }
+    if (needsKYC) {
+      toast.error('يجب تأكيد هويتك أولاً لدفع العربون');
       return;
     }
     onArrabon();
