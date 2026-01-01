@@ -13,7 +13,9 @@ import {
   Settings,
   MessageCircle,
   CreditCard,
-  Bell
+  Bell,
+  Calendar,
+  Shield
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useChat } from "@/hooks/useChat";
@@ -39,7 +41,7 @@ export function AIVoiceHub({ userName = "Guest", onNavigate }: AIVoiceHubProps) 
     { id: 'map', icon: Map, label: 'الخريطة', route: '/map' },
     { id: 'contracts', icon: MessageSquare, label: 'العقود', route: '/contracts' },
     { id: 'bills', icon: CreditCard, label: 'الفواتير', route: '/bills' },
-    { id: 'alerts', icon: Bell, label: 'التنبيهات', route: '/alerts' },
+    { id: 'appointments', icon: Calendar, label: 'المواعيد', route: '/appointments' },
   ];
 
   const suggestions = [
@@ -401,7 +403,7 @@ export function AIVoiceHub({ userName = "Guest", onNavigate }: AIVoiceHubProps) 
           </div>
           
           {/* Role-based Dashboard Links */}
-          <div className="mt-6 flex justify-center gap-3">
+          <div className="mt-6 flex justify-center gap-3 flex-wrap">
             <Button
               variant="glass"
               size="sm"
@@ -419,6 +421,15 @@ export function AIVoiceHub({ userName = "Guest", onNavigate }: AIVoiceHubProps) 
             >
               <Wrench className="w-4 h-4" />
               <span>لوحة الحرفي</span>
+            </Button>
+            <Button
+              variant="gold"
+              size="sm"
+              onClick={() => onNavigate('/admin')}
+              className="gap-2"
+            >
+              <Shield className="w-4 h-4" />
+              <span>لوحة المشرفين</span>
             </Button>
           </div>
         </motion.div>
