@@ -23,6 +23,8 @@ import { CreateContractPage } from "@/pages/CreateContractPage";
 import ArrabonPage from "@/pages/ArrabonPage";
 import AlertsPage from "@/pages/AlertsPage";
 import { BillsPage } from "@/pages/BillsPage";
+import { AdminDashboard } from "@/pages/AdminDashboard";
+import { AppointmentsPage } from "@/pages/AppointmentsPage";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import type { UserRole } from "@/types/user";
 
@@ -32,7 +34,8 @@ type AppScreen =
   | 'splash' | 'auth' | 'role-selection' | 'kyc' | 'home' | 'map' 
   | 'settings' | 'properties' | 'property-detail' | 'handymen' | 'chat'
   | 'owner-dashboard' | 'add-property' | 'handyman-dashboard'
-  | 'contracts' | 'create-contract' | 'arrabon' | 'alerts' | 'bills';
+  | 'contracts' | 'create-contract' | 'arrabon' | 'alerts' | 'bills'
+  | 'admin' | 'appointments';
 
 interface PropertyData {
   id: string;
@@ -92,7 +95,8 @@ function AppContent() {
       '/map': 'map', '/properties': 'properties', '/handymen': 'handymen',
       '/settings': 'settings', '/chat': 'chat', '/owner-dashboard': 'owner-dashboard',
       '/handyman-dashboard': 'handyman-dashboard', '/contracts': 'contracts',
-      '/arrabon': 'arrabon', '/alerts': 'alerts', '/bills': 'bills'
+      '/arrabon': 'arrabon', '/alerts': 'alerts', '/bills': 'bills',
+      '/admin': 'admin', '/appointments': 'appointments'
     };
     setChatUserId(undefined);
     setCurrentScreen(routeMap[route] || 'home');
@@ -142,6 +146,8 @@ function AppContent() {
       case 'arrabon': return <ArrabonPage onBack={() => setCurrentScreen(selectedProperty ? 'property-detail' : 'home')} />;
       case 'alerts': return <AlertsPage onBack={() => setCurrentScreen('home')} />;
       case 'bills': return <BillsPage onBack={() => setCurrentScreen('home')} />;
+      case 'admin': return <AdminDashboard onBack={() => setCurrentScreen('home')} />;
+      case 'appointments': return <AppointmentsPage onBack={() => setCurrentScreen('home')} />;
       default: return null;
     }
   };
