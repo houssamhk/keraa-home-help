@@ -22,6 +22,7 @@ import { toast } from "sonner";
 interface KYCFlowProps {
   onComplete: () => void;
   onBack: () => void;
+  onSkip?: () => void;
 }
 
 type KYCStep = 'intro' | 'id-type' | 'id-front' | 'id-back' | 'selfie' | 'processing' | 'complete';
@@ -42,7 +43,7 @@ const idTypes = [
   { value: 'driver_license', label: 'رخصة السياقة' },
 ];
 
-export function KYCFlow({ onComplete, onBack }: KYCFlowProps) {
+export function KYCFlow({ onComplete, onBack, onSkip }: KYCFlowProps) {
   const { user, updateProfile } = useAuth();
   const [currentStep, setCurrentStep] = useState<KYCStep>('intro');
   const [idType, setIdType] = useState<string>('national_id');
@@ -162,7 +163,7 @@ export function KYCFlow({ onComplete, onBack }: KYCFlowProps) {
   const renderStepContent = () => {
     switch (currentStep) {
       case 'intro':
-        return <IntroStep onContinue={goToNextStep} />;
+        return <IntroStep onContinue={goToNextStep} onSkip={onSkip} />;
       case 'id-type':
         return <IDTypeStep idType={idType} setIdType={setIdType} onContinue={goToNextStep} />;
       case 'id-front':
@@ -246,7 +247,7 @@ export function KYCFlow({ onComplete, onBack }: KYCFlowProps) {
   );
 }
 
-function IntroStep({ onContinue }: { onContinue: () => void }) {
+function IntroStep({ onContinue, onSkip }: { onContinue: () => void; onSkip?: () => void }) {
   const features = [
     { icon: ShieldCheck, title: 'أمان على مستوى البنوك', desc: 'بياناتك مشفرة ومحمية' },
     { icon: CreditCard, title: 'وثيقة هوية حكومية', desc: 'بطاقة تعريف، جواز سفر، أو رخصة قيادة' },
@@ -280,6 +281,18 @@ function IntroStep({ onContinue }: { onContinue: () => void }) {
           بدء التحقق
           <ArrowRight className="w-5 h-5" />
         </Button>
+        
+        {onSkip && (
+          <Button onClick={onSkip} variant="ghost" size="lg" className="w-full mt-3 text-muted-foreground">
+            تخطي الآن
+          </Button>
+        )}
+        
+        {onSkip && (
+          <p className="text-center text-xs text-muted-foreground mt-2">
+            ملاحظة: لن تتمكن من بعض العمليات حتى تؤكد هويتك
+          </p>
+        )}
       </div>
     </div>
   );

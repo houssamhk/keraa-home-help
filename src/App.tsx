@@ -25,6 +25,7 @@ import AlertsPage from "@/pages/AlertsPage";
 import { BillsPage } from "@/pages/BillsPage";
 import { AdminDashboard } from "@/pages/AdminDashboard";
 import { AppointmentsPage } from "@/pages/AppointmentsPage";
+import { ProfilePage } from "@/pages/ProfilePage";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import type { UserRole } from "@/types/user";
 
@@ -35,7 +36,7 @@ type AppScreen =
   | 'settings' | 'properties' | 'property-detail' | 'handymen' | 'chat'
   | 'owner-dashboard' | 'add-property' | 'handyman-dashboard'
   | 'contracts' | 'create-contract' | 'arrabon' | 'alerts' | 'bills'
-  | 'admin' | 'appointments';
+  | 'admin' | 'appointments' | 'profile';
 
 interface PropertyData {
   id: string;
@@ -57,37 +58,66 @@ interface PropertyData {
 function AppContent() {
   const { user, profile, isLoading } = useAuth();
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('splash');
-  const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [chatUserId, setChatUserId] = useState<string | undefined>();
   const [editPropertyId, setEditPropertyId] = useState<string | undefined>();
   const [selectedProperty, setSelectedProperty] = useState<PropertyData | null>(null);
   const [createContractPropertyId, setCreateContractPropertyId] = useState<string | undefined>();
+  const [isInitialized, setIsInitialized] = useState(false);
 
+  // Handle splash screen completion and initial routing
   const handleSplashComplete = () => {
-    if (user) {
-      if (profile?.kyc_verified) {
-        setCurrentScreen('home');
-      } else if (profile?.role_type) {
-        setCurrentScreen('kyc');
-      } else {
-        setCurrentScreen('role-selection');
-      }
-    } else {
+    setIsInitialized(true);
+    determineInitialScreen();
+  };
+
+  // Determine which screen to show based on auth state
+  const determineInitialScreen = () => {
+    if (isLoading) return;
+
+    if (!user) {
+      // Not logged in - show auth
       setCurrentScreen('auth');
+    } else if (!profile?.role_type) {
+      // Logged in but no role selected
+      setCurrentScreen('role-selection');
+    } else {
+      // Logged in with role - go to home (KYC is optional, can be done later)
+      setCurrentScreen('home');
     }
   };
 
+  // Re-evaluate screen when auth state changes (after initialization)
+  useEffect(() => {
+    if (!isInitialized || isLoading) return;
+    
+    // If user logs out, go to auth
+    if (!user && currentScreen !== 'auth' && currentScreen !== 'splash') {
+      setCurrentScreen('auth');
+    }
+  }, [user, isLoading, isInitialized, currentScreen]);
+
   const handleAuthSuccess = () => {
-    if (profile?.kyc_verified) {
+    // After login/signup, check if role is set
+    if (profile?.role_type) {
       setCurrentScreen('home');
     } else {
       setCurrentScreen('role-selection');
     }
   };
 
-  const handleRoleSelect = (role: UserRole) => {
-    setUserRole(role);
+  const handleRoleSelect = async (role: UserRole) => {
+    // Role will be saved in RoleSelection component
+    // Then show KYC with skip option
     setCurrentScreen('kyc');
+  };
+
+  const handleKYCComplete = () => {
+    setCurrentScreen('home');
+  };
+
+  const handleKYCSkip = () => {
+    // User skipped KYC - still go to home but they'll have restrictions
+    setCurrentScreen('home');
   };
 
   const handleNavigate = (route: string) => {
@@ -96,7 +126,8 @@ function AppContent() {
       '/settings': 'settings', '/chat': 'chat', '/owner-dashboard': 'owner-dashboard',
       '/handyman-dashboard': 'handyman-dashboard', '/contracts': 'contracts',
       '/arrabon': 'arrabon', '/alerts': 'alerts', '/bills': 'bills',
-      '/admin': 'admin', '/appointments': 'appointments'
+      '/admin': 'admin', '/appointments': 'appointments', '/profile': 'profile',
+      '/kyc': 'kyc'
     };
     setChatUserId(undefined);
     setCurrentScreen(routeMap[route] || 'home');
@@ -117,38 +148,78 @@ function AppContent() {
     setCurrentScreen('create-contract');
   };
 
+  // Check if user needs KYC for certain actions
+  const needsKYC = user && profile && !profile.kyc_verified;
+
   const renderScreen = () => {
     switch (currentScreen) {
-      case 'splash': return <SplashScreen onComplete={handleSplashComplete} />;
-      case 'auth': return <AuthPage onSuccess={handleAuthSuccess} />;
-      case 'role-selection': return <RoleSelection onSelectRole={handleRoleSelect} />;
-      case 'kyc': return <KYCFlow onComplete={() => setCurrentScreen('home')} onBack={() => setCurrentScreen('role-selection')} />;
-      case 'home': return <AIVoiceHub userName={profile?.full_name || user?.email?.split('@')[0] || "ضيف"} onNavigate={handleNavigate} />;
-      case 'map': return <InteractiveMap onBack={() => setCurrentScreen('home')} />;
-      case 'settings': return <SettingsPage onBack={() => setCurrentScreen('home')} />;
-      case 'properties': return <PropertiesPage onBack={() => setCurrentScreen('home')} onViewProperty={handleViewProperty} />;
-      case 'property-detail': return selectedProperty ? (
-        <PropertyDetailPage 
-          property={selectedProperty}
-          onBack={() => setCurrentScreen('properties')}
-          onChat={handleChatFromProperty}
-          onCreateContract={handleCreateContractFromProperty}
-          onArrabon={() => setCurrentScreen('arrabon')}
-        />
-      ) : null;
-      case 'handymen': return <HandymenPage onBack={() => setCurrentScreen('home')} onChat={(id) => { setChatUserId(id); setCurrentScreen('chat'); }} />;
-      case 'chat': return <ChatPage onBack={() => setCurrentScreen(selectedProperty ? 'property-detail' : 'home')} otherUserId={chatUserId} />;
-      case 'owner-dashboard': return <OwnerDashboard onBack={() => setCurrentScreen('home')} onAddProperty={() => setCurrentScreen('add-property')} onEditProperty={(id) => { setEditPropertyId(id); setCurrentScreen('add-property'); }} />;
-      case 'add-property': return <AddPropertyPage onBack={() => setCurrentScreen('owner-dashboard')} onSuccess={() => setCurrentScreen('owner-dashboard')} editPropertyId={editPropertyId} />;
-      case 'handyman-dashboard': return <HandymanDashboard onBack={() => setCurrentScreen('home')} />;
-      case 'contracts': return <ContractsPage onBack={() => setCurrentScreen('home')} onCreateContract={() => setCurrentScreen('create-contract')} />;
-      case 'create-contract': return <CreateContractPage onBack={() => setCurrentScreen('contracts')} onSuccess={() => setCurrentScreen('contracts')} preselectedPropertyId={createContractPropertyId} />;
-      case 'arrabon': return <ArrabonPage onBack={() => setCurrentScreen(selectedProperty ? 'property-detail' : 'home')} />;
-      case 'alerts': return <AlertsPage onBack={() => setCurrentScreen('home')} />;
-      case 'bills': return <BillsPage onBack={() => setCurrentScreen('home')} />;
-      case 'admin': return <AdminDashboard onBack={() => setCurrentScreen('home')} />;
-      case 'appointments': return <AppointmentsPage onBack={() => setCurrentScreen('home')} />;
-      default: return null;
+      case 'splash': 
+        return <SplashScreen onComplete={handleSplashComplete} />;
+      case 'auth': 
+        return <AuthPage onSuccess={handleAuthSuccess} />;
+      case 'role-selection': 
+        return <RoleSelection onSelectRole={handleRoleSelect} />;
+      case 'kyc': 
+        return (
+          <KYCFlow 
+            onComplete={handleKYCComplete} 
+            onBack={() => setCurrentScreen('role-selection')}
+            onSkip={handleKYCSkip}
+          />
+        );
+      case 'home': 
+        return (
+          <AIVoiceHub 
+            userName={profile?.full_name || user?.email?.split('@')[0] || "ضيف"} 
+            onNavigate={handleNavigate}
+            needsKYC={needsKYC}
+          />
+        );
+      case 'map': 
+        return <InteractiveMap onBack={() => setCurrentScreen('home')} />;
+      case 'settings': 
+        return <SettingsPage onBack={() => setCurrentScreen('home')} />;
+      case 'profile':
+        return <ProfilePage onBack={() => setCurrentScreen('home')} onNavigate={handleNavigate} />;
+      case 'properties': 
+        return <PropertiesPage onBack={() => setCurrentScreen('home')} onViewProperty={handleViewProperty} />;
+      case 'property-detail': 
+        return selectedProperty ? (
+          <PropertyDetailPage 
+            property={selectedProperty}
+            onBack={() => setCurrentScreen('properties')}
+            onChat={handleChatFromProperty}
+            onCreateContract={handleCreateContractFromProperty}
+            onArrabon={() => setCurrentScreen('arrabon')}
+            needsKYC={needsKYC}
+          />
+        ) : null;
+      case 'handymen': 
+        return <HandymenPage onBack={() => setCurrentScreen('home')} onChat={(id) => { setChatUserId(id); setCurrentScreen('chat'); }} />;
+      case 'chat': 
+        return <ChatPage onBack={() => setCurrentScreen(selectedProperty ? 'property-detail' : 'home')} otherUserId={chatUserId} />;
+      case 'owner-dashboard': 
+        return <OwnerDashboard onBack={() => setCurrentScreen('home')} onAddProperty={() => setCurrentScreen('add-property')} onEditProperty={(id) => { setEditPropertyId(id); setCurrentScreen('add-property'); }} />;
+      case 'add-property': 
+        return <AddPropertyPage onBack={() => setCurrentScreen('owner-dashboard')} onSuccess={() => setCurrentScreen('owner-dashboard')} editPropertyId={editPropertyId} />;
+      case 'handyman-dashboard': 
+        return <HandymanDashboard onBack={() => setCurrentScreen('home')} />;
+      case 'contracts': 
+        return <ContractsPage onBack={() => setCurrentScreen('home')} onCreateContract={() => setCurrentScreen('create-contract')} />;
+      case 'create-contract': 
+        return <CreateContractPage onBack={() => setCurrentScreen('contracts')} onSuccess={() => setCurrentScreen('contracts')} preselectedPropertyId={createContractPropertyId} />;
+      case 'arrabon': 
+        return <ArrabonPage onBack={() => setCurrentScreen(selectedProperty ? 'property-detail' : 'home')} />;
+      case 'alerts': 
+        return <AlertsPage onBack={() => setCurrentScreen('home')} />;
+      case 'bills': 
+        return <BillsPage onBack={() => setCurrentScreen('home')} />;
+      case 'admin': 
+        return <AdminDashboard onBack={() => setCurrentScreen('home')} />;
+      case 'appointments': 
+        return <AppointmentsPage onBack={() => setCurrentScreen('home')} />;
+      default: 
+        return null;
     }
   };
 

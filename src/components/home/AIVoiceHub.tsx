@@ -25,9 +25,10 @@ import { NotificationCenter } from "@/components/notifications/NotificationCente
 interface AIVoiceHubProps {
   userName?: string;
   onNavigate: (route: string) => void;
+  needsKYC?: boolean;
 }
 
-export function AIVoiceHub({ userName = "Guest", onNavigate }: AIVoiceHubProps) {
+export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoiceHubProps) {
   const [inputMode, setInputMode] = useState<"voice" | "text">("voice");
   const [textInput, setTextInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
