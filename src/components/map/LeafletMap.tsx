@@ -349,31 +349,27 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
             />
 
             {/* Property markers */}
-            {(viewMode === 'all' || viewMode === 'properties') && properties.map((property) => (
-              property.latitude && property.longitude && (
-                <Marker
-                  key={`property-${property.id}`}
-                  position={[property.latitude, property.longitude]}
-                  icon={propertyIcon}
-                  eventHandlers={{
-                    click: () => setSelectedItem(property)
-                  }}
-                />
-              )
+            {(viewMode === 'all' || viewMode === 'properties') && properties.filter(p => p.latitude && p.longitude).map((property) => (
+              <Marker
+                key={`property-${property.id}`}
+                position={[property.latitude!, property.longitude!]}
+                icon={propertyIcon}
+                eventHandlers={{
+                  click: () => setSelectedItem(property)
+                }}
+              />
             ))}
 
             {/* Handyman markers */}
-            {(viewMode === 'all' || viewMode === 'handymen') && handymen.map((handyman) => (
-              handyman.latitude && handyman.longitude && (
-                <Marker
-                  key={`handyman-${handyman.id}`}
-                  position={[handyman.latitude, handyman.longitude]}
-                  icon={handymanIcon}
-                  eventHandlers={{
-                    click: () => setSelectedItem(handyman)
-                  }}
-                />
-              )
+            {(viewMode === 'all' || viewMode === 'handymen') && handymen.filter(h => h.latitude && h.longitude).map((handyman) => (
+              <Marker
+                key={`handyman-${handyman.id}`}
+                position={[handyman.latitude!, handyman.longitude!]}
+                icon={handymanIcon}
+                eventHandlers={{
+                  click: () => setSelectedItem(handyman)
+                }}
+              />
             ))}
           </MapContainer>
         )}
