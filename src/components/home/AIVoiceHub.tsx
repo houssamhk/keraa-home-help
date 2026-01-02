@@ -15,11 +15,14 @@ import {
   CreditCard,
   Bell,
   Calendar,
-  Shield
+  Shield,
+  Phone,
+  PhoneOff,
+  Volume2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useVoiceChat } from "@/hooks/useVoiceChat";
 import { useChat } from "@/hooks/useChat";
-import { useVoiceRecognition } from "@/hooks/useVoiceRecognition";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 
 interface AIVoiceHubProps {
@@ -33,8 +36,16 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
   const [textInput, setTextInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  const { messages, isLoading, error, sendMessage, clearMessages } = useChat();
-  const { isListening, transcript, isSupported, startListening, stopListening, resetTranscript } = useVoiceRecognition();
+  // Voice chat hook for voice mode
+  const voiceChat = useVoiceChat();
+  
+  // Text chat hook for text mode
+  const textChat = useChat();
+
+  // Use the appropriate chat based on mode
+  const messages = inputMode === "voice" ? voiceChat.messages : textChat.messages;
+  const isLoading = inputMode === "voice" ? voiceChat.isLoading : textChat.isLoading;
+  const error = inputMode === "voice" ? voiceChat.error : textChat.error;
 
   const quickActions = [
     { id: 'properties', icon: Home, label: 'العقارات', route: '/properties' },
@@ -57,34 +68,29 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Handle voice transcript completion
-  useEffect(() => {
-    if (!isListening && transcript) {
-      sendMessage(transcript);
-      resetTranscript();
-    }
-  }, [isListening, transcript, sendMessage, resetTranscript]);
-
   const handleSendText = () => {
     if (textInput.trim()) {
-      sendMessage(textInput);
+      textChat.sendMessage(textInput);
       setTextInput("");
     }
   };
 
   const handleSuggestionClick = (suggestion: string) => {
-    sendMessage(suggestion);
-  };
-
-  const toggleVoice = () => {
-    if (isListening) {
-      stopListening();
-    } else {
-      startListening();
+    if (inputMode === "text") {
+      textChat.sendMessage(suggestion);
     }
   };
 
   const hasMessages = messages.length > 0;
+
+  // Determine conversation state for voice mode
+  const getVoiceStatus = () => {
+    if (!voiceChat.isSupported) return "غير مدعوم";
+    if (voiceChat.isSpeaking) return "جاري الرد...";
+    if (voiceChat.isListening) return "جاري الاستماع...";
+    if (voiceChat.isConversationActive) return "في انتظار حديثك...";
+    return "اضغط لبدء المحادثة";
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col safe-area-inset">
@@ -102,7 +108,7 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
           <div className="flex items-center gap-2">
             {/* Notifications */}
             <NotificationCenter onNavigate={onNavigate} />
-            {/* Mode Toggle */}
+            {/* Chat Button */}
             <Button
               variant="glass"
               size="icon"
@@ -110,6 +116,7 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
             >
               <MessageCircle className="w-5 h-5" />
             </Button>
+            {/* Settings Button */}
             <Button
               variant="glass"
               size="icon"
@@ -117,6 +124,7 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
             >
               <Settings className="w-5 h-5" />
             </Button>
+            {/* Mode Toggle */}
             <Button
               variant="glass"
               size="sm"
@@ -135,6 +143,7 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
                 </>
               )}
             </Button>
+            {/* Profile Avatar */}
             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
               <span className="text-primary-foreground font-semibold">
                 {userName.charAt(0).toUpperCase()}
@@ -161,6 +170,12 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
                     : "glass-card rounded-bl-md"
                 }`}
               >
+                {msg.role === "assistant" && inputMode === "voice" && voiceChat.isSpeaking && i === messages.length - 1 && (
+                  <div className="flex items-center gap-2 mb-2 text-primary">
+                    <Volume2 className="w-4 h-4 animate-pulse" />
+                    <span className="text-xs">جاري التحدث...</span>
+                  </div>
+                )}
                 <p className="text-sm whitespace-pre-wrap" dir="auto">{msg.content}</p>
               </div>
             </motion.div>
@@ -183,24 +198,25 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
         <div className="flex-1 flex flex-col items-center justify-center px-6 py-8">
           {inputMode === "voice" ? (
             <>
-              {/* Ambient rings */}
+              {/* Voice Conversation UI */}
               <div className="relative">
-                {isListening && (
+                {/* Ambient rings when active */}
+                {voiceChat.isConversationActive && (
                   <>
                     <motion.div
-                      className="absolute inset-0 rounded-full border border-primary/30"
+                      className={`absolute inset-0 rounded-full border ${voiceChat.isListening ? 'border-primary/50' : voiceChat.isSpeaking ? 'border-accent/50' : 'border-muted/30'}`}
                       initial={{ scale: 1, opacity: 0.5 }}
                       animate={{ scale: 2.5, opacity: 0 }}
                       transition={{ duration: 1.5, repeat: Infinity }}
                     />
                     <motion.div
-                      className="absolute inset-0 rounded-full border border-primary/30"
+                      className={`absolute inset-0 rounded-full border ${voiceChat.isListening ? 'border-primary/50' : voiceChat.isSpeaking ? 'border-accent/50' : 'border-muted/30'}`}
                       initial={{ scale: 1, opacity: 0.5 }}
                       animate={{ scale: 2.5, opacity: 0 }}
                       transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
                     />
                     <motion.div
-                      className="absolute inset-0 rounded-full border border-primary/30"
+                      className={`absolute inset-0 rounded-full border ${voiceChat.isListening ? 'border-primary/50' : voiceChat.isSpeaking ? 'border-accent/50' : 'border-muted/30'}`}
                       initial={{ scale: 1, opacity: 0.5 }}
                       animate={{ scale: 2.5, opacity: 0 }}
                       transition={{ duration: 1.5, repeat: Infinity, delay: 1 }}
@@ -208,28 +224,39 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
                   </>
                 )}
                 
-                {/* Main AI button */}
+                {/* Main conversation button - TOGGLE */}
                 <motion.button
-                  onClick={toggleVoice}
-                  disabled={!isSupported}
+                  onClick={voiceChat.toggleConversation}
+                  disabled={!voiceChat.isSupported}
                   className={`relative w-32 h-32 rounded-full flex items-center justify-center transition-all duration-300 ${
-                    isListening 
-                      ? 'bg-primary shadow-gold' 
-                      : 'bg-gradient-to-br from-primary to-accent'
-                  } ${!isSupported ? 'opacity-50' : ''}`}
+                    voiceChat.isConversationActive
+                      ? voiceChat.isSpeaking 
+                        ? 'bg-accent shadow-lg'
+                        : voiceChat.isListening
+                          ? 'bg-primary shadow-gold'
+                          : 'bg-gradient-to-br from-primary to-accent'
+                      : 'bg-gradient-to-br from-muted to-muted-foreground/20'
+                  } ${!voiceChat.isSupported ? 'opacity-50' : ''}`}
                   whileTap={{ scale: 0.95 }}
-                  animate={isListening ? { scale: [1, 1.05, 1] } : {}}
-                  transition={isListening ? { duration: 1, repeat: Infinity } : {}}
+                  animate={voiceChat.isListening ? { scale: [1, 1.05, 1] } : {}}
+                  transition={voiceChat.isListening ? { duration: 1, repeat: Infinity } : {}}
                 >
                   <AnimatePresence mode="wait">
-                    {isListening ? (
+                    {voiceChat.isConversationActive ? (
                       <motion.div
-                        key="listening"
+                        key="active"
                         initial={{ scale: 0, rotate: -90 }}
                         animate={{ scale: 1, rotate: 0 }}
                         exit={{ scale: 0, rotate: 90 }}
+                        className="flex flex-col items-center"
                       >
-                        <MicOff className="w-10 h-10 text-primary-foreground" />
+                        {voiceChat.isSpeaking ? (
+                          <Volume2 className="w-10 h-10 text-white animate-pulse" />
+                        ) : voiceChat.isListening ? (
+                          <Mic className="w-10 h-10 text-white" />
+                        ) : (
+                          <PhoneOff className="w-10 h-10 text-white" />
+                        )}
                       </motion.div>
                     ) : (
                       <motion.div
@@ -239,8 +266,8 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
                         exit={{ scale: 0, rotate: -90 }}
                         className="flex items-center gap-1"
                       >
-                        <Mic className="w-10 h-10 text-primary-foreground" />
-                        <Sparkles className="w-5 h-5 text-primary-foreground absolute -top-1 -right-1" />
+                        <Phone className="w-10 h-10 text-white" />
+                        <Sparkles className="w-5 h-5 text-white absolute -top-1 -right-1" />
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -248,29 +275,40 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
               </div>
 
               {/* Status text */}
-              <motion.p 
+              <motion.div 
                 className="mt-6 text-center"
-                animate={{ opacity: isListening ? 1 : 0.7 }}
+                animate={{ opacity: 1 }}
               >
-                {isListening ? (
-                  <span className="text-primary font-medium">جاري الاستماع...</span>
-                ) : !isSupported ? (
-                  <span className="text-muted-foreground">المتصفح لا يدعم التعرف على الصوت</span>
-                ) : (
-                  <span className="text-muted-foreground">اضغط للتحدث مع الذكاء الاصطناعي</span>
+                <p className={`font-medium ${
+                  voiceChat.isConversationActive 
+                    ? voiceChat.isSpeaking 
+                      ? 'text-accent' 
+                      : voiceChat.isListening 
+                        ? 'text-primary' 
+                        : 'text-muted-foreground'
+                    : 'text-muted-foreground'
+                }`}>
+                  {getVoiceStatus()}
+                </p>
+                {voiceChat.isConversationActive && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    اضغط الزر لإنهاء المحادثة
+                  </p>
                 )}
-              </motion.p>
+              </motion.div>
 
-              {/* Transcription */}
+              {/* Live Transcription */}
               <AnimatePresence>
-                {transcript && (
+                {voiceChat.transcript && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     className="mt-4 px-6 py-3 glass-card max-w-xs"
                   >
-                    <p className="text-foreground text-center" dir="auto">{transcript}</p>
+                    <p className="text-foreground text-center text-sm" dir="auto">
+                      {voiceChat.transcript}
+                    </p>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -304,6 +342,7 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.4 + i * 0.1 }}
                   onClick={() => handleSuggestionClick(suggestion)}
+                  disabled={inputMode === "voice"}
                 >
                   "{suggestion}"
                 </motion.button>
@@ -351,21 +390,22 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
                 </Button>
               </>
             ) : (
+              /* Voice toggle button when there are messages */
               <Button
-                variant={isListening ? "gold" : "glass"}
+                variant={voiceChat.isConversationActive ? "destructive" : "gold"}
                 className="flex-1 gap-2"
-                onClick={toggleVoice}
-                disabled={!isSupported}
+                onClick={voiceChat.toggleConversation}
+                disabled={!voiceChat.isSupported}
               >
-                {isListening ? (
+                {voiceChat.isConversationActive ? (
                   <>
-                    <MicOff className="w-5 h-5" />
-                    <span>إيقاف</span>
+                    <PhoneOff className="w-5 h-5" />
+                    <span>إنهاء المحادثة</span>
                   </>
                 ) : (
                   <>
-                    <Mic className="w-5 h-5" />
-                    <span>اضغط للتحدث</span>
+                    <Phone className="w-5 h-5" />
+                    <span>بدء المحادثة</span>
                   </>
                 )}
               </Button>
@@ -435,7 +475,6 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
           </div>
         </motion.div>
       )}
-
     </div>
   );
 }
