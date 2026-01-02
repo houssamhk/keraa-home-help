@@ -8,7 +8,7 @@ import { SplashScreen } from "@/components/onboarding/SplashScreen";
 import { RoleSelection } from "@/components/onboarding/RoleSelection";
 import { KYCFlow } from "@/components/onboarding/KYCFlow";
 import { AIVoiceHub } from "@/components/home/AIVoiceHub";
-import { InteractiveMap } from "@/components/map/InteractiveMap";
+import { LeafletMap } from "@/components/map/LeafletMap";
 import { AuthPage } from "@/pages/AuthPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { PropertiesPage } from "@/pages/PropertiesPage";
@@ -176,7 +176,15 @@ function AppContent() {
           />
         );
       case 'map': 
-        return <InteractiveMap onBack={() => setCurrentScreen('home')} />;
+        return (
+          <LeafletMap 
+            onBack={() => setCurrentScreen('home')} 
+            onViewProperty={(id) => {
+              // Fetch property and navigate
+              setCurrentScreen('properties');
+            }}
+          />
+        );
       case 'settings': 
         return <SettingsPage onBack={() => setCurrentScreen('home')} />;
       case 'profile':

@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Home, MapPin, DollarSign, Bed, Bath, Ruler, Loader2, Upload, X, Image, Video } from 'lucide-react';
+import { ArrowRight, Home, MapPin, DollarSign, Bed, Bath, Ruler, Loader2, Upload, X, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { LocationPicker } from '@/components/map/LocationPicker';
 
 interface AddPropertyPageProps {
   onBack: () => void;
@@ -30,7 +31,9 @@ export function AddPropertyPage({ onBack, onSuccess, editPropertyId }: AddProper
     property_type: 'apartment',
     bedrooms: '1',
     bathrooms: '1',
-    area_sqm: ''
+    area_sqm: '',
+    latitude: null as number | null,
+    longitude: null as number | null
   });
 
   const propertyTypes = [
@@ -137,7 +140,9 @@ export function AddPropertyPage({ onBack, onSuccess, editPropertyId }: AddProper
       bedrooms: parseInt(formData.bedrooms),
       bathrooms: parseInt(formData.bathrooms),
       area_sqm: formData.area_sqm ? parseFloat(formData.area_sqm) : null,
-      images: mediaFiles.map(m => m.url)
+      images: mediaFiles.map(m => m.url),
+      latitude: formData.latitude,
+      longitude: formData.longitude
     };
 
     const { error } = await supabase
@@ -398,6 +403,13 @@ export function AddPropertyPage({ onBack, onSuccess, editPropertyId }: AddProper
             </div>
           </div>
         </div>
+
+        {/* Location Picker */}
+        <LocationPicker
+          latitude={formData.latitude}
+          longitude={formData.longitude}
+          onLocationChange={(lat, lng) => setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }))}
+        />
 
         {/* Submit */}
         <Button
