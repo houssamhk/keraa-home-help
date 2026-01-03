@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Home, Wrench, Navigation, MapPin, Phone, Star, Loader2, X, ChevronDown } from 'lucide-react';
@@ -38,10 +38,9 @@ const handymanIcon = new L.DivIcon({
 });
 
 const userLocationIcon = new L.DivIcon({
-  className: 'custom-marker',
+  className: 'custom-marker user-location-marker',
   html: `<div style="position: relative;">
     <div style="background: #3b82f6; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(59,130,246,0.5);"></div>
-    <div style="position: absolute; inset: -8px; border-radius: 50%; background: rgba(59,130,246,0.2); animation: ping 1.5s infinite;"></div>
   </div>`,
   iconSize: [20, 20],
   iconAnchor: [10, 10],
@@ -72,11 +71,7 @@ interface Handyman {
   is_available: boolean | null;
   latitude: number | null;
   longitude: number | null;
-  profiles?: {
-    full_name: string | null;
-    avatar_url: string | null;
-    phone: string | null;
-  };
+  name?: string;
 }
 
 interface LeafletMapProps {
@@ -86,12 +81,9 @@ interface LeafletMapProps {
 }
 
 // Algeria center coordinates
-const ALGERIA_CENTER: [number, number] = [36.7538, 3.0588]; // Algiers
+const ALGERIA_CENTER: [number, number] = [36.7538, 3.0588];
 
-function LocationMarker({ userLocation, setUserLocation }: { 
-  userLocation: [number, number] | null; 
-  setUserLocation: (loc: [number, number]) => void;
-}) {
+function LocationMarker({ userLocation }: { userLocation: [number, number] | null }) {
   const map = useMap();
 
   useEffect(() => {
@@ -111,10 +103,9 @@ function LocationMarker({ userLocation, setUserLocation }: {
   ) : null;
 }
 
-function RoutingControl({ userLocation, destination, onClearRoute }: {
+function RoutingControl({ userLocation, destination }: {
   userLocation: [number, number] | null;
   destination: [number, number] | null;
-  onClearRoute: () => void;
 }) {
   const map = useMap();
   const routingControlRef = useRef<L.Polyline | null>(null);
@@ -126,7 +117,6 @@ function RoutingControl({ userLocation, destination, onClearRoute }: {
     }
 
     if (userLocation && destination) {
-      // Draw a simple polyline between points
       const polyline = L.polyline([userLocation, destination], {
         color: '#3b82f6',
         weight: 4,
@@ -135,8 +125,6 @@ function RoutingControl({ userLocation, destination, onClearRoute }: {
       }).addTo(map);
 
       routingControlRef.current = polyline;
-
-      // Fit bounds to show both points
       const bounds = L.latLngBounds([userLocation, destination]);
       map.fitBounds(bounds, { padding: [50, 50] });
     }
@@ -171,30 +159,40 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
   const fetchData = async () => {
     setLoading(true);
     
-    const [propertiesRes, handymenRes] = await Promise.all([
-      supabase
+    try {
+      // Fetch properties
+      const { data: propertiesData, error: propertiesError } = await supabase
         .from('properties')
         .select('id, title, address, city, price, bedrooms, bathrooms, area_sqm, latitude, longitude, images')
-        .eq('is_available', true)
-        .not('latitude', 'is', null)
-        .not('longitude', 'is', null),
-      supabase
-        .from('handymen')
-        .select(`
-          id, user_id, specialty, description, hourly_rate, rating, total_reviews, is_available, latitude, longitude,
-          profiles!handymen_user_id_fkey(full_name, avatar_url, phone)
-        `)
-        .eq('is_available', true)
-        .not('latitude', 'is', null)
-        .not('longitude', 'is', null)
-    ]);
+        .eq('is_available', true);
 
-    if (propertiesRes.data) {
-      setProperties(propertiesRes.data);
-    }
-    
-    if (handymenRes.data) {
-      setHandymen(handymenRes.data as any);
+      if (propertiesError) {
+        console.error('Properties fetch error:', propertiesError);
+      } else if (propertiesData) {
+        // Filter for valid coordinates
+        setProperties(propertiesData.filter(p => p.latitude && p.longitude));
+      }
+
+      // Fetch handymen
+      const { data: handymenData, error: handymenError } = await supabase
+        .from('handymen')
+        .select('id, user_id, specialty, description, hourly_rate, rating, total_reviews, is_available, latitude, longitude')
+        .eq('is_available', true);
+
+      if (handymenError) {
+        console.error('Handymen fetch error:', handymenError);
+      } else if (handymenData) {
+        // Filter for valid coordinates and add name
+        const handymenWithNames = handymenData
+          .filter(h => h.latitude && h.longitude)
+          .map(h => ({
+            ...h,
+            name: `حرفي ${h.specialty?.[0] || ''}`
+          }));
+        setHandymen(handymenWithNames);
+      }
+    } catch (error) {
+      console.error('Fetch error:', error);
     }
     
     setLoading(false);
@@ -226,8 +224,6 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
         let message = 'فشل في تحديد الموقع';
         if (error.code === error.PERMISSION_DENIED) {
           message = 'يرجى السماح بالوصول للموقع';
-        } else if (error.code === error.POSITION_UNAVAILABLE) {
-          message = 'الموقع غير متاح حالياً';
         }
         toast({
           title: 'خطأ',
@@ -244,20 +240,16 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
       getCurrentLocation();
       toast({
         title: 'تنبيه',
-        description: 'يرجى تحديد موقعك أولاً ثم المحاولة مجدداً'
+        description: 'يرجى تحديد موقعك أولاً'
       });
       return;
     }
     setRouteDestination([lat, lng]);
   };
 
-  const clearRoute = () => {
-    setRouteDestination(null);
-  };
+  const clearRoute = () => setRouteDestination(null);
 
-  const isProperty = (item: Property | Handyman): item is Property => {
-    return 'bedrooms' in item;
-  };
+  const isProperty = (item: Property | Handyman): item is Property => 'bedrooms' in item;
 
   return (
     <div className="min-h-screen bg-background flex flex-col safe-area-inset relative">
@@ -291,7 +283,6 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
           </Button>
         </div>
 
-        {/* View mode toggle */}
         <div className="flex gap-2 mt-3">
           {(['all', 'properties', 'handymen'] as ViewMode[]).map((mode) => (
             <button
@@ -308,14 +299,8 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
           ))}
         </div>
 
-        {/* Route clear button */}
         {routeDestination && (
-          <Button 
-            variant="destructive" 
-            size="sm" 
-            className="mt-3"
-            onClick={clearRoute}
-          >
+          <Button variant="destructive" size="sm" className="mt-3" onClick={clearRoute}>
             <X className="w-4 h-4 ml-2" />
             إلغاء المسار
           </Button>
@@ -336,46 +321,35 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
             zoomControl={false}
           >
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              attribution='&copy; OpenStreetMap'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             
-            <LocationMarker userLocation={userLocation} setUserLocation={setUserLocation} />
-            
-            <RoutingControl 
-              userLocation={userLocation} 
-              destination={routeDestination} 
-              onClearRoute={clearRoute}
-            />
+            <LocationMarker userLocation={userLocation} />
+            <RoutingControl userLocation={userLocation} destination={routeDestination} />
 
-            {/* Property markers */}
-            {(viewMode === 'all' || viewMode === 'properties') && properties.filter(p => p.latitude && p.longitude).map((property) => (
+            {(viewMode === 'all' || viewMode === 'properties') && properties.map((property) => (
               <Marker
                 key={`property-${property.id}`}
                 position={[property.latitude!, property.longitude!]}
                 icon={propertyIcon}
-                eventHandlers={{
-                  click: () => setSelectedItem(property)
-                }}
+                eventHandlers={{ click: () => setSelectedItem(property) }}
               />
             ))}
 
-            {/* Handyman markers */}
-            {(viewMode === 'all' || viewMode === 'handymen') && handymen.filter(h => h.latitude && h.longitude).map((handyman) => (
+            {(viewMode === 'all' || viewMode === 'handymen') && handymen.map((handyman) => (
               <Marker
                 key={`handyman-${handyman.id}`}
                 position={[handyman.latitude!, handyman.longitude!]}
                 icon={handymanIcon}
-                eventHandlers={{
-                  click: () => setSelectedItem(handyman)
-                }}
+                eventHandlers={{ click: () => setSelectedItem(handyman) }}
               />
             ))}
           </MapContainer>
         )}
       </div>
 
-      {/* Bottom sheet - Selected item details */}
+      {/* Bottom sheet */}
       <AnimatePresence>
         {selectedItem && (
           <motion.div
@@ -386,27 +360,88 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
             className="absolute bottom-0 left-0 right-0 bg-card rounded-t-3xl border-t border-border p-6 pb-8 z-[1000]"
           >
             {isProperty(selectedItem) ? (
-              <PropertyCard 
-                property={selectedItem} 
-                onClose={() => setSelectedItem(null)}
-                onNavigate={() => {
-                  if (selectedItem.latitude && selectedItem.longitude) {
-                    navigateToItem(selectedItem.latitude, selectedItem.longitude);
-                  }
-                }}
-                onViewDetails={() => onViewProperty?.(selectedItem.id)}
-              />
+              <div>
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="font-serif text-xl font-bold text-foreground">{selectedItem.title}</h3>
+                    <p className="text-muted-foreground text-sm flex items-center gap-1 mt-1">
+                      <MapPin className="w-4 h-4" />
+                      {selectedItem.city}، {selectedItem.address}
+                    </p>
+                  </div>
+                  <button onClick={() => setSelectedItem(null)} className="p-2 -m-2">
+                    <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-4 mb-4">
+                  <span className="gold-text font-bold text-2xl">{selectedItem.price?.toLocaleString()} دج</span>
+                  <span className="text-muted-foreground">/شهرياً</span>
+                </div>
+
+                <div className="flex gap-4 mb-6 text-sm text-muted-foreground">
+                  <span>{selectedItem.bedrooms || 0} غرف</span>
+                  <span>•</span>
+                  <span>{selectedItem.bathrooms || 0} حمام</span>
+                  <span>•</span>
+                  <span>{selectedItem.area_sqm || 0} م²</span>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button variant="gold" className="flex-1" onClick={() => onViewProperty?.(selectedItem.id)}>
+                    <Home className="w-4 h-4" />
+                    عرض التفاصيل
+                  </Button>
+                  <Button variant="glass" size="icon" onClick={() => navigateToItem(selectedItem.latitude!, selectedItem.longitude!)}>
+                    <Navigation className="w-5 h-5" />
+                  </Button>
+                </div>
+              </div>
             ) : (
-              <HandymanCard 
-                handyman={selectedItem} 
-                onClose={() => setSelectedItem(null)}
-                onNavigate={() => {
-                  if (selectedItem.latitude && selectedItem.longitude) {
-                    navigateToItem(selectedItem.latitude, selectedItem.longitude);
-                  }
-                }}
-                onViewDetails={() => onViewHandyman?.(selectedItem.id)}
-              />
+              <div>
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                      <Wrench className="w-6 h-6 text-primary-foreground" />
+                    </div>
+                    <div>
+                      <h3 className="font-serif text-xl font-bold text-foreground">{selectedItem.name || 'حرفي'}</h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Star className="w-4 h-4 text-primary fill-primary" />
+                        <span className="text-foreground font-medium">{selectedItem.rating || 0}</span>
+                        <span className="text-muted-foreground text-sm">({selectedItem.total_reviews || 0} تقييم)</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button onClick={() => setSelectedItem(null)} className="p-2 -m-2">
+                    <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {selectedItem.specialty?.slice(0, 3).map((spec, idx) => (
+                    <span key={idx} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+                      {spec}
+                    </span>
+                  ))}
+                </div>
+
+                {selectedItem.hourly_rate && (
+                  <p className="text-muted-foreground mb-4">
+                    <span className="gold-text font-bold">{selectedItem.hourly_rate} دج</span> /ساعة
+                  </p>
+                )}
+
+                <div className="flex gap-3">
+                  <Button variant="gold" className="flex-1" onClick={() => onViewHandyman?.(selectedItem.id)}>
+                    <Wrench className="w-4 h-4" />
+                    عرض التفاصيل
+                  </Button>
+                  <Button variant="glass" size="icon" onClick={() => navigateToItem(selectedItem.latitude!, selectedItem.longitude!)}>
+                    <Navigation className="w-5 h-5" />
+                  </Button>
+                </div>
+              </div>
             )}
           </motion.div>
         )}
@@ -415,128 +450,4 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
   );
 }
 
-function PropertyCard({ property, onClose, onNavigate, onViewDetails }: { 
-  property: Property; 
-  onClose: () => void;
-  onNavigate: () => void;
-  onViewDetails: () => void;
-}) {
-  return (
-    <div>
-      <div className="flex items-start justify-between mb-4">
-        <div>
-          <h3 className="font-serif text-xl font-bold text-foreground">{property.title}</h3>
-          <p className="text-muted-foreground text-sm flex items-center gap-1 mt-1">
-            <MapPin className="w-4 h-4" />
-            {property.city}، {property.address}
-          </p>
-        </div>
-        <button onClick={onClose} className="p-2 -m-2">
-          <ChevronDown className="w-5 h-5 text-muted-foreground" />
-        </button>
-      </div>
-
-      <div className="flex items-center gap-4 mb-4">
-        <span className="gold-text font-bold text-2xl">
-          {property.price?.toLocaleString()} دج
-        </span>
-        <span className="text-muted-foreground">/شهرياً</span>
-      </div>
-
-      <div className="flex gap-4 mb-6 text-sm text-muted-foreground">
-        <span>{property.bedrooms || 0} غرف</span>
-        <span>•</span>
-        <span>{property.bathrooms || 0} حمام</span>
-        <span>•</span>
-        <span>{property.area_sqm || 0} م²</span>
-      </div>
-
-      <div className="flex gap-3">
-        <Button variant="gold" className="flex-1" onClick={onViewDetails}>
-          <Home className="w-4 h-4" />
-          عرض التفاصيل
-        </Button>
-        <Button variant="glass" size="icon" onClick={onNavigate}>
-          <Navigation className="w-5 h-5" />
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function HandymanCard({ handyman, onClose, onNavigate, onViewDetails }: { 
-  handyman: Handyman; 
-  onClose: () => void;
-  onNavigate: () => void;
-  onViewDetails: () => void;
-}) {
-  const name = handyman.profiles?.full_name || 'حرفي';
-  
-  return (
-    <div>
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-lg">
-              {name.charAt(0)}
-            </span>
-          </div>
-          <div>
-            <h3 className="font-serif text-xl font-bold text-foreground">{name}</h3>
-            <div className="flex items-center gap-2 mt-1">
-              <Star className="w-4 h-4 text-primary fill-primary" />
-              <span className="text-foreground font-medium">{handyman.rating || 0}</span>
-              <span className="text-muted-foreground text-sm">({handyman.total_reviews || 0} تقييم)</span>
-            </div>
-          </div>
-        </div>
-        <button onClick={onClose} className="p-2 -m-2">
-          <ChevronDown className="w-5 h-5 text-muted-foreground" />
-        </button>
-      </div>
-
-      <div className="flex flex-wrap gap-2 mb-4">
-        {handyman.specialty?.map((specialty) => (
-          <span 
-            key={specialty}
-            className="px-3 py-1 bg-muted rounded-full text-sm text-muted-foreground"
-          >
-            {specialty}
-          </span>
-        ))}
-      </div>
-
-      <div className="flex items-center gap-4 mb-6 text-sm">
-        <span className="gold-text font-bold">
-          {handyman.hourly_rate?.toLocaleString() || 0} دج/ساعة
-        </span>
-        {handyman.is_available && (
-          <>
-            <span className="text-muted-foreground">•</span>
-            <span className="text-green-500 flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-green-500" />
-              متاح الآن
-            </span>
-          </>
-        )}
-      </div>
-
-      <div className="flex gap-3">
-        <Button variant="gold" className="flex-1" onClick={onViewDetails}>
-          <Wrench className="w-4 h-4" />
-          عرض الملف
-        </Button>
-        <Button variant="glass" size="icon" onClick={onNavigate}>
-          <Navigation className="w-5 h-5" />
-        </Button>
-        {handyman.profiles?.phone && (
-          <Button variant="glass" size="icon" asChild>
-            <a href={`tel:${handyman.profiles.phone}`}>
-              <Phone className="w-5 h-5" />
-            </a>
-          </Button>
-        )}
-      </div>
-    </div>
-  );
-}
+export default LeafletMap;
