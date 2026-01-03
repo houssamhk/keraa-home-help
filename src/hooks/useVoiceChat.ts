@@ -1,5 +1,4 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -32,7 +31,8 @@ declare global {
   }
 }
 
-const CHAT_URL = `https://xcawesnsfnqoqdartmdc.supabase.co/functions/v1/chat`;
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/text-to-speech`;
 
 export function useVoiceChat() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -47,6 +47,9 @@ export function useVoiceChat() {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const shouldContinueListeningRef = useRef(false);
+  const isSpeakingRef = useRef(false);
+  const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSpeechTimeRef = useRef<number>(0);
 
   // Initialize speech recognition
   useEffect(() => {
@@ -57,6 +60,7 @@ export function useVoiceChat() {
     }
 
     const recognition = new SpeechRecognitionAPI();
+    // Support Algerian dialect and Arabic
     recognition.lang = "ar-DZ";
     recognition.continuous = true;
     recognition.interimResults = true;
@@ -66,6 +70,11 @@ export function useVoiceChat() {
     };
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
+      // Don't process if AI is speaking (prevents echo)
+      if (isSpeakingRef.current) {
+        return;
+      }
+
       let finalTranscript = "";
       let interimTranscript = "";
       
@@ -78,12 +87,25 @@ export function useVoiceChat() {
         }
       }
 
+      if (interimTranscript) {
+        setTranscript(interimTranscript);
+        lastSpeechTimeRef.current = Date.now();
+        
+        // Clear previous timeout
+        if (silenceTimeoutRef.current) {
+          clearTimeout(silenceTimeoutRef.current);
+        }
+      }
+
       if (finalTranscript) {
         setTranscript(finalTranscript);
-        // Process the final transcript
-        handleUserSpeech(finalTranscript);
-      } else if (interimTranscript) {
-        setTranscript(interimTranscript);
+        // Wait for a moment of silence before processing
+        if (silenceTimeoutRef.current) {
+          clearTimeout(silenceTimeoutRef.current);
+        }
+        silenceTimeoutRef.current = setTimeout(() => {
+          handleUserSpeech(finalTranscript);
+        }, 800);
       }
     };
 
@@ -97,9 +119,9 @@ export function useVoiceChat() {
     recognition.onend = () => {
       setIsListening(false);
       // Restart listening if conversation is still active and not speaking
-      if (shouldContinueListeningRef.current && !isSpeaking) {
+      if (shouldContinueListeningRef.current && !isSpeakingRef.current) {
         setTimeout(() => {
-          if (shouldContinueListeningRef.current && recognitionRef.current) {
+          if (shouldContinueListeningRef.current && !isSpeakingRef.current && recognitionRef.current) {
             try {
               recognitionRef.current.start();
             } catch (e) {
@@ -114,12 +136,15 @@ export function useVoiceChat() {
 
     return () => {
       recognition.abort();
+      if (silenceTimeoutRef.current) {
+        clearTimeout(silenceTimeoutRef.current);
+      }
     };
   }, []);
 
   // Handle user speech and send to AI
   const handleUserSpeech = useCallback(async (text: string) => {
-    if (!text.trim() || isLoading) return;
+    if (!text.trim() || isLoading || isSpeakingRef.current) return;
 
     const userMsg: Message = { role: "user", content: text };
     setMessages(prev => [...prev, userMsg]);
@@ -127,10 +152,11 @@ export function useVoiceChat() {
     setError(null);
     setTranscript("");
 
-    // Stop listening while processing
-    if (recognitionRef.current && isListening) {
+    // Stop listening while processing and speaking
+    if (recognitionRef.current) {
       recognitionRef.current.stop();
     }
+    setIsListening(false);
 
     let assistantResponse = "";
 
@@ -139,9 +165,16 @@ export function useVoiceChat() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjYXdlc25zZm5xb3FkYXJ0bWRjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyMjM4MTAsImV4cCI6MjA4MTc5OTgxMH0.TThSLykm4Wm2rHigSzOpHvCKEB_8ku_6ACrPZbWsitM`,
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: [...messages, userMsg] }),
+        body: JSON.stringify({ 
+          messages: [...messages, userMsg],
+          systemPrompt: `أنت مساعد ذكي اسمك "سكني" متخصص في العقارات والخدمات المنزلية في الجزائر. 
+          تتحدث العربية الفصحى واللهجة الجزائرية بطلاقة.
+          كن ودوداً ومختصراً في ردودك. استخدم جمل قصيرة وواضحة.
+          ساعد المستخدمين في البحث عن العقارات، الحرفيين، وإدارة العقود.
+          إذا سألك أحد عن شيء خارج نطاق العقارات، أجب بلطف ووجهه للموضوع الصحيح.`
+        }),
       });
 
       if (!resp.ok) {
@@ -197,88 +230,145 @@ export function useVoiceChat() {
         }
       }
 
-      // Speak the response
+      setIsLoading(false);
+
+      // Speak the response using professional TTS
       if (assistantResponse) {
         await speakText(assistantResponse);
       }
     } catch (e) {
       console.error(e);
       setError(e instanceof Error ? e.message : "حدث خطأ");
-    } finally {
       setIsLoading(false);
+      // Resume listening on error
+      if (shouldContinueListeningRef.current && recognitionRef.current) {
+        try {
+          recognitionRef.current.start();
+        } catch (err) {
+          console.log("Recognition restart error:", err);
+        }
+      }
     }
-  }, [messages, isLoading, isListening]);
+  }, [messages, isLoading]);
 
-  // Text-to-speech function
+  // Professional Text-to-speech function using edge function
   const speakText = useCallback(async (text: string) => {
     setIsSpeaking(true);
+    isSpeakingRef.current = true;
+    
+    // Stop listening while speaking to prevent echo
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+    setIsListening(false);
     
     try {
-      // Use browser's built-in speech synthesis for Arabic
-      const synth = window.speechSynthesis;
+      const response = await fetch(TTS_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ 
+          text,
+          voice: "shimmer" // Professional female voice, good for Arabic
+        }),
+      });
+
+      const data = await response.json();
       
-      if (synth) {
-        // Cancel any ongoing speech
-        synth.cancel();
+      if (data.audioContent) {
+        // Play audio using data URI
+        const audioUrl = `data:audio/mpeg;base64,${data.audioContent}`;
         
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = "ar-SA"; // Arabic
-        utterance.rate = 0.9;
-        utterance.pitch = 1;
-        
-        // Find an Arabic voice if available
-        const voices = synth.getVoices();
-        const arabicVoice = voices.find(v => v.lang.startsWith("ar"));
-        if (arabicVoice) {
-          utterance.voice = arabicVoice;
+        if (audioRef.current) {
+          audioRef.current.pause();
         }
         
-        utterance.onend = () => {
+        const audio = new Audio(audioUrl);
+        audioRef.current = audio;
+        
+        audio.onended = () => {
           setIsSpeaking(false);
-          // Resume listening after speaking
+          isSpeakingRef.current = false;
+          
+          // Resume listening after speaking is done
           if (shouldContinueListeningRef.current && recognitionRef.current) {
             setTimeout(() => {
-              try {
-                recognitionRef.current?.start();
-              } catch (e) {
-                console.log("Recognition restart error:", e);
+              if (shouldContinueListeningRef.current && !isSpeakingRef.current) {
+                try {
+                  recognitionRef.current?.start();
+                } catch (e) {
+                  console.log("Recognition restart error:", e);
+                }
               }
-            }, 300);
+            }, 500);
           }
         };
         
-        utterance.onerror = () => {
+        audio.onerror = () => {
+          console.error("Audio playback error");
           setIsSpeaking(false);
-          // Resume listening even on error
-          if (shouldContinueListeningRef.current && recognitionRef.current) {
+          isSpeakingRef.current = false;
+          fallbackToSpeechSynthesis(text);
+        };
+        
+        await audio.play();
+      } else if (data.fallback || data.error) {
+        // Fallback to browser TTS
+        fallbackToSpeechSynthesis(text);
+      }
+    } catch (error) {
+      console.error("TTS error:", error);
+      fallbackToSpeechSynthesis(text);
+    }
+  }, []);
+
+  // Fallback to browser speech synthesis
+  const fallbackToSpeechSynthesis = useCallback((text: string) => {
+    const synth = window.speechSynthesis;
+    if (!synth) {
+      setIsSpeaking(false);
+      isSpeakingRef.current = false;
+      return;
+    }
+
+    synth.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "ar-SA";
+    utterance.rate = 0.9;
+    utterance.pitch = 1;
+    
+    const voices = synth.getVoices();
+    const arabicVoice = voices.find(v => v.lang.startsWith("ar"));
+    if (arabicVoice) {
+      utterance.voice = arabicVoice;
+    }
+    
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      isSpeakingRef.current = false;
+      
+      if (shouldContinueListeningRef.current && recognitionRef.current) {
+        setTimeout(() => {
+          if (shouldContinueListeningRef.current && !isSpeakingRef.current) {
             try {
               recognitionRef.current?.start();
             } catch (e) {
               console.log("Recognition restart error:", e);
             }
           }
-        };
-        
-        synth.speak(utterance);
-      } else {
-        setIsSpeaking(false);
-        // Resume listening if no TTS available
-        if (shouldContinueListeningRef.current && recognitionRef.current) {
-          recognitionRef.current.start();
-        }
+        }, 500);
       }
-    } catch (error) {
-      console.error("TTS error:", error);
+    };
+    
+    utterance.onerror = () => {
       setIsSpeaking(false);
-      // Resume listening on error
-      if (shouldContinueListeningRef.current && recognitionRef.current) {
-        try {
-          recognitionRef.current.start();
-        } catch (e) {
-          console.log("Recognition restart error:", e);
-        }
-      }
-    }
+      isSpeakingRef.current = false;
+    };
+    
+    synth.speak(utterance);
   }, []);
 
   // Toggle conversation - single button press to start/stop
@@ -292,18 +382,31 @@ export function useVoiceChat() {
         recognitionRef.current.stop();
       }
       
-      // Stop any ongoing speech
+      // Stop any ongoing audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      
+      // Stop browser TTS
       if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
       
       setIsSpeaking(false);
+      isSpeakingRef.current = false;
+      setIsListening(false);
       setTranscript("");
+      
+      if (silenceTimeoutRef.current) {
+        clearTimeout(silenceTimeoutRef.current);
+      }
     } else {
       // Start conversation
       shouldContinueListeningRef.current = true;
       setIsConversationActive(true);
       setError(null);
+      isSpeakingRef.current = false;
       
       if (recognitionRef.current) {
         try {
