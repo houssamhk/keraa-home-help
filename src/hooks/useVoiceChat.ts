@@ -32,7 +32,6 @@ declare global {
 }
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
-const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/text-to-speech`;
 
 export function useVoiceChat() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -45,11 +44,51 @@ export function useVoiceChat() {
   const [isSupported, setIsSupported] = useState(true);
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const shouldContinueListeningRef = useRef(false);
   const isSpeakingRef = useRef(false);
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastSpeechTimeRef = useRef<number>(0);
+  const synthRef = useRef<SpeechSynthesis | null>(null);
+  const voicesLoadedRef = useRef(false);
+  const arabicVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
+
+  // Load voices
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      synthRef.current = window.speechSynthesis;
+      
+      const loadVoices = () => {
+        const voices = synthRef.current?.getVoices() || [];
+        // Prioritize high-quality Arabic voices
+        const priorityVoices = [
+          'Majed', 'Maged', 'Tarik', 'Laila', 'Mariam', // Apple Arabic voices
+          'ar-SA', 'ar-EG', 'ar-DZ', 'ar-MA' // Google/Microsoft Arabic
+        ];
+        
+        for (const priority of priorityVoices) {
+          const found = voices.find(v => 
+            v.name.includes(priority) || 
+            v.lang.includes(priority) ||
+            v.voiceURI.includes(priority)
+          );
+          if (found) {
+            arabicVoiceRef.current = found;
+            console.log("Selected Arabic voice:", found.name, found.lang);
+            break;
+          }
+        }
+        
+        // Fallback to any Arabic voice
+        if (!arabicVoiceRef.current) {
+          arabicVoiceRef.current = voices.find(v => v.lang.startsWith('ar')) || null;
+        }
+        
+        voicesLoadedRef.current = true;
+      };
+      
+      loadVoices();
+      synthRef.current.onvoiceschanged = loadVoices;
+    }
+  }, []);
 
   // Initialize speech recognition
   useEffect(() => {
@@ -60,8 +99,7 @@ export function useVoiceChat() {
     }
 
     const recognition = new SpeechRecognitionAPI();
-    // Support Algerian dialect and Arabic
-    recognition.lang = "ar-DZ";
+    recognition.lang = "ar-DZ"; // Algerian dialect
     recognition.continuous = true;
     recognition.interimResults = true;
 
@@ -70,10 +108,7 @@ export function useVoiceChat() {
     };
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      // Don't process if AI is speaking (prevents echo)
-      if (isSpeakingRef.current) {
-        return;
-      }
+      if (isSpeakingRef.current) return;
 
       let finalTranscript = "";
       let interimTranscript = "";
@@ -89,9 +124,6 @@ export function useVoiceChat() {
 
       if (interimTranscript) {
         setTranscript(interimTranscript);
-        lastSpeechTimeRef.current = Date.now();
-        
-        // Clear previous timeout
         if (silenceTimeoutRef.current) {
           clearTimeout(silenceTimeoutRef.current);
         }
@@ -99,7 +131,6 @@ export function useVoiceChat() {
 
       if (finalTranscript) {
         setTranscript(finalTranscript);
-        // Wait for a moment of silence before processing
         if (silenceTimeoutRef.current) {
           clearTimeout(silenceTimeoutRef.current);
         }
@@ -110,22 +141,20 @@ export function useVoiceChat() {
     };
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      console.error("Speech recognition error:", event.error);
       if (event.error !== 'no-speech' && event.error !== 'aborted') {
-        setError(`خطأ في التعرف على الصوت: ${event.error}`);
+        console.error("Speech recognition error:", event.error);
       }
     };
 
     recognition.onend = () => {
       setIsListening(false);
-      // Restart listening if conversation is still active and not speaking
       if (shouldContinueListeningRef.current && !isSpeakingRef.current) {
         setTimeout(() => {
           if (shouldContinueListeningRef.current && !isSpeakingRef.current && recognitionRef.current) {
             try {
               recognitionRef.current.start();
             } catch (e) {
-              console.log("Recognition restart error:", e);
+              // Ignore restart errors
             }
           }
         }, 100);
@@ -142,7 +171,7 @@ export function useVoiceChat() {
     };
   }, []);
 
-  // Handle user speech and send to AI
+  // Handle user speech
   const handleUserSpeech = useCallback(async (text: string) => {
     if (!text.trim() || isLoading || isSpeakingRef.current) return;
 
@@ -152,7 +181,6 @@ export function useVoiceChat() {
     setError(null);
     setTranscript("");
 
-    // Stop listening while processing and speaking
     if (recognitionRef.current) {
       recognitionRef.current.stop();
     }
@@ -170,10 +198,10 @@ export function useVoiceChat() {
         body: JSON.stringify({ 
           messages: [...messages, userMsg],
           systemPrompt: `أنت مساعد ذكي اسمك "سكني" متخصص في العقارات والخدمات المنزلية في الجزائر. 
-          تتحدث العربية الفصحى واللهجة الجزائرية بطلاقة.
-          كن ودوداً ومختصراً في ردودك. استخدم جمل قصيرة وواضحة.
-          ساعد المستخدمين في البحث عن العقارات، الحرفيين، وإدارة العقود.
-          إذا سألك أحد عن شيء خارج نطاق العقارات، أجب بلطف ووجهه للموضوع الصحيح.`
+تتحدث العربية الفصحى واللهجة الجزائرية بطلاقة.
+كن ودوداً ومختصراً جداً. استخدم جمل قصيرة. لا تكتب أكثر من 2-3 جمل.
+ساعد المستخدمين في البحث عن العقارات والحرفيين.
+تصرف كأنك تتحدث وليس تكتب - اجعل ردودك طبيعية للنطق.`
         }),
       });
 
@@ -232,7 +260,6 @@ export function useVoiceChat() {
 
       setIsLoading(false);
 
-      // Speak the response using professional TTS
       if (assistantResponse) {
         await speakText(assistantResponse);
       }
@@ -240,141 +267,79 @@ export function useVoiceChat() {
       console.error(e);
       setError(e instanceof Error ? e.message : "حدث خطأ");
       setIsLoading(false);
-      // Resume listening on error
-      if (shouldContinueListeningRef.current && recognitionRef.current) {
-        try {
-          recognitionRef.current.start();
-        } catch (err) {
-          console.log("Recognition restart error:", err);
-        }
-      }
+      resumeListening();
     }
   }, [messages, isLoading]);
 
-  // Professional Text-to-speech function using edge function
+  // Enhanced TTS with browser Speech Synthesis
   const speakText = useCallback(async (text: string) => {
+    if (!synthRef.current) {
+      resumeListening();
+      return;
+    }
+
     setIsSpeaking(true);
     isSpeakingRef.current = true;
     
-    // Stop listening while speaking to prevent echo
     if (recognitionRef.current) {
       recognitionRef.current.stop();
     }
     setIsListening(false);
     
-    try {
-      const response = await fetch(TTS_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({ 
-          text,
-          voice: "shimmer" // Professional female voice, good for Arabic
-        }),
-      });
+    // Cancel any ongoing speech
+    synthRef.current.cancel();
 
-      const data = await response.json();
-      
-      if (data.audioContent) {
-        // Play audio using data URI
-        const audioUrl = `data:audio/mpeg;base64,${data.audioContent}`;
-        
-        if (audioRef.current) {
-          audioRef.current.pause();
-        }
-        
-        const audio = new Audio(audioUrl);
-        audioRef.current = audio;
-        
-        audio.onended = () => {
-          setIsSpeaking(false);
-          isSpeakingRef.current = false;
-          
-          // Resume listening after speaking is done
-          if (shouldContinueListeningRef.current && recognitionRef.current) {
-            setTimeout(() => {
-              if (shouldContinueListeningRef.current && !isSpeakingRef.current) {
-                try {
-                  recognitionRef.current?.start();
-                } catch (e) {
-                  console.log("Recognition restart error:", e);
-                }
-              }
-            }, 500);
-          }
-        };
-        
-        audio.onerror = () => {
-          console.error("Audio playback error");
-          setIsSpeaking(false);
-          isSpeakingRef.current = false;
-          fallbackToSpeechSynthesis(text);
-        };
-        
-        await audio.play();
-      } else if (data.fallback || data.error) {
-        // Fallback to browser TTS
-        fallbackToSpeechSynthesis(text);
-      }
-    } catch (error) {
-      console.error("TTS error:", error);
-      fallbackToSpeechSynthesis(text);
-    }
-  }, []);
+    // Clean text for speech
+    const cleanText = text
+      .replace(/[*#_`]/g, '')
+      .replace(/\n+/g, '. ')
+      .trim();
 
-  // Fallback to browser speech synthesis
-  const fallbackToSpeechSynthesis = useCallback((text: string) => {
-    const synth = window.speechSynthesis;
-    if (!synth) {
-      setIsSpeaking(false);
-      isSpeakingRef.current = false;
-      return;
-    }
-
-    synth.cancel();
+    const utterance = new SpeechSynthesisUtterance(cleanText);
     
-    const utterance = new SpeechSynthesisUtterance(text);
+    // Use the best Arabic voice found
+    if (arabicVoiceRef.current) {
+      utterance.voice = arabicVoiceRef.current;
+    }
+    
     utterance.lang = "ar-SA";
-    utterance.rate = 0.9;
-    utterance.pitch = 1;
-    
-    const voices = synth.getVoices();
-    const arabicVoice = voices.find(v => v.lang.startsWith("ar"));
-    if (arabicVoice) {
-      utterance.voice = arabicVoice;
-    }
+    utterance.rate = 1.0;    // Normal speed - professional pace
+    utterance.pitch = 1.05;  // Slightly higher for clarity
+    utterance.volume = 1.0;
     
     utterance.onend = () => {
       setIsSpeaking(false);
       isSpeakingRef.current = false;
-      
-      if (shouldContinueListeningRef.current && recognitionRef.current) {
-        setTimeout(() => {
-          if (shouldContinueListeningRef.current && !isSpeakingRef.current) {
-            try {
-              recognitionRef.current?.start();
-            } catch (e) {
-              console.log("Recognition restart error:", e);
-            }
-          }
-        }, 500);
-      }
+      resumeListening();
     };
     
     utterance.onerror = () => {
       setIsSpeaking(false);
       isSpeakingRef.current = false;
+      resumeListening();
     };
     
-    synth.speak(utterance);
+    synthRef.current.speak(utterance);
   }, []);
 
-  // Toggle conversation - single button press to start/stop
+  // Resume listening after speaking
+  const resumeListening = useCallback(() => {
+    if (shouldContinueListeningRef.current && recognitionRef.current && !isSpeakingRef.current) {
+      setTimeout(() => {
+        if (shouldContinueListeningRef.current && !isSpeakingRef.current) {
+          try {
+            recognitionRef.current?.start();
+          } catch (e) {
+            // Ignore
+          }
+        }
+      }, 300);
+    }
+  }, []);
+
+  // Toggle conversation
   const toggleConversation = useCallback(() => {
     if (isConversationActive) {
-      // Stop conversation
       shouldContinueListeningRef.current = false;
       setIsConversationActive(false);
       
@@ -382,15 +347,8 @@ export function useVoiceChat() {
         recognitionRef.current.stop();
       }
       
-      // Stop any ongoing audio
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-      
-      // Stop browser TTS
-      if (window.speechSynthesis) {
-        window.speechSynthesis.cancel();
+      if (synthRef.current) {
+        synthRef.current.cancel();
       }
       
       setIsSpeaking(false);
@@ -402,7 +360,6 @@ export function useVoiceChat() {
         clearTimeout(silenceTimeoutRef.current);
       }
     } else {
-      // Start conversation
       shouldContinueListeningRef.current = true;
       setIsConversationActive(true);
       setError(null);
