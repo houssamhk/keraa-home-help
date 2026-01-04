@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Home, Wrench, Navigation, MapPin, Phone, Star, Loader2, X, ChevronDown } from 'lucide-react';
+import { Home, Wrench, Navigation, MapPin, Star, Loader2, X, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,36 +13,6 @@ L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-});
-
-// Custom icons
-const propertyIcon = new L.DivIcon({
-  className: 'custom-marker',
-  html: `<div style="background: linear-gradient(135deg, hsl(30 52% 65%), hsl(38 65% 55%)); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 3px solid white;">
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-  </div>`,
-  iconSize: [40, 40],
-  iconAnchor: [20, 40],
-  popupAnchor: [0, -40],
-});
-
-const handymanIcon = new L.DivIcon({
-  className: 'custom-marker',
-  html: `<div style="background: linear-gradient(135deg, #22c55e, #16a34a); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 3px solid white;">
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-  </div>`,
-  iconSize: [40, 40],
-  iconAnchor: [20, 40],
-  popupAnchor: [0, -40],
-});
-
-const userLocationIcon = new L.DivIcon({
-  className: 'custom-marker user-location-marker',
-  html: `<div style="position: relative;">
-    <div style="background: #3b82f6; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(59,130,246,0.5);"></div>
-  </div>`,
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
 });
 
 interface Property {
@@ -83,75 +52,82 @@ interface LeafletMapProps {
 // Algeria center coordinates
 const ALGERIA_CENTER: [number, number] = [36.7538, 3.0588];
 
-function LocationMarker({ userLocation }: { userLocation: [number, number] | null }) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (userLocation) {
-      map.flyTo(userLocation, 14);
-    }
-  }, [userLocation, map]);
-
-  return userLocation ? (
-    <Marker position={userLocation} icon={userLocationIcon}>
-      <Popup>
-        <div className="text-center p-2">
-          <strong>موقعك الحالي</strong>
-        </div>
-      </Popup>
-    </Marker>
-  ) : null;
-}
-
-function RoutingControl({ userLocation, destination }: {
-  userLocation: [number, number] | null;
-  destination: [number, number] | null;
-}) {
-  const map = useMap();
-  const routingControlRef = useRef<L.Polyline | null>(null);
-
-  useEffect(() => {
-    if (routingControlRef.current) {
-      map.removeLayer(routingControlRef.current);
-      routingControlRef.current = null;
-    }
-
-    if (userLocation && destination) {
-      const polyline = L.polyline([userLocation, destination], {
-        color: '#3b82f6',
-        weight: 4,
-        opacity: 0.8,
-        dashArray: '10, 10'
-      }).addTo(map);
-
-      routingControlRef.current = polyline;
-      const bounds = L.latLngBounds([userLocation, destination]);
-      map.fitBounds(bounds, { padding: [50, 50] });
-    }
-
-    return () => {
-      if (routingControlRef.current) {
-        map.removeLayer(routingControlRef.current);
-      }
-    };
-  }, [userLocation, destination, map]);
-
-  return null;
-}
-
 type ViewMode = 'all' | 'properties' | 'handymen';
 
 export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMapProps) {
   const { toast } = useToast();
+  const mapRef = useRef<L.Map | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const markersRef = useRef<L.Marker[]>([]);
+  const routeLineRef = useRef<L.Polyline | null>(null);
+  const userMarkerRef = useRef<L.Marker | null>(null);
+
   const [viewMode, setViewMode] = useState<ViewMode>('all');
   const [properties, setProperties] = useState<Property[]>([]);
   const [handymen, setHandymen] = useState<Handyman[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mapReady, setMapReady] = useState(false);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [selectedItem, setSelectedItem] = useState<Property | Handyman | null>(null);
   const [routeDestination, setRouteDestination] = useState<[number, number] | null>(null);
   const [gettingLocation, setGettingLocation] = useState(false);
 
+  // Custom icons
+  const propertyIcon = useMemo(() => new L.DivIcon({
+    className: 'custom-marker',
+    html: `<div style="background: linear-gradient(135deg, hsl(30 52% 65%), hsl(38 65% 55%)); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 3px solid white;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </div>`,
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+    popupAnchor: [0, -40],
+  }), []);
+
+  const handymanIcon = useMemo(() => new L.DivIcon({
+    className: 'custom-marker',
+    html: `<div style="background: linear-gradient(135deg, #22c55e, #16a34a); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 3px solid white;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+    </div>`,
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+    popupAnchor: [0, -40],
+  }), []);
+
+  const userLocationIcon = useMemo(() => new L.DivIcon({
+    className: 'custom-marker user-location-marker',
+    html: `<div style="position: relative;">
+      <div style="background: #3b82f6; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(59,130,246,0.5);"></div>
+    </div>`,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+  }), []);
+
+  // Initialize map
+  useEffect(() => {
+    if (!mapContainerRef.current || mapRef.current) return;
+
+    const map = L.map(mapContainerRef.current, {
+      center: ALGERIA_CENTER,
+      zoom: 12,
+      zoomControl: false,
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    mapRef.current = map;
+    setMapReady(true);
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []);
+
+  // Fetch data
   useEffect(() => {
     fetchData();
   }, []);
@@ -160,7 +136,6 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
     setLoading(true);
     
     try {
-      // Fetch properties
       const { data: propertiesData, error: propertiesError } = await supabase
         .from('properties')
         .select('id, title, address, city, price, bedrooms, bathrooms, area_sqm, latitude, longitude, images')
@@ -169,11 +144,9 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
       if (propertiesError) {
         console.error('Properties fetch error:', propertiesError);
       } else if (propertiesData) {
-        // Filter for valid coordinates
         setProperties(propertiesData.filter(p => p.latitude && p.longitude));
       }
 
-      // Fetch handymen
       const { data: handymenData, error: handymenError } = await supabase
         .from('handymen')
         .select('id, user_id, specialty, description, hourly_rate, rating, total_reviews, is_available, latitude, longitude')
@@ -182,7 +155,6 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
       if (handymenError) {
         console.error('Handymen fetch error:', handymenError);
       } else if (handymenData) {
-        // Filter for valid coordinates and add name
         const handymenWithNames = handymenData
           .filter(h => h.latitude && h.longitude)
           .map(h => ({
@@ -197,6 +169,79 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
     
     setLoading(false);
   };
+
+  // Update markers when data or viewMode changes
+  useEffect(() => {
+    if (!mapRef.current || !mapReady) return;
+
+    // Clear existing markers
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+
+    // Add property markers
+    if (viewMode === 'all' || viewMode === 'properties') {
+      properties.forEach(property => {
+        if (property.latitude && property.longitude) {
+          const marker = L.marker([property.latitude, property.longitude], { icon: propertyIcon })
+            .addTo(mapRef.current!)
+            .on('click', () => setSelectedItem(property));
+          markersRef.current.push(marker);
+        }
+      });
+    }
+
+    // Add handyman markers
+    if (viewMode === 'all' || viewMode === 'handymen') {
+      handymen.forEach(handyman => {
+        if (handyman.latitude && handyman.longitude) {
+          const marker = L.marker([handyman.latitude, handyman.longitude], { icon: handymanIcon })
+            .addTo(mapRef.current!)
+            .on('click', () => setSelectedItem(handyman));
+          markersRef.current.push(marker);
+        }
+      });
+    }
+  }, [properties, handymen, viewMode, mapReady, propertyIcon, handymanIcon]);
+
+  // Update user location marker
+  useEffect(() => {
+    if (!mapRef.current || !mapReady) return;
+
+    if (userMarkerRef.current) {
+      userMarkerRef.current.remove();
+      userMarkerRef.current = null;
+    }
+
+    if (userLocation) {
+      userMarkerRef.current = L.marker(userLocation, { icon: userLocationIcon })
+        .addTo(mapRef.current)
+        .bindPopup('<div class="text-center p-2"><strong>موقعك الحالي</strong></div>');
+      
+      mapRef.current.flyTo(userLocation, 14);
+    }
+  }, [userLocation, mapReady, userLocationIcon]);
+
+  // Update route line
+  useEffect(() => {
+    if (!mapRef.current || !mapReady) return;
+
+    if (routeLineRef.current) {
+      routeLineRef.current.remove();
+      routeLineRef.current = null;
+    }
+
+    if (userLocation && routeDestination) {
+      routeLineRef.current = L.polyline([userLocation, routeDestination], {
+        color: '#3b82f6',
+        weight: 4,
+        opacity: 0.8,
+        dashArray: '10, 10'
+      }).addTo(mapRef.current);
+
+      const bounds = L.latLngBounds([userLocation, routeDestination]);
+      mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+    }
+  }, [userLocation, routeDestination, mapReady]);
 
   const getCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -308,45 +353,13 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
       </motion.div>
 
       {/* Map */}
-      <div className="flex-1 pt-32">
-        {loading ? (
-          <div className="flex items-center justify-center h-full">
+      <div className="flex-1 pt-32 relative">
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
             <Loader2 className="w-10 h-10 animate-spin text-primary" />
           </div>
-        ) : (
-          <MapContainer
-            center={userLocation || ALGERIA_CENTER}
-            zoom={12}
-            style={{ height: '100%', width: '100%' }}
-            zoomControl={false}
-          >
-            <TileLayer
-              attribution='&copy; OpenStreetMap'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            
-            <LocationMarker userLocation={userLocation} />
-            <RoutingControl userLocation={userLocation} destination={routeDestination} />
-
-            {(viewMode === 'all' || viewMode === 'properties') && properties.map((property) => (
-              <Marker
-                key={`property-${property.id}`}
-                position={[property.latitude!, property.longitude!]}
-                icon={propertyIcon}
-                eventHandlers={{ click: () => setSelectedItem(property) }}
-              />
-            ))}
-
-            {(viewMode === 'all' || viewMode === 'handymen') && handymen.map((handyman) => (
-              <Marker
-                key={`handyman-${handyman.id}`}
-                position={[handyman.latitude!, handyman.longitude!]}
-                icon={handymanIcon}
-                eventHandlers={{ click: () => setSelectedItem(handyman) }}
-              />
-            ))}
-          </MapContainer>
         )}
+        <div ref={mapContainerRef} className="h-full w-full" />
       </div>
 
       {/* Bottom sheet */}
