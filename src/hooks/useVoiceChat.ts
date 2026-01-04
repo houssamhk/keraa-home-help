@@ -108,7 +108,11 @@ export function useVoiceChat() {
     };
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      if (isSpeakingRef.current) return;
+      // CRITICAL: Ignore all input while AI is speaking to prevent echo
+      if (isSpeakingRef.current) {
+        console.log("Ignoring speech input - AI is speaking");
+        return;
+      }
 
       let finalTranscript = "";
       let interimTranscript = "";
@@ -135,8 +139,11 @@ export function useVoiceChat() {
           clearTimeout(silenceTimeoutRef.current);
         }
         silenceTimeoutRef.current = setTimeout(() => {
-          handleUserSpeech(finalTranscript);
-        }, 800);
+          // Double check we're not speaking before processing
+          if (!isSpeakingRef.current) {
+            handleUserSpeech(finalTranscript);
+          }
+        }, 1000); // Longer delay to ensure we don't pick up echo
       }
     };
 
@@ -278,16 +285,25 @@ export function useVoiceChat() {
       return;
     }
 
+    // CRITICAL: Stop recognition BEFORE speaking to prevent echo
     setIsSpeaking(true);
     isSpeakingRef.current = true;
     
+    // Stop recognition immediately and wait for it to fully stop
     if (recognitionRef.current) {
-      recognitionRef.current.stop();
+      try {
+        recognitionRef.current.abort(); // Use abort instead of stop for immediate effect
+      } catch (e) {
+        // Ignore
+      }
     }
     setIsListening(false);
     
     // Cancel any ongoing speech
     synthRef.current.cancel();
+    
+    // Wait a moment for recognition to fully stop before speaking
+    await new Promise(resolve => setTimeout(resolve, 200));
 
     // Clean text for speech
     const cleanText = text
@@ -308,15 +324,22 @@ export function useVoiceChat() {
     utterance.volume = 1.0;
     
     utterance.onend = () => {
+      console.log("AI finished speaking");
       setIsSpeaking(false);
-      isSpeakingRef.current = false;
-      resumeListening();
+      // Wait longer before resuming to prevent picking up echoes
+      setTimeout(() => {
+        isSpeakingRef.current = false;
+        resumeListening();
+      }, 500); // 500ms delay after speaking ends
     };
     
     utterance.onerror = () => {
+      console.log("TTS error");
       setIsSpeaking(false);
-      isSpeakingRef.current = false;
-      resumeListening();
+      setTimeout(() => {
+        isSpeakingRef.current = false;
+        resumeListening();
+      }, 500);
     };
     
     synthRef.current.speak(utterance);
@@ -325,15 +348,17 @@ export function useVoiceChat() {
   // Resume listening after speaking
   const resumeListening = useCallback(() => {
     if (shouldContinueListeningRef.current && recognitionRef.current && !isSpeakingRef.current) {
+      // Longer delay to ensure no echo is picked up
       setTimeout(() => {
         if (shouldContinueListeningRef.current && !isSpeakingRef.current) {
+          console.log("Resuming listening after speaking");
           try {
             recognitionRef.current?.start();
           } catch (e) {
-            // Ignore
+            // If already started, ignore
           }
         }
-      }, 300);
+      }, 600); // 600ms delay before resuming
     }
   }, []);
 
