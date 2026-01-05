@@ -18,6 +18,7 @@ import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { LocationPicker } from '@/components/map/LocationPicker';
 
 interface HandymanProfile {
   id: string;
@@ -28,6 +29,8 @@ interface HandymanProfile {
   total_reviews: number;
   is_available: boolean;
   service_area_km: number;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 interface HandymanDashboardProps {
@@ -45,7 +48,9 @@ export function HandymanDashboard({ onBack }: HandymanDashboardProps) {
     specialty: [] as string[],
     description: '',
     hourly_rate: '',
-    service_area_km: '20'
+    service_area_km: '20',
+    latitude: null as number | null,
+    longitude: null as number | null
   });
 
   const specialties = [
@@ -81,7 +86,9 @@ export function HandymanDashboard({ onBack }: HandymanDashboardProps) {
         specialty: data.specialty || [],
         description: data.description || '',
         hourly_rate: data.hourly_rate?.toString() || '',
-        service_area_km: data.service_area_km?.toString() || '20'
+        service_area_km: data.service_area_km?.toString() || '20',
+        latitude: data.latitude || null,
+        longitude: data.longitude || null
       });
     }
     setIsLoading(false);
@@ -107,7 +114,9 @@ export function HandymanDashboard({ onBack }: HandymanDashboardProps) {
       description: formData.description,
       hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
       service_area_km: parseInt(formData.service_area_km),
-      is_available: true
+      is_available: true,
+      latitude: formData.latitude,
+      longitude: formData.longitude
     };
 
     let result;
@@ -261,6 +270,13 @@ export function HandymanDashboard({ onBack }: HandymanDashboardProps) {
               <span className="text-muted-foreground text-sm">كم</span>
             </div>
           </div>
+
+          {/* Location Picker */}
+          <LocationPicker
+            latitude={formData.latitude}
+            longitude={formData.longitude}
+            onLocationChange={(lat, lng) => setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }))}
+          />
 
           <Button
             variant="gold"

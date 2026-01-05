@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Home, Wrench, Navigation, MapPin, Star, Loader2, X, ChevronDown } from 'lucide-react';
+import { Home, Wrench, Navigation, MapPin, Star, Loader2, X, ChevronDown, Search, Route } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -52,6 +53,104 @@ interface LeafletMapProps {
 // Algeria center coordinates
 const ALGERIA_CENTER: [number, number] = [36.7538, 3.0588];
 
+// Demo data for testing
+const DEMO_PROPERTIES: Property[] = [
+  {
+    id: 'demo-1',
+    title: 'شقة فاخرة في حيدرة',
+    address: 'شارع ديدوش مراد',
+    city: 'الجزائر',
+    price: 45000,
+    bedrooms: 3,
+    bathrooms: 2,
+    area_sqm: 120,
+    latitude: 36.7650,
+    longitude: 3.0522,
+    images: []
+  },
+  {
+    id: 'demo-2',
+    title: 'فيلا مع حديقة',
+    address: 'بوزريعة',
+    city: 'الجزائر',
+    price: 120000,
+    bedrooms: 5,
+    bathrooms: 3,
+    area_sqm: 300,
+    latitude: 36.7780,
+    longitude: 3.0150,
+    images: []
+  },
+  {
+    id: 'demo-3',
+    title: 'استوديو مفروش',
+    address: 'باب الوادي',
+    city: 'الجزائر',
+    price: 25000,
+    bedrooms: 1,
+    bathrooms: 1,
+    area_sqm: 40,
+    latitude: 36.7900,
+    longitude: 3.0560,
+    images: []
+  },
+  {
+    id: 'demo-4',
+    title: 'شقة عائلية',
+    address: 'الدار البيضاء',
+    city: 'الجزائر',
+    price: 55000,
+    bedrooms: 4,
+    bathrooms: 2,
+    area_sqm: 150,
+    latitude: 36.7400,
+    longitude: 3.0800,
+    images: []
+  }
+];
+
+const DEMO_HANDYMEN: Handyman[] = [
+  {
+    id: 'demo-h1',
+    user_id: 'demo-user-1',
+    specialty: ['سباكة', 'كهرباء'],
+    description: 'خبرة 10 سنوات في السباكة والكهرباء',
+    hourly_rate: 2000,
+    rating: 4.8,
+    total_reviews: 45,
+    is_available: true,
+    latitude: 36.7600,
+    longitude: 3.0400,
+    name: 'أحمد السباك'
+  },
+  {
+    id: 'demo-h2',
+    user_id: 'demo-user-2',
+    specialty: ['دهان', 'نجارة'],
+    description: 'متخصص في الدهان والتصميم الداخلي',
+    hourly_rate: 1800,
+    rating: 4.5,
+    total_reviews: 32,
+    is_available: true,
+    latitude: 36.7750,
+    longitude: 3.0650,
+    name: 'محمد الدهان'
+  },
+  {
+    id: 'demo-h3',
+    user_id: 'demo-user-3',
+    specialty: ['تكييف', 'كهرباء'],
+    description: 'تركيب وصيانة المكيفات',
+    hourly_rate: 2500,
+    rating: 4.9,
+    total_reviews: 67,
+    is_available: true,
+    latitude: 36.7480,
+    longitude: 3.0320,
+    name: 'كريم التكييف'
+  }
+];
+
 type ViewMode = 'all' | 'properties' | 'handymen';
 
 export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMapProps) {
@@ -61,16 +160,21 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
   const markersRef = useRef<L.Marker[]>([]);
   const routeLineRef = useRef<L.Polyline | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
+  const routeMarkersRef = useRef<L.Marker[]>([]);
 
   const [viewMode, setViewMode] = useState<ViewMode>('all');
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [handymen, setHandymen] = useState<Handyman[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [properties, setProperties] = useState<Property[]>(DEMO_PROPERTIES);
+  const [handymen, setHandymen] = useState<Handyman[]>(DEMO_HANDYMEN);
+  const [loading, setLoading] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [selectedItem, setSelectedItem] = useState<Property | Handyman | null>(null);
   const [routeDestination, setRouteDestination] = useState<[number, number] | null>(null);
   const [gettingLocation, setGettingLocation] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  const [isTracking, setIsTracking] = useState(false);
+  const watchIdRef = useRef<number | null>(null);
 
   // Custom icons
   const propertyIcon = useMemo(() => new L.DivIcon({
@@ -96,11 +200,41 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
   const userLocationIcon = useMemo(() => new L.DivIcon({
     className: 'custom-marker user-location-marker',
     html: `<div style="position: relative;">
-      <div style="background: #3b82f6; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(59,130,246,0.5);"></div>
+      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; background: rgba(59,130,246,0.2); border-radius: 50%; animation: pulse 2s infinite;"></div>
+      <div style="background: #3b82f6; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(59,130,246,0.5); position: relative; z-index: 1;"></div>
     </div>`,
     iconSize: [20, 20],
     iconAnchor: [10, 10],
   }), []);
+
+  const destinationIcon = useMemo(() => new L.DivIcon({
+    className: 'custom-marker',
+    html: `<div style="background: #ef4444; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 3px solid white;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg>
+    </div>`,
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+  }), []);
+
+  // Filter items based on search
+  const filteredProperties = useMemo(() => {
+    if (!searchQuery.trim()) return properties;
+    const query = searchQuery.toLowerCase();
+    return properties.filter(p => 
+      p.title.toLowerCase().includes(query) ||
+      p.address.toLowerCase().includes(query) ||
+      p.city.toLowerCase().includes(query)
+    );
+  }, [properties, searchQuery]);
+
+  const filteredHandymen = useMemo(() => {
+    if (!searchQuery.trim()) return handymen;
+    const query = searchQuery.toLowerCase();
+    return handymen.filter(h => 
+      h.name?.toLowerCase().includes(query) ||
+      h.specialty?.some(s => s.toLowerCase().includes(query))
+    );
+  }, [handymen, searchQuery]);
 
   // Initialize map
   useEffect(() => {
@@ -116,6 +250,9 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
       attribution: '&copy; OpenStreetMap'
     }).addTo(map);
 
+    // Add zoom control to bottom right
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+
     mapRef.current = map;
     setMapReady(true);
 
@@ -127,7 +264,7 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
     };
   }, []);
 
-  // Fetch data
+  // Fetch data from Supabase and merge with demo data
   useEffect(() => {
     fetchData();
   }, []);
@@ -136,32 +273,26 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
     setLoading(true);
     
     try {
-      const { data: propertiesData, error: propertiesError } = await supabase
+      const { data: propertiesData } = await supabase
         .from('properties')
         .select('id, title, address, city, price, bedrooms, bathrooms, area_sqm, latitude, longitude, images')
         .eq('is_available', true);
 
-      if (propertiesError) {
-        console.error('Properties fetch error:', propertiesError);
-      } else if (propertiesData) {
-        setProperties(propertiesData.filter(p => p.latitude && p.longitude));
+      if (propertiesData && propertiesData.length > 0) {
+        const realProperties = propertiesData.filter(p => p.latitude && p.longitude);
+        setProperties([...realProperties, ...DEMO_PROPERTIES]);
       }
 
-      const { data: handymenData, error: handymenError } = await supabase
+      const { data: handymenData } = await supabase
         .from('handymen')
         .select('id, user_id, specialty, description, hourly_rate, rating, total_reviews, is_available, latitude, longitude')
         .eq('is_available', true);
 
-      if (handymenError) {
-        console.error('Handymen fetch error:', handymenError);
-      } else if (handymenData) {
-        const handymenWithNames = handymenData
+      if (handymenData && handymenData.length > 0) {
+        const realHandymen = handymenData
           .filter(h => h.latitude && h.longitude)
-          .map(h => ({
-            ...h,
-            name: `حرفي ${h.specialty?.[0] || ''}`
-          }));
-        setHandymen(handymenWithNames);
+          .map(h => ({ ...h, name: `حرفي ${h.specialty?.[0] || ''}` }));
+        setHandymen([...realHandymen, ...DEMO_HANDYMEN]);
       }
     } catch (error) {
       console.error('Fetch error:', error);
@@ -180,7 +311,7 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
 
     // Add property markers
     if (viewMode === 'all' || viewMode === 'properties') {
-      properties.forEach(property => {
+      filteredProperties.forEach(property => {
         if (property.latitude && property.longitude) {
           const marker = L.marker([property.latitude, property.longitude], { icon: propertyIcon })
             .addTo(mapRef.current!)
@@ -192,7 +323,7 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
 
     // Add handyman markers
     if (viewMode === 'all' || viewMode === 'handymen') {
-      handymen.forEach(handyman => {
+      filteredHandymen.forEach(handyman => {
         if (handyman.latitude && handyman.longitude) {
           const marker = L.marker([handyman.latitude, handyman.longitude], { icon: handymanIcon })
             .addTo(mapRef.current!)
@@ -201,7 +332,7 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
         }
       });
     }
-  }, [properties, handymen, viewMode, mapReady, propertyIcon, handymanIcon]);
+  }, [filteredProperties, filteredHandymen, viewMode, mapReady, propertyIcon, handymanIcon]);
 
   // Update user location marker
   useEffect(() => {
@@ -215,33 +346,46 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
     if (userLocation) {
       userMarkerRef.current = L.marker(userLocation, { icon: userLocationIcon })
         .addTo(mapRef.current)
-        .bindPopup('<div class="text-center p-2"><strong>موقعك الحالي</strong></div>');
+        .bindPopup('<div class="text-center p-2 font-semibold">موقعك الحالي</div>');
       
-      mapRef.current.flyTo(userLocation, 14);
+      if (!routeDestination) {
+        mapRef.current.flyTo(userLocation, 14);
+      }
     }
-  }, [userLocation, mapReady, userLocationIcon]);
+  }, [userLocation, mapReady, userLocationIcon, routeDestination]);
 
   // Update route line
   useEffect(() => {
     if (!mapRef.current || !mapReady) return;
 
+    // Clear existing route
     if (routeLineRef.current) {
       routeLineRef.current.remove();
       routeLineRef.current = null;
     }
+    routeMarkersRef.current.forEach(m => m.remove());
+    routeMarkersRef.current = [];
 
     if (userLocation && routeDestination) {
+      // Draw route line
       routeLineRef.current = L.polyline([userLocation, routeDestination], {
         color: '#3b82f6',
-        weight: 4,
+        weight: 5,
         opacity: 0.8,
-        dashArray: '10, 10'
+        dashArray: '12, 8'
       }).addTo(mapRef.current);
 
+      // Add destination marker
+      const destMarker = L.marker(routeDestination, { icon: destinationIcon })
+        .addTo(mapRef.current)
+        .bindPopup('<div class="text-center p-2 font-semibold">الوجهة</div>');
+      routeMarkersRef.current.push(destMarker);
+
+      // Fit bounds to show route
       const bounds = L.latLngBounds([userLocation, routeDestination]);
-      mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+      mapRef.current.fitBounds(bounds, { padding: [80, 80] });
     }
-  }, [userLocation, routeDestination, mapReady]);
+  }, [userLocation, routeDestination, mapReady, destinationIcon]);
 
   const getCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -261,7 +405,7 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
         setGettingLocation(false);
         toast({
           title: 'تم تحديد موقعك',
-          description: 'تم تحديد موقعك الحالي بنجاح'
+          description: 'يمكنك الآن تتبع المسار'
         });
       },
       (error) => {
@@ -280,21 +424,98 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
     );
   };
 
+  // Start live tracking
+  const startTracking = () => {
+    if (!navigator.geolocation) {
+      toast({ title: 'خطأ', description: 'المتصفح لا يدعم تحديد الموقع', variant: 'destructive' });
+      return;
+    }
+
+    setIsTracking(true);
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (position) => {
+        const loc: [number, number] = [position.coords.latitude, position.coords.longitude];
+        setUserLocation(loc);
+        
+        // Update map center to follow user
+        if (mapRef.current && routeDestination) {
+          mapRef.current.panTo(loc);
+        }
+      },
+      (error) => {
+        console.error('Tracking error:', error);
+      },
+      { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
+    );
+
+    toast({ title: 'تتبع الموقع', description: 'تم تفعيل تتبع موقعك الحالي' });
+  };
+
+  // Stop live tracking
+  const stopTracking = () => {
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    setIsTracking(false);
+    toast({ title: 'إيقاف التتبع', description: 'تم إيقاف تتبع الموقع' });
+  };
+
   const navigateToItem = (lat: number, lng: number) => {
     if (!userLocation) {
       getCurrentLocation();
-      toast({
-        title: 'تنبيه',
-        description: 'يرجى تحديد موقعك أولاً'
-      });
+      toast({ title: 'تنبيه', description: 'يرجى تحديد موقعك أولاً' });
       return;
     }
     setRouteDestination([lat, lng]);
+    setSelectedItem(null);
   };
 
-  const clearRoute = () => setRouteDestination(null);
+  const clearRoute = () => {
+    setRouteDestination(null);
+    stopTracking();
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    
+    // If there's a match, zoom to first result
+    if (query.trim()) {
+      const matchedProperty = filteredProperties.find(p => 
+        p.latitude && p.longitude && (
+          p.title.toLowerCase().includes(query.toLowerCase()) ||
+          p.address.toLowerCase().includes(query.toLowerCase())
+        )
+      );
+      
+      const matchedHandyman = filteredHandymen.find(h => 
+        h.latitude && h.longitude && (
+          h.name?.toLowerCase().includes(query.toLowerCase()) ||
+          h.specialty?.some(s => s.toLowerCase().includes(query.toLowerCase()))
+        )
+      );
+
+      const match = matchedProperty || matchedHandyman;
+      if (match && match.latitude && match.longitude && mapRef.current) {
+        mapRef.current.flyTo([match.latitude, match.longitude], 15);
+        setSelectedItem(match);
+      }
+    }
+  };
 
   const isProperty = (item: Property | Handyman): item is Property => 'bedrooms' in item;
+
+  // Calculate distance
+  const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371; // km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return (R * c).toFixed(1);
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col safe-area-inset relative">
@@ -309,23 +530,41 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
             <X className="w-5 h-5" />
           </Button>
           
-          <div className="flex-1 glass-card px-4 py-3 flex items-center gap-3">
-            <MapPin className="w-5 h-5 text-primary" />
-            <span className="text-muted-foreground text-sm">استكشف العقارات والحرفيين</span>
-          </div>
-          
-          <Button 
-            variant="glass" 
-            size="icon" 
-            onClick={getCurrentLocation}
-            disabled={gettingLocation}
-          >
-            {gettingLocation ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Navigation className="w-5 h-5" />
-            )}
-          </Button>
+          {showSearch ? (
+            <div className="flex-1 glass-card px-4 py-2 flex items-center gap-3">
+              <Search className="w-5 h-5 text-primary" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                placeholder="ابحث عن عقار أو حرفي..."
+                className="border-none bg-transparent focus-visible:ring-0 p-0 h-auto text-foreground"
+                autoFocus
+              />
+              <Button variant="ghost" size="sm" onClick={() => { setShowSearch(false); setSearchQuery(''); }}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="flex-1 glass-card px-4 py-3 flex items-center gap-3" onClick={() => setShowSearch(true)}>
+                <Search className="w-5 h-5 text-muted-foreground" />
+                <span className="text-muted-foreground text-sm">البحث في الخريطة...</span>
+              </div>
+              
+              <Button 
+                variant="glass" 
+                size="icon" 
+                onClick={getCurrentLocation}
+                disabled={gettingLocation}
+              >
+                {gettingLocation ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Navigation className="w-5 h-5" />
+                )}
+              </Button>
+            </>
+          )}
         </div>
 
         <div className="flex gap-2 mt-3">
@@ -336,7 +575,7 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
               className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                 viewMode === mode
                   ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground'
+                  : 'bg-muted/80 backdrop-blur text-muted-foreground'
               }`}
             >
               {mode === 'all' ? 'الكل' : mode === 'properties' ? 'العقارات' : 'الحرفيين'}
@@ -344,22 +583,51 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
           ))}
         </div>
 
+        {/* Route controls */}
         {routeDestination && (
-          <Button variant="destructive" size="sm" className="mt-3" onClick={clearRoute}>
-            <X className="w-4 h-4 ml-2" />
-            إلغاء المسار
-          </Button>
+          <div className="flex gap-2 mt-3">
+            <Button 
+              variant={isTracking ? 'default' : 'glass'}
+              size="sm" 
+              className="flex-1 gap-2"
+              onClick={isTracking ? stopTracking : startTracking}
+            >
+              <Route className="w-4 h-4" />
+              {isTracking ? 'إيقاف التتبع' : 'بدء التتبع'}
+            </Button>
+            <Button variant="destructive" size="sm" onClick={clearRoute}>
+              <X className="w-4 h-4" />
+              إلغاء
+            </Button>
+          </div>
+        )}
+
+        {/* Distance indicator */}
+        {routeDestination && userLocation && (
+          <div className="mt-2 glass-card px-4 py-2 text-center">
+            <span className="text-muted-foreground">المسافة: </span>
+            <span className="text-primary font-bold">
+              {getDistance(userLocation[0], userLocation[1], routeDestination[0], routeDestination[1])} كم
+            </span>
+          </div>
         )}
       </motion.div>
 
       {/* Map */}
-      <div className="flex-1 pt-32 relative">
+      <div className="flex-1 relative" style={{ paddingTop: routeDestination ? '220px' : '160px' }}>
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
             <Loader2 className="w-10 h-10 animate-spin text-primary" />
           </div>
         )}
         <div ref={mapContainerRef} className="h-full w-full" />
+      </div>
+
+      {/* Stats Badge */}
+      <div className="absolute bottom-24 left-4 z-[1000] glass-card px-3 py-2 text-xs">
+        <span className="text-muted-foreground">
+          {filteredProperties.length} عقار • {filteredHandymen.length} حرفي
+        </span>
       </div>
 
       {/* Bottom sheet */}
@@ -414,8 +682,8 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
               <div>
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                      <Wrench className="w-6 h-6 text-primary-foreground" />
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
+                      <Wrench className="w-6 h-6 text-white" />
                     </div>
                     <div>
                       <h3 className="font-serif text-xl font-bold text-foreground">{selectedItem.name || 'حرفي'}</h3>
@@ -433,7 +701,7 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
 
                 <div className="flex flex-wrap gap-2 mb-4">
                   {selectedItem.specialty?.slice(0, 3).map((spec, idx) => (
-                    <span key={idx} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+                    <span key={idx} className="px-3 py-1 bg-green-500/10 text-green-500 rounded-full text-sm">
                       {spec}
                     </span>
                   ))}
