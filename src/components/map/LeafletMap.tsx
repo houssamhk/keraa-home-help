@@ -240,27 +240,67 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
-    const map = L.map(mapContainerRef.current, {
-      center: ALGERIA_CENTER,
-      zoom: 12,
-      zoomControl: false,
+    // Small delay to ensure container has proper dimensions
+    const initMap = () => {
+      if (!mapContainerRef.current) return;
+      
+      const map = L.map(mapContainerRef.current, {
+        center: ALGERIA_CENTER,
+        zoom: 12,
+        zoomControl: false,
+      });
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap',
+        maxZoom: 19,
+      }).addTo(map);
+
+      // Add zoom control to bottom right
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+      mapRef.current = map;
+      
+      // Force map to recalculate size after render
+      setTimeout(() => {
+        map.invalidateSize();
+        setMapReady(true);
+      }, 100);
+    };
+
+    // Use requestAnimationFrame to ensure DOM is ready
+    requestAnimationFrame(() => {
+      setTimeout(initMap, 50);
     });
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap'
-    }).addTo(map);
-
-    // Add zoom control to bottom right
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-    mapRef.current = map;
-    setMapReady(true);
 
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
       }
+    };
+  }, []);
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize();
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    
+    // Also invalidate on visibility change (tab switching)
+    const handleVisibility = () => {
+      if (!document.hidden && mapRef.current) {
+        setTimeout(() => mapRef.current?.invalidateSize(), 100);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
 
@@ -518,10 +558,25 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col safe-area-inset relative">
+    <div className="fixed inset-0 bg-background flex flex-col">
+      {/* Map Container - Full screen behind everything */}
+      <div 
+        ref={mapContainerRef} 
+        className="absolute inset-0"
+        style={{ zIndex: 1 }}
+      />
+
+      {/* Loading overlay */}
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/80" style={{ zIndex: 500 }}>
+          <Loader2 className="w-10 h-10 animate-spin text-primary" />
+        </div>
+      )}
+
       {/* Header */}
       <motion.div 
-        className="absolute top-0 left-0 right-0 z-[1000] p-4 safe-top"
+        className="absolute top-0 left-0 right-0 p-4 safe-top"
+        style={{ zIndex: 1000 }}
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -546,7 +601,7 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
             </div>
           ) : (
             <>
-              <div className="flex-1 glass-card px-4 py-3 flex items-center gap-3" onClick={() => setShowSearch(true)}>
+              <div className="flex-1 glass-card px-4 py-3 flex items-center gap-3 cursor-pointer" onClick={() => setShowSearch(true)}>
                 <Search className="w-5 h-5 text-muted-foreground" />
                 <span className="text-muted-foreground text-sm">البحث في الخريطة...</span>
               </div>
@@ -613,18 +668,8 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
         )}
       </motion.div>
 
-      {/* Map */}
-      <div className="flex-1 relative" style={{ paddingTop: routeDestination ? '220px' : '160px' }}>
-        {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
-            <Loader2 className="w-10 h-10 animate-spin text-primary" />
-          </div>
-        )}
-        <div ref={mapContainerRef} className="h-full w-full" />
-      </div>
-
       {/* Stats Badge */}
-      <div className="absolute bottom-24 left-4 z-[1000] glass-card px-3 py-2 text-xs">
+      <div className="absolute bottom-24 left-4 glass-card px-3 py-2 text-xs" style={{ zIndex: 1000 }}>
         <span className="text-muted-foreground">
           {filteredProperties.length} عقار • {filteredHandymen.length} حرفي
         </span>
