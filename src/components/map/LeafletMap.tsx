@@ -158,7 +158,7 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<L.Marker[]>([]);
-  const routeLineRef = useRef<L.Polyline | null>(null);
+  const routeLayerRef = useRef<L.Polyline | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
   const routeMarkersRef = useRef<L.Marker[]>([]);
 
@@ -174,6 +174,8 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [isTracking, setIsTracking] = useState(false);
+  const [routeInfo, setRouteInfo] = useState<{ distance: string; duration: string } | null>(null);
+  const [loadingRoute, setLoadingRoute] = useState(false);
   const watchIdRef = useRef<number | null>(null);
 
   // Custom icons
@@ -394,36 +396,82 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
     }
   }, [userLocation, mapReady, userLocationIcon, routeDestination]);
 
+  // Fetch real route from OSRM
+  const fetchRoute = async (start: [number, number], end: [number, number]) => {
+    setLoadingRoute(true);
+    try {
+      // OSRM expects coordinates as [lng, lat]
+      const url = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+        const route = data.routes[0];
+        const coordinates = route.geometry.coordinates.map((coord: [number, number]) => [coord[1], coord[0]] as [number, number]);
+        
+        // Calculate distance and duration
+        const distanceKm = (route.distance / 1000).toFixed(1);
+        const durationMin = Math.round(route.duration / 60);
+        setRouteInfo({ 
+          distance: `${distanceKm} كم`, 
+          duration: `${durationMin} دقيقة` 
+        });
+        
+        return coordinates;
+      }
+      return null;
+    } catch (error) {
+      console.error('Route fetch error:', error);
+      toast({
+        title: 'خطأ في المسار',
+        description: 'تعذر حساب المسار، سيتم رسم خط مباشر',
+        variant: 'destructive'
+      });
+      return null;
+    } finally {
+      setLoadingRoute(false);
+    }
+  };
+
   // Update route line
   useEffect(() => {
     if (!mapRef.current || !mapReady) return;
 
     // Clear existing route
-    if (routeLineRef.current) {
-      routeLineRef.current.remove();
-      routeLineRef.current = null;
+    if (routeLayerRef.current) {
+      routeLayerRef.current.remove();
+      routeLayerRef.current = null;
     }
     routeMarkersRef.current.forEach(m => m.remove());
     routeMarkersRef.current = [];
+    setRouteInfo(null);
 
     if (userLocation && routeDestination) {
-      // Draw route line
-      routeLineRef.current = L.polyline([userLocation, routeDestination], {
-        color: '#3b82f6',
-        weight: 5,
-        opacity: 0.8,
-        dashArray: '12, 8'
-      }).addTo(mapRef.current);
+      // Fetch and draw real route
+      fetchRoute(userLocation, routeDestination).then(routeCoords => {
+        if (!mapRef.current) return;
+        
+        const coords = routeCoords || [userLocation, routeDestination];
+        
+        // Draw route polyline with smooth styling
+        routeLayerRef.current = L.polyline(coords, {
+          color: '#3b82f6',
+          weight: 6,
+          opacity: 0.9,
+          lineJoin: 'round',
+          lineCap: 'round'
+        }).addTo(mapRef.current);
 
-      // Add destination marker
-      const destMarker = L.marker(routeDestination, { icon: destinationIcon })
-        .addTo(mapRef.current)
-        .bindPopup('<div class="text-center p-2 font-semibold">الوجهة</div>');
-      routeMarkersRef.current.push(destMarker);
+        // Add destination marker
+        const destMarker = L.marker(routeDestination, { icon: destinationIcon })
+          .addTo(mapRef.current)
+          .bindPopup('<div class="text-center p-2 font-semibold">الوجهة</div>');
+        routeMarkersRef.current.push(destMarker);
 
-      // Fit bounds to show route
-      const bounds = L.latLngBounds([userLocation, routeDestination]);
-      mapRef.current.fitBounds(bounds, { padding: [80, 80] });
+        // Fit bounds to show route
+        const bounds = L.latLngBounds(coords);
+        mapRef.current.fitBounds(bounds, { padding: [80, 80] });
+      });
     }
   }, [userLocation, routeDestination, mapReady, destinationIcon]);
 
@@ -657,13 +705,31 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
           </div>
         )}
 
-        {/* Distance indicator */}
+        {/* Route info indicator */}
         {routeDestination && userLocation && (
-          <div className="mt-2 glass-card px-4 py-2 text-center">
-            <span className="text-muted-foreground">المسافة: </span>
-            <span className="text-primary font-bold">
-              {getDistance(userLocation[0], userLocation[1], routeDestination[0], routeDestination[1])} كم
-            </span>
+          <div className="mt-2 glass-card px-4 py-3">
+            {loadingRoute ? (
+              <div className="flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                <span className="text-muted-foreground text-sm">جاري حساب المسار...</span>
+              </div>
+            ) : routeInfo ? (
+              <div className="flex items-center justify-around text-center">
+                <div>
+                  <span className="text-muted-foreground text-xs block">المسافة</span>
+                  <span className="text-primary font-bold text-lg">{routeInfo.distance}</span>
+                </div>
+                <div className="h-8 w-px bg-border" />
+                <div>
+                  <span className="text-muted-foreground text-xs block">الوقت المتوقع</span>
+                  <span className="text-primary font-bold text-lg">{routeInfo.duration}</span>
+                </div>
+              </div>
+            ) : (
+              <span className="text-muted-foreground text-center block">
+                المسافة: {getDistance(userLocation[0], userLocation[1], routeDestination[0], routeDestination[1])} كم
+              </span>
+            )}
           </div>
         )}
       </motion.div>
