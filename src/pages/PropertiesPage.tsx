@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { AISearchBar } from '@/components/search/AISearchBar';
 import { SearchAlertDialog } from '@/components/alerts/SearchAlertDialog';
+import { useFavorites } from '@/hooks/useFavorites';
+import { PropertyCardSkeleton } from '@/components/common/PropertyCardSkeleton';
 
 interface Property {
   id: string;
@@ -42,7 +44,7 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState<SearchFilters>({});
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   useEffect(() => {
     fetchProperties();
@@ -97,16 +99,9 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
     setFilters(newFilters);
   };
 
-  const toggleFavorite = (id: string) => {
-    setFavorites(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
-      return newSet;
-    });
+  const handleToggleFavorite = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    await toggleFavorite(id);
   };
 
   const formatPrice = (price: number, period: string) => {
@@ -216,9 +211,11 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
       {/* Properties List */}
       <div className="px-6 pb-6 space-y-4">
         {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          </div>
+          <>
+            <PropertyCardSkeleton />
+            <PropertyCardSkeleton />
+            <PropertyCardSkeleton />
+          </>
         ) : (
           displayProperties.map((property, index) => (
             <motion.div
@@ -235,14 +232,11 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
                   {getPropertyTypeText(property.property_type)}
                 </span>
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleFavorite(property.id);
-                  }}
-                  className="absolute top-3 left-3 w-10 h-10 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center"
+                  onClick={(e) => handleToggleFavorite(e, property.id)}
+                  className="absolute top-3 left-3 w-10 h-10 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center transition-colors hover:bg-primary/20"
                 >
                   <Heart
-                    className={`w-5 h-5 ${favorites.has(property.id) ? 'fill-primary text-primary' : 'text-foreground'}`}
+                    className={`w-5 h-5 transition-colors ${isFavorite(property.id) ? 'fill-primary text-primary' : 'text-foreground'}`}
                   />
                 </button>
                 <div className="absolute bottom-3 right-3 px-3 py-1 rounded-full bg-primary text-primary-foreground text-sm font-medium">

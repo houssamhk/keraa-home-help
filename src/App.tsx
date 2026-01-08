@@ -26,6 +26,7 @@ import { BillsPage } from "@/pages/BillsPage";
 import { AdminDashboard } from "@/pages/AdminDashboard";
 import { AppointmentsPage } from "@/pages/AppointmentsPage";
 import { ProfilePage } from "@/pages/ProfilePage";
+import { FavoritesPage } from "@/pages/FavoritesPage";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import type { UserRole } from "@/types/user";
 
@@ -36,7 +37,7 @@ type AppScreen =
   | 'settings' | 'properties' | 'property-detail' | 'handymen' | 'chat'
   | 'owner-dashboard' | 'add-property' | 'handyman-dashboard'
   | 'contracts' | 'create-contract' | 'arrabon' | 'alerts' | 'bills'
-  | 'admin' | 'appointments' | 'profile';
+  | 'admin' | 'appointments' | 'profile' | 'favorites';
 
 interface PropertyData {
   id: string;
@@ -127,7 +128,7 @@ function AppContent() {
       '/handyman-dashboard': 'handyman-dashboard', '/contracts': 'contracts',
       '/arrabon': 'arrabon', '/alerts': 'alerts', '/bills': 'bills',
       '/admin': 'admin', '/appointments': 'appointments', '/profile': 'profile',
-      '/kyc': 'kyc'
+      '/kyc': 'kyc', '/favorites': 'favorites'
     };
     setChatUserId(undefined);
     setCurrentScreen(routeMap[route] || 'home');
@@ -191,6 +192,8 @@ function AppContent() {
         return <ProfilePage onBack={() => setCurrentScreen('home')} onNavigate={handleNavigate} />;
       case 'properties': 
         return <PropertiesPage onBack={() => setCurrentScreen('home')} onViewProperty={handleViewProperty} />;
+      case 'favorites':
+        return <FavoritesPage onBack={() => setCurrentScreen('home')} onViewProperty={handleViewProperty} />;
       case 'property-detail': 
         return selectedProperty ? (
           <PropertyDetailPage 

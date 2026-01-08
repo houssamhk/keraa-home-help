@@ -3,12 +3,15 @@ import { motion } from 'framer-motion';
 import { 
   ArrowRight, MapPin, Bed, Bath, Ruler, Heart, MessageCircle, 
   FileText, CreditCard, Share2, Phone, Calendar, Home,
-  Flame, Snowflake, Car, Trees, Waves, Wifi, Armchair
+  Flame, Snowflake, Car, Trees, Waves, Wifi, Armchair, Flag
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFavorites } from '@/hooks/useFavorites';
+import { usePropertyViews } from '@/hooks/usePropertyViews';
+import { ReportDialog } from '@/components/common/ReportDialog';
 import { toast } from 'sonner';
 
 interface Property {
@@ -70,7 +73,20 @@ export function PropertyDetailPage({
   needsKYC
 }: PropertyDetailPageProps) {
   const { user } = useAuth();
-  const [isFavorite, setIsFavorite] = useState(false);
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const { logView } = usePropertyViews();
+  const [reportOpen, setReportOpen] = useState(false);
+
+  // Log view when property is viewed
+  useEffect(() => {
+    if (property?.id) {
+      logView(property.id);
+    }
+  }, [property?.id, logView]);
+
+  const handleToggleFavorite = async () => {
+    await toggleFavorite(property.id);
+  };
 
   const formatPrice = (price: number, period: string) => {
     const periodText = {
@@ -183,10 +199,18 @@ export function PropertyDetailPage({
             <Button 
               variant="glass" 
               size="icon"
-              onClick={() => setIsFavorite(!isFavorite)}
+              onClick={handleToggleFavorite}
               className="bg-background/80 backdrop-blur-sm"
             >
-              <Heart className={`w-5 h-5 ${isFavorite ? 'fill-primary text-primary' : ''}`} />
+              <Heart className={`w-5 h-5 ${isFavorite(property.id) ? 'fill-primary text-primary' : ''}`} />
+            </Button>
+            <Button 
+              variant="glass" 
+              size="icon"
+              onClick={() => setReportOpen(true)}
+              className="bg-background/80 backdrop-blur-sm"
+            >
+              <Flag className="w-5 h-5 text-destructive" />
             </Button>
           </div>
         </div>
@@ -328,6 +352,15 @@ export function PropertyDetailPage({
           </Button>
         </div>
       </motion.div>
+
+      {/* Report Dialog */}
+      <ReportDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        reportedType="property"
+        reportedId={property.id}
+        reportedName={property.title}
+      />
     </div>
   );
 }
