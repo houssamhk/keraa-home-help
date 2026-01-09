@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
+import 'leaflet.markercluster';
 import { Home, Wrench, Navigation, MapPin, Star, Loader2, X, ChevronDown, Search, Route } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -158,6 +161,7 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<L.Marker[]>([]);
+  const markerClusterRef = useRef<L.MarkerClusterGroup | null>(null);
   const routeLayerRef = useRef<L.Polyline | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
   const routeMarkersRef = useRef<L.Marker[]>([]);
@@ -343,36 +347,89 @@ export function LeafletMap({ onBack, onViewProperty, onViewHandyman }: LeafletMa
     setLoading(false);
   };
 
-  // Update markers when data or viewMode changes
+  // Update markers when data or viewMode changes - using MarkerCluster
   useEffect(() => {
     if (!mapRef.current || !mapReady) return;
 
-    // Clear existing markers
+    // Clear existing cluster group
+    if (markerClusterRef.current) {
+      markerClusterRef.current.clearLayers();
+      mapRef.current.removeLayer(markerClusterRef.current);
+    }
+
+    // Clear individual markers
     markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
 
-    // Add property markers
+    // Create new marker cluster group with custom options
+    markerClusterRef.current = (L as any).markerClusterGroup({
+      chunkedLoading: true,
+      maxClusterRadius: 60,
+      spiderfyOnMaxZoom: true,
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: true,
+      iconCreateFunction: (cluster: any) => {
+        const count = cluster.getChildCount();
+        let size = 'small';
+        let className = 'marker-cluster-small';
+        
+        if (count > 10) {
+          size = 'medium';
+          className = 'marker-cluster-medium';
+        }
+        if (count > 30) {
+          size = 'large';
+          className = 'marker-cluster-large';
+        }
+        
+        return L.divIcon({
+          html: `<div style="
+            background: linear-gradient(135deg, hsl(30 52% 65%), hsl(38 65% 55%));
+            width: ${size === 'small' ? 40 : size === 'medium' ? 50 : 60}px;
+            height: ${size === 'small' ? 40 : size === 'medium' ? 50 : 60}px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: ${size === 'small' ? 14 : size === 'medium' ? 16 : 18}px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border: 3px solid white;
+          ">${count}</div>`,
+          className: className,
+          iconSize: L.point(size === 'small' ? 40 : size === 'medium' ? 50 : 60, size === 'small' ? 40 : size === 'medium' ? 50 : 60)
+        });
+      }
+    });
+
+    // Add property markers to cluster
     if (viewMode === 'all' || viewMode === 'properties') {
       filteredProperties.forEach(property => {
         if (property.latitude && property.longitude) {
           const marker = L.marker([property.latitude, property.longitude], { icon: propertyIcon })
-            .addTo(mapRef.current!)
             .on('click', () => setSelectedItem(property));
+          markerClusterRef.current?.addLayer(marker);
           markersRef.current.push(marker);
         }
       });
     }
 
-    // Add handyman markers
+    // Add handyman markers to cluster
     if (viewMode === 'all' || viewMode === 'handymen') {
       filteredHandymen.forEach(handyman => {
         if (handyman.latitude && handyman.longitude) {
           const marker = L.marker([handyman.latitude, handyman.longitude], { icon: handymanIcon })
-            .addTo(mapRef.current!)
             .on('click', () => setSelectedItem(handyman));
+          markerClusterRef.current?.addLayer(marker);
           markersRef.current.push(marker);
         }
       });
+    }
+
+    // Add cluster group to map
+    if (markerClusterRef.current) {
+      mapRef.current.addLayer(markerClusterRef.current);
     }
   }, [filteredProperties, filteredHandymen, viewMode, mapReady, propertyIcon, handymanIcon]);
 
