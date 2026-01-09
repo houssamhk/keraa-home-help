@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Search, Star, MapPin, Phone, MessageSquare } from 'lucide-react';
+import { ArrowRight, Search, Star, MapPin, Phone, MessageSquare, CalendarPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { BookHandymanDialog } from '@/components/handymen/BookHandymanDialog';
+import { HandymanCardSkeleton } from '@/components/common/HandymanCardSkeleton';
 
 interface Handyman {
   id: string;
@@ -30,6 +32,7 @@ export function HandymenPage({ onBack, onChat }: HandymenPageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
+  const [bookingHandyman, setBookingHandyman] = useState<Handyman | null>(null);
 
   const specialties = [
     { id: 'plumbing', label: 'سباكة', icon: '🔧' },
@@ -189,9 +192,11 @@ export function HandymenPage({ onBack, onChat }: HandymenPageProps) {
       {/* Handymen List */}
       <div className="px-6 pb-6 space-y-4">
         {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          </div>
+          <>
+            <HandymanCardSkeleton />
+            <HandymanCardSkeleton />
+            <HandymanCardSkeleton />
+          </>
         ) : (
           filteredHandymen.map((handyman, index) => (
             <motion.div
@@ -246,13 +251,22 @@ export function HandymenPage({ onBack, onChat }: HandymenPageProps) {
                         <span>اتصال</span>
                       </Button>
                       <Button 
-                        variant="gold" 
+                        variant="outline" 
                         size="sm" 
                         className="gap-1"
                         onClick={() => onChat(handyman.user_id)}
                       >
                         <MessageSquare className="w-4 h-4" />
                         <span>محادثة</span>
+                      </Button>
+                      <Button 
+                        variant="gold" 
+                        size="sm" 
+                        className="gap-1"
+                        onClick={() => setBookingHandyman(handyman)}
+                      >
+                        <CalendarPlus className="w-4 h-4" />
+                        <span>حجز</span>
                       </Button>
                     </div>
                   </div>
@@ -262,6 +276,15 @@ export function HandymenPage({ onBack, onChat }: HandymenPageProps) {
           ))
         )}
       </div>
+
+      {/* Booking Dialog */}
+      {bookingHandyman && (
+        <BookHandymanDialog
+          open={!!bookingHandyman}
+          onOpenChange={(open) => !open && setBookingHandyman(null)}
+          handyman={bookingHandyman}
+        />
+      )}
     </div>
   );
 }
