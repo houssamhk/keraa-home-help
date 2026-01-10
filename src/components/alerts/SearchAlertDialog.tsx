@@ -153,12 +153,12 @@ export function SearchAlertDialog({ initialFilters }: SearchAlertDialogProps) {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>المدينة</Label>
-              <Select value={city} onValueChange={setCity}>
+              <Select value={city} onValueChange={(val) => setCity(val === 'all' ? '' : val)}>
                 <SelectTrigger>
                   <SelectValue placeholder="اختر المدينة" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">الكل</SelectItem>
+                  <SelectItem value="all">الكل</SelectItem>
                   {cities.map(c => (
                     <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
                   ))}
@@ -168,12 +168,12 @@ export function SearchAlertDialog({ initialFilters }: SearchAlertDialogProps) {
 
             <div className="space-y-2">
               <Label>نوع العقار</Label>
-              <Select value={propertyType} onValueChange={setPropertyType}>
+              <Select value={propertyType} onValueChange={(val) => setPropertyType(val === 'all' ? '' : val)}>
                 <SelectTrigger>
                   <SelectValue placeholder="اختر النوع" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">الكل</SelectItem>
+                  <SelectItem value="all">الكل</SelectItem>
                   {propertyTypes.map(t => (
                     <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
                   ))}
