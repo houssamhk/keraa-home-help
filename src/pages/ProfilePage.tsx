@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, User, Star, Settings, Shield, MapPin, Phone, Mail, Calendar } from 'lucide-react';
+import { ArrowRight, User, Star, Settings, Shield, MapPin, Phone, Mail, Calendar, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,7 @@ import { UserReputationCard } from '@/components/reviews/UserReputationCard';
 import { ReviewsList } from '@/components/reviews/ReviewsList';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFavorites } from '@/hooks/useFavorites';
 
 interface UserProfile {
   id: string;
@@ -33,6 +34,7 @@ interface ProfilePageProps {
 
 export function ProfilePage({ userId, onBack, onSettings, onNavigate }: ProfilePageProps) {
   const { user, profile: currentUserProfile } = useAuth();
+  const { favorites } = useFavorites();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [propertiesCount, setPropertiesCount] = useState(0);
@@ -210,6 +212,27 @@ export function ProfilePage({ userId, onBack, onSettings, onNavigate }: ProfileP
           </TabsContent>
 
           <TabsContent value="info" className="mt-4 space-y-4">
+            {/* Favorites Quick Link - Only for own profile */}
+            {isOwnProfile && (
+              <Card 
+                className="bg-primary/5 border-primary/20 cursor-pointer hover:bg-primary/10 transition-colors"
+                onClick={() => onNavigate?.('/favorites')}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Heart className="w-5 h-5 text-primary" />
+                      <div>
+                        <p className="font-medium">المفضلة</p>
+                        <p className="text-xs text-muted-foreground">{favorites.size} عقار</p>
+                      </div>
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-muted-foreground rotate-180" />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardContent className="p-4 space-y-4">
                 {profile?.phone && (

@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-interface MediaFile {
+export interface MediaFile {
   url: string;
   type: 'image' | 'video';
   file?: File;

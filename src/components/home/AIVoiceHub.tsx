@@ -18,12 +18,14 @@ import {
   Shield,
   Phone,
   PhoneOff,
-  Volume2
+  Volume2,
+  Heart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useVoiceChat } from "@/hooks/useVoiceChat";
 import { useChat } from "@/hooks/useChat";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
+import { useFavorites } from "@/hooks/useFavorites";
 
 interface AIVoiceHubProps {
   userName?: string;
@@ -35,6 +37,7 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
   const [inputMode, setInputMode] = useState<"voice" | "text">("voice");
   const [textInput, setTextInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { favorites } = useFavorites();
   
   // Voice chat hook for voice mode
   const voiceChat = useVoiceChat();
@@ -49,6 +52,7 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
 
   const quickActions = [
     { id: 'properties', icon: Home, label: 'العقارات', route: '/properties' },
+    { id: 'favorites', icon: Heart, label: 'المفضلة', route: '/favorites', badge: favorites.size > 0 ? favorites.size : undefined },
     { id: 'handymen', icon: Wrench, label: 'الحرفيون', route: '/handymen' },
     { id: 'map', icon: Map, label: 'الخريطة', route: '/map' },
     { id: 'contracts', icon: MessageSquare, label: 'العقود', route: '/contracts' },
@@ -427,14 +431,19 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
               <motion.button
                 key={action.id}
                 onClick={() => onNavigate(action.route)}
-                className="flex flex-col items-center gap-2 group"
+                className="flex flex-col items-center gap-2 group relative"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 + i * 0.1 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center group-hover:bg-primary/10 group-hover:border-primary/30 border border-transparent transition-all">
-                  <action.icon className="w-7 h-7 text-muted-foreground group-hover:text-primary transition-colors" />
+                <div className="relative w-16 h-16 rounded-2xl bg-muted flex items-center justify-center group-hover:bg-primary/10 group-hover:border-primary/30 border border-transparent transition-all">
+                  <action.icon className={`w-7 h-7 text-muted-foreground group-hover:text-primary transition-colors ${action.id === 'favorites' ? 'group-hover:fill-primary/20' : ''}`} />
+                  {action.badge && (
+                    <span className="absolute -top-1 -right-1 min-w-5 h-5 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center px-1">
+                      {action.badge}
+                    </span>
+                  )}
                 </div>
                 <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
                   {action.label}

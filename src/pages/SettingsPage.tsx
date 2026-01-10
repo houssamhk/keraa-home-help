@@ -1,9 +1,10 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, Moon, Sun, Bell, Globe, LogOut, User, Shield, ChevronLeft } from 'lucide-react';
+import { ArrowRight, Moon, Sun, Bell, Globe, LogOut, User, Shield, ChevronLeft, BellRing } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 interface SettingsPageProps {
   onBack: () => void;
@@ -12,6 +13,7 @@ interface SettingsPageProps {
 export function SettingsPage({ onBack }: SettingsPageProps) {
   const { profile, updateSettings, signOut } = useAuth();
   const { toast } = useToast();
+  const { isSupported, permission, requestPermission, isLoading: pushLoading } = usePushNotifications();
 
   const handleThemeChange = async (isDark: boolean) => {
     await updateSettings({ theme: isDark ? 'dark' : 'light' });
@@ -126,13 +128,43 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Bell className="w-5 h-5 text-primary" />
-              <span className="text-foreground">الإشعارات</span>
+              <span className="text-foreground">إشعارات التطبيق</span>
             </div>
             <Switch
               checked={settings.notifications}
               onCheckedChange={handleNotificationsChange}
             />
           </div>
+
+          {isSupported && (
+            <div className="flex items-center justify-between pt-2 border-t border-border/50">
+              <div className="flex items-center gap-3">
+                <BellRing className="w-5 h-5 text-primary" />
+                <div>
+                  <span className="text-foreground block">إشعارات المتصفح (Push)</span>
+                  <span className="text-xs text-muted-foreground">
+                    {permission === 'granted' ? 'مفعّلة' : permission === 'denied' ? 'مرفوضة' : 'غير مفعّلة'}
+                  </span>
+                </div>
+              </div>
+              {permission !== 'granted' && (
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={requestPermission}
+                  disabled={pushLoading || permission === 'denied'}
+                >
+                  {pushLoading ? 'جاري...' : 'تفعيل'}
+                </Button>
+              )}
+              {permission === 'granted' && (
+                <span className="text-xs text-green-500 flex items-center gap-1">
+                  <Shield className="w-3 h-3" />
+                  مفعّلة
+                </span>
+              )}
+            </div>
+          )}
         </motion.div>
 
         {/* Language */}

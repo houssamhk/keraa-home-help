@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useFavorites } from '@/hooks/useFavorites';
 import { usePropertyViews } from '@/hooks/usePropertyViews';
 import { ReportDialog } from '@/components/common/ReportDialog';
+import { BookViewingDialog } from '@/components/property/BookViewingDialog';
 import { toast } from 'sonner';
 
 interface Property {
@@ -76,6 +77,7 @@ export function PropertyDetailPage({
   const { isFavorite, toggleFavorite } = useFavorites();
   const { logView } = usePropertyViews();
   const [reportOpen, setReportOpen] = useState(false);
+  const [bookingOpen, setBookingOpen] = useState(false);
 
   // Log view when property is viewed
   useEffect(() => {
@@ -319,7 +321,21 @@ export function PropertyDetailPage({
                     <p className="text-xs text-muted-foreground">زيارة العقار</p>
                   </div>
                 </div>
-                <Button size="sm" variant="outline" onClick={() => toast.info('سيتم إضافة هذه الميزة قريباً')}>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => {
+                    if (!user) {
+                      toast.error('يجب تسجيل الدخول أولاً');
+                      return;
+                    }
+                    if (needsKYC) {
+                      toast.error('يجب تأكيد هويتك أولاً لحجز موعد');
+                      return;
+                    }
+                    setBookingOpen(true);
+                  }}
+                >
                   حجز
                 </Button>
               </div>
@@ -360,6 +376,17 @@ export function PropertyDetailPage({
         reportedType="property"
         reportedId={property.id}
         reportedName={property.title}
+      />
+
+      {/* Booking Dialog */}
+      <BookViewingDialog
+        open={bookingOpen}
+        onOpenChange={setBookingOpen}
+        property={{
+          id: property.id,
+          title: property.title,
+          owner_id: property.owner_id
+        }}
       />
     </div>
   );
