@@ -1,0 +1,32 @@
+{
+  "name": "سكني - منصة العقارات",
+  "short_name": "سكني",
+  "description": "منصة متكاملة لإدارة العقارات والإيجارات",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0b",
+  "theme_color": "#c9a55c",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["real-estate", "lifestyle", "business"],
+  "lang": "ar",
+  "dir": "rtl"
+}

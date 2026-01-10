@@ -1,11 +1,12 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Home, MapPin, DollarSign, Bed, Bath, Ruler, Loader2, Upload, X, Video } from 'lucide-react';
+import { ArrowRight, Home, MapPin, DollarSign, Bed, Bath, Ruler, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { LocationPicker } from '@/components/map/LocationPicker';
+import { MultiImageUpload, type MediaFile } from '@/components/upload/MultiImageUpload';
 
 interface AddPropertyPageProps {
   onBack: () => void;
@@ -17,9 +18,7 @@ export function AddPropertyPage({ onBack, onSuccess, editPropertyId }: AddProper
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [uploadingMedia, setUploadingMedia] = useState(false);
-  const [mediaFiles, setMediaFiles] = useState<{ url: string; type: 'image' | 'video' }[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -50,60 +49,6 @@ export function AddPropertyPage({ onBack, onSuccess, editPropertyId }: AddProper
     { id: 'month', label: 'شهرياً' },
     { id: 'year', label: 'سنوياً' }
   ];
-
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || !user) return;
-
-    setUploadingMedia(true);
-
-    for (const file of Array.from(files)) {
-      const isVideo = file.type.startsWith('video/');
-      const isImage = file.type.startsWith('image/');
-      
-      if (!isImage && !isVideo) {
-        toast({
-          title: 'خطأ',
-          description: 'يرجى اختيار صور أو فيديوهات فقط',
-          variant: 'destructive'
-        });
-        continue;
-      }
-
-      const fileName = `${user.id}/${Date.now()}_${file.name}`;
-      
-      const { data, error } = await supabase.storage
-        .from('property-media')
-        .upload(fileName, file);
-
-      if (error) {
-        toast({
-          title: 'خطأ',
-          description: 'فشل في رفع الملف',
-          variant: 'destructive'
-        });
-        continue;
-      }
-
-      const { data: urlData } = supabase.storage
-        .from('property-media')
-        .getPublicUrl(data.path);
-
-      setMediaFiles(prev => [...prev, { 
-        url: urlData.publicUrl, 
-        type: isVideo ? 'video' : 'image' 
-      }]);
-    }
-
-    setUploadingMedia(false);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const removeMedia = (index: number) => {
-    setMediaFiles(prev => prev.filter((_, i) => i !== index));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -188,61 +133,13 @@ export function AddPropertyPage({ onBack, onSuccess, editPropertyId }: AddProper
         <div>
           <label className="text-sm text-muted-foreground mb-2 block">الصور والفيديوهات</label>
           <div className="glass-card p-4">
-            {/* Preview Grid */}
-            {mediaFiles.length > 0 && (
-              <div className="grid grid-cols-3 gap-2 mb-4">
-                {mediaFiles.map((media, index) => (
-                  <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-muted">
-                    {media.type === 'image' ? (
-                      <img src={media.url} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <video src={media.url} className="w-full h-full object-cover" />
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => removeMedia(index)}
-                      className="absolute top-1 right-1 w-6 h-6 bg-destructive rounded-full flex items-center justify-center"
-                    >
-                      <X className="w-4 h-4 text-destructive-foreground" />
-                    </button>
-                    {media.type === 'video' && (
-                      <div className="absolute bottom-1 left-1">
-                        <Video className="w-4 h-4 text-white drop-shadow-lg" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            {/* Upload Button */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,video/*"
-              multiple
-              onChange={handleFileSelect}
-              className="hidden"
+            <MultiImageUpload
+              bucket="property-media"
+              value={mediaFiles}
+              onChange={setMediaFiles}
+              maxFiles={10}
+              compressImages={true}
             />
-            <Button
-              type="button"
-              variant="glass"
-              className="w-full gap-2"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingMedia}
-            >
-              {uploadingMedia ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>
-                  <Upload className="w-5 h-5" />
-                  <span>رفع صور أو فيديوهات</span>
-                </>
-              )}
-            </Button>
-            <p className="text-xs text-muted-foreground text-center mt-2">
-              يمكنك رفع صور وفيديوهات متعددة
-            </p>
           </div>
         </div>
 
