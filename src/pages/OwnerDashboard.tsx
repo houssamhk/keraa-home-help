@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { usePropertyViews } from '@/hooks/usePropertyViews';
 
 interface Property {
   id: string;
@@ -38,6 +39,7 @@ interface OwnerDashboardProps {
 export function OwnerDashboard({ onBack, onAddProperty, onEditProperty }: OwnerDashboardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { getOwnerStats } = usePropertyViews();
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -50,8 +52,28 @@ export function OwnerDashboard({ onBack, onAddProperty, onEditProperty }: OwnerD
   useEffect(() => {
     if (user) {
       fetchProperties();
+      fetchRealStats();
     }
   }, [user]);
+
+  const fetchRealStats = async () => {
+    if (!user) return;
+    
+    // Get real view stats
+    const viewStats = await getOwnerStats(user.id);
+    
+    // Get real inquiry count from conversations
+    const { count: inquiryCount } = await supabase
+      .from('conversations')
+      .select('*', { count: 'exact', head: true })
+      .or(`participant_1.eq.${user.id},participant_2.eq.${user.id}`);
+
+    setStats(prev => ({
+      ...prev,
+      totalViews: viewStats.totalViews,
+      totalInquiries: inquiryCount || 0
+    }));
+  };
 
   const fetchProperties = async () => {
     if (!user) return;
@@ -65,12 +87,11 @@ export function OwnerDashboard({ onBack, onAddProperty, onEditProperty }: OwnerD
     
     if (!error && data) {
       setProperties(data);
-      setStats({
+      setStats(prev => ({
+        ...prev,
         totalProperties: data.length,
-        availableProperties: data.filter(p => p.is_available).length,
-        totalViews: Math.floor(Math.random() * 500), // Demo data
-        totalInquiries: Math.floor(Math.random() * 50) // Demo data
-      });
+        availableProperties: data.filter(p => p.is_available).length
+      }));
     }
     setIsLoading(false);
   };

@@ -253,6 +253,11 @@ export function ChatPage({ onBack, conversationId: initialConversationId, otherU
     );
   }
 
+  // Get current conversation's other user info
+  const currentConversation = conversations.find(c => c.id === activeConversation);
+  const otherUserName = currentConversation?.other_user?.full_name || 'مستخدم';
+  const otherUserInitial = otherUserName.charAt(0) || 'م';
+
   // Chat View
   return (
     <div className="min-h-screen bg-background flex flex-col safe-area-inset">
@@ -266,10 +271,10 @@ export function ChatPage({ onBack, conversationId: initialConversationId, otherU
           <ArrowRight className="w-5 h-5" />
         </Button>
         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-          <span className="text-primary-foreground font-bold">م</span>
+          <span className="text-primary-foreground font-bold">{otherUserInitial}</span>
         </div>
         <div>
-          <h2 className="font-medium text-foreground">محادثة</h2>
+          <h2 className="font-medium text-foreground">{otherUserName}</h2>
           <p className="text-xs text-muted-foreground">متصل الآن</p>
         </div>
       </motion.header>

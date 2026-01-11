@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Home, MapPin, DollarSign, Bed, Bath, Ruler, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ export function AddPropertyPage({ onBack, onSuccess, editPropertyId }: AddProper
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
   
   const [formData, setFormData] = useState({
@@ -34,6 +35,53 @@ export function AddPropertyPage({ onBack, onSuccess, editPropertyId }: AddProper
     latitude: null as number | null,
     longitude: null as number | null
   });
+
+  // Fetch property data when editing
+  useEffect(() => {
+    if (editPropertyId) {
+      fetchPropertyData();
+    }
+  }, [editPropertyId]);
+
+  const fetchPropertyData = async () => {
+    if (!editPropertyId) return;
+    
+    setIsFetching(true);
+    const { data, error } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('id', editPropertyId)
+      .single();
+
+    if (!error && data) {
+      setFormData({
+        title: data.title || '',
+        description: data.description || '',
+        address: data.address || '',
+        city: data.city || '',
+        price: data.price?.toString() || '',
+        price_period: data.price_period || 'month',
+        property_type: data.property_type || 'apartment',
+        bedrooms: data.bedrooms?.toString() || '1',
+        bathrooms: data.bathrooms?.toString() || '1',
+        area_sqm: data.area_sqm?.toString() || '',
+        latitude: data.latitude || null,
+        longitude: data.longitude || null
+      });
+      
+      // Convert existing images to MediaFile format
+      if (data.images && data.images.length > 0) {
+        const existingMedia: MediaFile[] = data.images.map((url: string, index: number) => ({
+          id: `existing-${index}`,
+          url,
+          type: 'image' as const,
+          name: `image-${index + 1}`
+        }));
+        setMediaFiles(existingMedia);
+      }
+    }
+    setIsFetching(false);
+  };
 
   const propertyTypes = [
     { id: 'apartment', label: 'شقة' },
@@ -90,26 +138,47 @@ export function AddPropertyPage({ onBack, onSuccess, editPropertyId }: AddProper
       longitude: formData.longitude
     };
 
-    const { error } = await supabase
-      .from('properties')
-      .insert(propertyData);
+    let error;
+    
+    if (editPropertyId) {
+      // Update existing property
+      const { error: updateError } = await supabase
+        .from('properties')
+        .update(propertyData)
+        .eq('id', editPropertyId);
+      error = updateError;
+    } else {
+      // Insert new property
+      const { error: insertError } = await supabase
+        .from('properties')
+        .insert(propertyData);
+      error = insertError;
+    }
 
     setIsLoading(false);
 
     if (error) {
       toast({
         title: 'خطأ',
-        description: 'فشل في إضافة العقار',
+        description: editPropertyId ? 'فشل في تحديث العقار' : 'فشل في إضافة العقار',
         variant: 'destructive'
       });
     } else {
       toast({
         title: 'تم بنجاح',
-        description: 'تم إضافة العقار بنجاح'
+        description: editPropertyId ? 'تم تحديث العقار بنجاح' : 'تم إضافة العقار بنجاح'
       });
       onSuccess();
     }
   };
+
+  if (isFetching) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background safe-area-inset">
