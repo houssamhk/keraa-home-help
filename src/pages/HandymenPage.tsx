@@ -25,9 +25,10 @@ interface Handyman {
 interface HandymenPageProps {
   onBack: () => void;
   onChat: (userId: string) => void;
+  onViewHandyman?: (handymanId: string) => void;
 }
 
-export function HandymenPage({ onBack, onChat }: HandymenPageProps) {
+export function HandymenPage({ onBack, onChat, onViewHandyman }: HandymenPageProps) {
   const [handymen, setHandymen] = useState<Handyman[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -204,7 +205,8 @@ export function HandymenPage({ onBack, onChat }: HandymenPageProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="glass-card p-4"
+              className="glass-card p-4 cursor-pointer"
+              onClick={() => onViewHandyman?.(handyman.id)}
             >
               <div className="flex gap-4">
                 {/* Avatar */}

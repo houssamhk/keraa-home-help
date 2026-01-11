@@ -226,11 +226,30 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
               className="glass-card overflow-hidden"
               onClick={() => onViewProperty(property)}
             >
-              {/* Image placeholder */}
-              <div className="relative h-48 bg-gradient-to-br from-muted to-surface-elevated flex items-center justify-center">
-                <span className="text-muted-foreground text-sm">
-                  {getPropertyTypeText(property.property_type)}
-                </span>
+              {/* Property Image */}
+              <div className="relative h-48 bg-gradient-to-br from-muted to-surface-elevated">
+                {property.images && property.images.length > 0 ? (
+                  <img
+                    src={property.images[0]}
+                    alt={property.title}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      target.parentElement!.classList.add('flex', 'items-center', 'justify-center');
+                      const fallback = document.createElement('span');
+                      fallback.className = 'text-muted-foreground text-sm';
+                      fallback.textContent = getPropertyTypeText(property.property_type);
+                      target.parentElement!.appendChild(fallback);
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-muted-foreground text-sm">
+                      {getPropertyTypeText(property.property_type)}
+                    </span>
+                  </div>
+                )}
                 <button
                   onClick={(e) => handleToggleFavorite(e, property.id)}
                   className="absolute top-3 left-3 w-10 h-10 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center transition-colors hover:bg-primary/20"

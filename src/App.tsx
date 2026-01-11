@@ -18,6 +18,7 @@ import { ChatPage } from "@/pages/ChatPage";
 import { OwnerDashboard } from "@/pages/OwnerDashboard";
 import { AddPropertyPage } from "@/pages/AddPropertyPage";
 import { HandymanDashboard } from "@/pages/HandymanDashboard";
+import { HandymanDetailPage } from "@/pages/HandymanDetailPage";
 import { ContractsPage } from "@/pages/ContractsPage";
 import { CreateContractPage } from "@/pages/CreateContractPage";
 import ArrabonPage from "@/pages/ArrabonPage";
@@ -34,7 +35,7 @@ const queryClient = new QueryClient();
 
 type AppScreen = 
   | 'splash' | 'auth' | 'role-selection' | 'kyc' | 'home' | 'map' 
-  | 'settings' | 'properties' | 'property-detail' | 'handymen' | 'chat'
+  | 'settings' | 'properties' | 'property-detail' | 'handymen' | 'handyman-detail' | 'chat'
   | 'owner-dashboard' | 'add-property' | 'handyman-dashboard'
   | 'contracts' | 'create-contract' | 'arrabon' | 'alerts' | 'bills'
   | 'admin' | 'appointments' | 'profile' | 'favorites';
@@ -62,6 +63,7 @@ function AppContent() {
   const [chatUserId, setChatUserId] = useState<string | undefined>();
   const [editPropertyId, setEditPropertyId] = useState<string | undefined>();
   const [selectedProperty, setSelectedProperty] = useState<PropertyData | null>(null);
+  const [selectedHandymanId, setSelectedHandymanId] = useState<string | undefined>();
   const [createContractPropertyId, setCreateContractPropertyId] = useState<string | undefined>();
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -206,7 +208,15 @@ function AppContent() {
           />
         ) : null;
       case 'handymen': 
-        return <HandymenPage onBack={() => setCurrentScreen('home')} onChat={(id) => { setChatUserId(id); setCurrentScreen('chat'); }} />;
+        return <HandymenPage onBack={() => setCurrentScreen('home')} onChat={(id) => { setChatUserId(id); setCurrentScreen('chat'); }} onViewHandyman={(id) => { setSelectedHandymanId(id); setCurrentScreen('handyman-detail'); }} />;
+      case 'handyman-detail':
+        return selectedHandymanId ? (
+          <HandymanDetailPage 
+            handymanId={selectedHandymanId}
+            onBack={() => setCurrentScreen('handymen')}
+            onChat={(id) => { setChatUserId(id); setCurrentScreen('chat'); }}
+          />
+        ) : null;
       case 'chat': 
         return <ChatPage onBack={() => setCurrentScreen(selectedProperty ? 'property-detail' : 'home')} otherUserId={chatUserId} />;
       case 'owner-dashboard': 
