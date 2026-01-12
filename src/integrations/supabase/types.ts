@@ -958,6 +958,18 @@ export type Database = {
         }
         Relationships: []
       }
+      historical_contract_partners: {
+        Row: {
+          avatar_url: string | null
+          avg_rating: number | null
+          full_name: string | null
+          kyc_verified: boolean | null
+          role_type: string | null
+          total_reviews: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       public_handymen: {
         Row: {
           approximate_latitude: number | null
