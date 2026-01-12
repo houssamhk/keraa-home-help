@@ -18,7 +18,8 @@ export function useKycDocuments() {
   /**
    * Generate signed URLs for KYC documents
    * @param filePaths - Object containing file paths (not full URLs)
-   * @param expiresIn - URL expiration time in seconds (default: 3600 = 1 hour)
+   * @param expiresIn - URL expiration time in seconds (default: 300 = 5 minutes for security)
+   * SECURITY: Short expiration prevents URL sharing/leaking
    */
   const getSignedUrls = useCallback(async (
     filePaths: {
@@ -26,7 +27,7 @@ export function useKycDocuments() {
       id_back_url: string | null;
       selfie_url: string | null;
     },
-    expiresIn: number = 3600
+    expiresIn: number = 300 // 5 minutes - short for security
   ): Promise<SignedUrls> => {
     setLoading(true);
     setError(null);
