@@ -892,6 +892,72 @@ export type Database = {
       }
     }
     Views: {
+      appointment_partner_profiles: {
+        Row: {
+          avatar_url: string | null
+          avg_rating: number | null
+          full_name: string | null
+          kyc_verified: boolean | null
+          reputation_badges: string[] | null
+          role_type: string | null
+          total_reviews: number | null
+          user_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          avg_rating?: number | null
+          full_name?: string | null
+          kyc_verified?: boolean | null
+          reputation_badges?: string[] | null
+          role_type?: string | null
+          total_reviews?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          avg_rating?: number | null
+          full_name?: string | null
+          kyc_verified?: boolean | null
+          reputation_badges?: string[] | null
+          role_type?: string | null
+          total_reviews?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      conversation_partner_profiles: {
+        Row: {
+          avatar_url: string | null
+          avg_rating: number | null
+          full_name: string | null
+          kyc_verified: boolean | null
+          reputation_badges: string[] | null
+          role_type: string | null
+          total_reviews: number | null
+          user_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          avg_rating?: number | null
+          full_name?: string | null
+          kyc_verified?: boolean | null
+          reputation_badges?: string[] | null
+          role_type?: string | null
+          total_reviews?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          avg_rating?: number | null
+          full_name?: string | null
+          kyc_verified?: boolean | null
+          reputation_badges?: string[] | null
+          role_type?: string | null
+          total_reviews?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       public_handymen: {
         Row: {
           approximate_latitude: number | null
