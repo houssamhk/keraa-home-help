@@ -894,6 +894,7 @@ export type Database = {
       }
     }
     Functions: {
+      get_profile_kyc_data: { Args: { target_user_id: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
