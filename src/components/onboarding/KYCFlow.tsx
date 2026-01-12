@@ -101,11 +101,9 @@ export function KYCFlow({ onComplete, onBack, onSkip }: KYCFlowProps) {
         
         if (error) throw error;
         
-        const { data: { publicUrl } } = supabase.storage
-          .from('kyc-documents')
-          .getPublicUrl(filePath);
-        
-        return publicUrl;
+        // Store the file path only - URLs will be generated on-demand with signed URLs
+        // This is more secure than storing public URLs for sensitive documents
+        return filePath;
       };
 
       const idFrontUrl = images.idFront ? await uploadImage(images.idFront, 'id-front.jpg') : null;
