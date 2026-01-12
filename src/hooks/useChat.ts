@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -22,11 +23,17 @@ export function useChat() {
     assistantResponseRef.current = "";
 
     try {
+      // Get current session token for authenticated requests
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error("يجب تسجيل الدخول لاستخدام المحادثة");
+      }
+
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ messages: currentMessages }),
       });
