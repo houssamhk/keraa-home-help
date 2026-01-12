@@ -12,13 +12,15 @@ import {
   DollarSign,
   Loader2,
   Pen,
-  Star
+  Star,
+  Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { ReviewDialog } from '@/components/reviews/ReviewDialog';
+import { exportContractToPdf } from '@/utils/contractPdfExport';
 
 interface Contract {
   id: string;
@@ -43,7 +45,7 @@ interface ContractsPageProps {
 }
 
 export function ContractsPage({ onBack, onCreateContract }: ContractsPageProps) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -278,6 +280,25 @@ export function ContractsPage({ onBack, onCreateContract }: ContractsPageProps) 
                         <span>توقيع العقد</span>
                       </Button>
                     )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => {
+                        exportContractToPdf(
+                          contract as any,
+                          { name: isLandlord ? (profile?.full_name || 'المالك') : 'الطرف الآخر', role: 'landlord' },
+                          { name: !isLandlord ? (profile?.full_name || 'المستأجر') : 'الطرف الآخر', role: 'tenant' }
+                        );
+                        toast({
+                          title: 'تم تصدير العقد',
+                          description: 'تم حفظ العقد كملف PDF'
+                        });
+                      }}
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>تصدير PDF</span>
+                    </Button>
                     {contract.status === 'completed' && (
                       <ReviewDialog
                         contractId={contract.id}

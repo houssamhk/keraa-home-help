@@ -1,19 +1,23 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Moon, Sun, Bell, Globe, LogOut, User, Shield, ChevronLeft, BellRing } from 'lucide-react';
+import { ArrowRight, Moon, Sun, Bell, Globe, LogOut, User, Shield, ChevronLeft, BellRing, Database, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { seedDemoData, clearDemoData } from '@/utils/seedDemoData';
 
 interface SettingsPageProps {
   onBack: () => void;
 }
 
 export function SettingsPage({ onBack }: SettingsPageProps) {
-  const { profile, updateSettings, signOut } = useAuth();
+  const { user, profile, updateSettings, signOut } = useAuth();
   const { toast } = useToast();
-  const { isSupported, permission, requestPermission, isLoading: pushLoading } = usePushNotifications();
+  const { isSupported, permission, requestPermission, isLoading: pushLoading, showNotification } = usePushNotifications();
+  const [isLoadingDemo, setIsLoadingDemo] = useState(false);
+  const [isClearingDemo, setIsClearingDemo] = useState(false);
 
   const handleThemeChange = async (isDark: boolean) => {
     await updateSettings({ theme: isDark ? 'dark' : 'light' });
@@ -45,6 +49,58 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
       description: 'نراك قريباً!'
     });
     onBack();
+  };
+
+  const handleSeedDemoData = async () => {
+    if (!user) return;
+    setIsLoadingDemo(true);
+    const result = await seedDemoData(user.id);
+    setIsLoadingDemo(false);
+    
+    if (result.success) {
+      toast({
+        title: 'تم إضافة البيانات التجريبية',
+        description: `${result.createdItems?.properties} عقارات، ${result.createdItems?.handymen} حرفيين، ${result.createdItems?.appointments} مواعيد`
+      });
+    } else {
+      toast({
+        title: 'خطأ',
+        description: result.message,
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleClearDemoData = async () => {
+    if (!user) return;
+    setIsClearingDemo(true);
+    const result = await clearDemoData(user.id);
+    setIsClearingDemo(false);
+    
+    if (result.success) {
+      toast({
+        title: 'تم حذف البيانات',
+        description: result.message
+      });
+    } else {
+      toast({
+        title: 'خطأ',
+        description: result.message,
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleTestNotification = async () => {
+    await showNotification('سكني - إشعار تجريبي', {
+      body: 'هذا إشعار تجريبي للتأكد من عمل الإشعارات بشكل صحيح',
+      icon: '/favicon.ico',
+      tag: 'test-notification'
+    });
+    toast({
+      title: 'تم إرسال إشعار تجريبي',
+      description: 'تحقق من الإشعارات'
+    });
   };
 
   const settings = profile?.settings || { theme: 'dark', language: 'ar', notifications: true };
@@ -185,11 +241,62 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
           </button>
         </motion.div>
 
-        {/* Sign Out */}
+        {/* Demo Data Section */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
+          className="glass-card p-4 space-y-4"
+        >
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">بيانات تجريبية</h3>
+          
+          <div className="flex flex-col gap-3">
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-3"
+              onClick={handleSeedDemoData}
+              disabled={isLoadingDemo}
+            >
+              {isLoadingDemo ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Database className="w-5 h-5 text-primary" />
+              )}
+              إضافة بيانات تجريبية
+            </Button>
+            
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-3 text-destructive hover:text-destructive"
+              onClick={handleClearDemoData}
+              disabled={isClearingDemo}
+            >
+              {isClearingDemo ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Trash2 className="w-5 h-5" />
+              )}
+              حذف البيانات التجريبية
+            </Button>
+
+            {permission === 'granted' && (
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-3"
+                onClick={handleTestNotification}
+              >
+                <BellRing className="w-5 h-5 text-primary" />
+                اختبار الإشعارات
+              </Button>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Sign Out */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
         >
           <Button
             variant="ghost"
