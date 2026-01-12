@@ -859,6 +859,51 @@ export type Database = {
       }
     }
     Views: {
+      public_handymen: {
+        Row: {
+          approximate_latitude: number | null
+          approximate_longitude: number | null
+          created_at: string | null
+          description: string | null
+          id: string | null
+          is_available: boolean | null
+          rate_range: string | null
+          rating: number | null
+          service_area_km: number | null
+          specialty: string[] | null
+          total_reviews: number | null
+          user_id: string | null
+        }
+        Insert: {
+          approximate_latitude?: never
+          approximate_longitude?: never
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          is_available?: boolean | null
+          rate_range?: never
+          rating?: number | null
+          service_area_km?: number | null
+          specialty?: string[] | null
+          total_reviews?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          approximate_latitude?: never
+          approximate_longitude?: never
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          is_available?: boolean | null
+          rate_range?: never
+          rating?: number | null
+          service_area_km?: number | null
+          specialty?: string[] | null
+          total_reviews?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       public_profiles: {
         Row: {
           avatar_url: string | null
@@ -894,6 +939,22 @@ export type Database = {
       }
     }
     Functions: {
+      get_handyman_details: {
+        Args: { handyman_user_id: string }
+        Returns: {
+          description: string
+          hourly_rate: number
+          id: string
+          is_available: boolean
+          latitude: number
+          longitude: number
+          rating: number
+          service_area_km: number
+          specialty: string[]
+          total_reviews: number
+          user_id: string
+        }[]
+      }
       get_profile_kyc_data: { Args: { target_user_id: string }; Returns: Json }
       get_safe_profile: {
         Args: { target_user_id: string }
