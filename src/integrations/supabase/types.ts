@@ -895,11 +895,29 @@ export type Database = {
     }
     Functions: {
       get_profile_kyc_data: { Args: { target_user_id: string }; Returns: Json }
+      get_safe_profile: {
+        Args: { target_user_id: string }
+        Returns: {
+          avatar_url: string
+          avg_rating: number
+          full_name: string
+          kyc_verified: boolean
+          phone: string
+          reputation_badges: string[]
+          role_type: string
+          total_reviews: number
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      has_verified_contract_with: {
+        Args: { target_user_id: string }
         Returns: boolean
       }
     }
