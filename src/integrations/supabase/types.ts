@@ -431,6 +431,39 @@ export type Database = {
         }
         Relationships: []
       }
+      kyc_access_audit: {
+        Row: {
+          accessed_at: string
+          action: string
+          admin_user_id: string
+          details: Json | null
+          id: string
+          ip_address: string | null
+          target_user_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          accessed_at?: string
+          action: string
+          admin_user_id: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          target_user_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          accessed_at?: string
+          action?: string
+          admin_user_id?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          target_user_id?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       kyc_verifications: {
         Row: {
           created_at: string
@@ -939,6 +972,25 @@ export type Database = {
       }
     }
     Functions: {
+      admin_get_kyc_verification: {
+        Args: { target_user_id: string }
+        Returns: {
+          id: string
+          id_back_url: string
+          id_front_url: string
+          id_type: string
+          rejection_reason: string
+          selfie_url: string
+          status: string
+          submitted_at: string
+          user_id: string
+          verified_at: string
+        }[]
+      }
+      admin_verify_kyc: {
+        Args: { new_status: string; reason?: string; target_user_id: string }
+        Returns: boolean
+      }
       get_handyman_details: {
         Args: { handyman_user_id: string }
         Returns: {
