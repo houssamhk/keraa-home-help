@@ -250,14 +250,18 @@ export type Database = {
           end_date: string | null
           handyman_id: string | null
           id: string
+          landlord_consented_at: string | null
           landlord_id: string
+          landlord_phone_consent: boolean | null
           landlord_signed: boolean | null
           landlord_signed_at: string | null
           monthly_amount: number | null
           property_id: string | null
           start_date: string
           status: string
+          tenant_consented_at: string | null
           tenant_id: string
+          tenant_phone_consent: boolean | null
           tenant_signed: boolean | null
           tenant_signed_at: string | null
           terms: string | null
@@ -272,14 +276,18 @@ export type Database = {
           end_date?: string | null
           handyman_id?: string | null
           id?: string
+          landlord_consented_at?: string | null
           landlord_id: string
+          landlord_phone_consent?: boolean | null
           landlord_signed?: boolean | null
           landlord_signed_at?: string | null
           monthly_amount?: number | null
           property_id?: string | null
           start_date: string
           status?: string
+          tenant_consented_at?: string | null
           tenant_id: string
+          tenant_phone_consent?: boolean | null
           tenant_signed?: boolean | null
           tenant_signed_at?: string | null
           terms?: string | null
@@ -294,14 +302,18 @@ export type Database = {
           end_date?: string | null
           handyman_id?: string | null
           id?: string
+          landlord_consented_at?: string | null
           landlord_id?: string
+          landlord_phone_consent?: boolean | null
           landlord_signed?: boolean | null
           landlord_signed_at?: string | null
           monthly_amount?: number | null
           property_id?: string | null
           start_date?: string
           status?: string
+          tenant_consented_at?: string | null
           tenant_id?: string
+          tenant_phone_consent?: boolean | null
           tenant_signed?: boolean | null
           tenant_signed_at?: string | null
           terms?: string | null
@@ -1100,6 +1112,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      give_phone_consent: { Args: { contract_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1111,6 +1124,7 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: boolean
       }
+      revoke_phone_consent: { Args: { contract_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
