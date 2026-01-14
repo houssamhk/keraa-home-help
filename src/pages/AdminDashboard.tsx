@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { 
   ArrowRight, Users, Home, Calendar, Shield, Search, 
   CheckCircle, XCircle, Clock, Eye, Trash2, UserCheck,
-  Building, FileText, Bell
+  Building, FileText, Bell, Image, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,8 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminRole } from '@/hooks/useAdminRole';
+import { useKycDocuments } from '@/hooks/useKycDocuments';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -58,11 +60,21 @@ interface KYCVerification {
   user_id: string;
   status: string;
   id_type: string | null;
+  id_front_url: string | null;
+  id_back_url: string | null;
+  selfie_url: string | null;
   submitted_at: string | null;
+}
+
+interface SignedKycUrls {
+  idFrontUrl: string | null;
+  idBackUrl: string | null;
+  selfieUrl: string | null;
 }
 
 export function AdminDashboard({ onBack }: AdminDashboardProps) {
   const { isAdmin, isLoading: roleLoading } = useAdminRole();
+  const { getSignedUrls, loading: kycDocsLoading } = useKycDocuments();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -75,6 +87,12 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
     pendingAppointments: 0,
     pendingKYC: 0
   });
+  
+  // KYC Document Viewer State
+  const [kycViewerOpen, setKycViewerOpen] = useState(false);
+  const [selectedKyc, setSelectedKyc] = useState<KYCVerification | null>(null);
+  const [signedUrls, setSignedUrls] = useState<SignedKycUrls | null>(null);
+  const [loadingDocs, setLoadingDocs] = useState(false);
 
   useEffect(() => {
     if (isAdmin) {
@@ -135,7 +153,7 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
   const fetchKYCRequests = async () => {
     const { data, error } = await supabase
       .from('kyc_verifications')
-      .select('*')
+      .select('id, user_id, status, id_type, id_front_url, id_back_url, selfie_url, submitted_at')
       .order('created_at', { ascending: false });
     
     if (!error && data) {
@@ -145,6 +163,36 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
         pendingKYC: data.filter(k => k.status === 'submitted').length 
       }));
     }
+  };
+
+  // View KYC documents using secure signed URLs (expire in 5 minutes)
+  const handleViewKycDocuments = async (kyc: KYCVerification) => {
+    setSelectedKyc(kyc);
+    setKycViewerOpen(true);
+    setLoadingDocs(true);
+    setSignedUrls(null);
+    
+    try {
+      const urls = await getSignedUrls({
+        id_front_url: kyc.id_front_url,
+        id_back_url: kyc.id_back_url,
+        selfie_url: kyc.selfie_url,
+      });
+      setSignedUrls(urls);
+    } catch (error) {
+      console.error('Error loading KYC documents:', error);
+      toast.error('فشل في تحميل الوثائق');
+    } finally {
+      setLoadingDocs(false);
+    }
+  };
+
+  // Close KYC viewer and clear sensitive URLs from memory
+  const handleCloseKycViewer = () => {
+    setKycViewerOpen(false);
+    setSelectedKyc(null);
+    // Clear signed URLs from memory for security
+    setSignedUrls(null);
   };
 
   const handleKYCAction = async (kycId: string, userId: string, action: 'verified' | 'rejected') => {
@@ -521,25 +569,36 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
                            kyc.status === 'submitted' ? 'قيد المراجعة' : 'معلق'}
                         </Badge>
                       </div>
-                      {kyc.status === 'submitted' && (
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => handleKYCAction(kyc.id, kyc.user_id, 'verified')}
-                          >
-                            <CheckCircle className="w-4 h-4 ml-1" />
-                            قبول
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleKYCAction(kyc.id, kyc.user_id, 'rejected')}
-                          >
-                            <XCircle className="w-4 h-4 ml-1" />
-                            رفض
-                          </Button>
-                        </div>
-                      )}
+                      <div className="flex gap-2 flex-wrap">
+                        {/* View Documents Button - uses secure signed URLs */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleViewKycDocuments(kyc)}
+                        >
+                          <Image className="w-4 h-4 ml-1" />
+                          عرض الوثائق
+                        </Button>
+                        {kyc.status === 'submitted' && (
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={() => handleKYCAction(kyc.id, kyc.user_id, 'verified')}
+                            >
+                              <CheckCircle className="w-4 h-4 ml-1" />
+                              قبول
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleKYCAction(kyc.id, kyc.user_id, 'rejected')}
+                            >
+                              <XCircle className="w-4 h-4 ml-1" />
+                              رفض
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   ))}
                   {kycRequests.length === 0 && (
@@ -550,6 +609,103 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* KYC Document Viewer Dialog - Uses Secure Signed URLs */}
+        <Dialog open={kycViewerOpen} onOpenChange={handleCloseKycViewer}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-primary" />
+                مراجعة وثائق التحقق
+              </DialogTitle>
+              <p className="text-xs text-muted-foreground">
+                ⚠️ هذه الروابط آمنة وتنتهي صلاحيتها خلال 5 دقائق
+              </p>
+            </DialogHeader>
+            
+            {loadingDocs ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <span className="mr-2">جاري تحميل الوثائق...</span>
+              </div>
+            ) : signedUrls ? (
+              <div className="space-y-4">
+                {/* ID Front */}
+                <div>
+                  <h4 className="font-medium mb-2 text-foreground">الوجه الأمامي للهوية</h4>
+                  {signedUrls.idFrontUrl ? (
+                    <img 
+                      src={signedUrls.idFrontUrl} 
+                      alt="ID Front" 
+                      className="w-full max-h-64 object-contain rounded-lg border border-border"
+                    />
+                  ) : (
+                    <p className="text-muted-foreground text-sm">غير متوفر</p>
+                  )}
+                </div>
+                
+                {/* ID Back */}
+                <div>
+                  <h4 className="font-medium mb-2 text-foreground">الوجه الخلفي للهوية</h4>
+                  {signedUrls.idBackUrl ? (
+                    <img 
+                      src={signedUrls.idBackUrl} 
+                      alt="ID Back" 
+                      className="w-full max-h-64 object-contain rounded-lg border border-border"
+                    />
+                  ) : (
+                    <p className="text-muted-foreground text-sm">غير متوفر</p>
+                  )}
+                </div>
+                
+                {/* Selfie */}
+                <div>
+                  <h4 className="font-medium mb-2 text-foreground">الصورة الشخصية</h4>
+                  {signedUrls.selfieUrl ? (
+                    <img 
+                      src={signedUrls.selfieUrl} 
+                      alt="Selfie" 
+                      className="w-full max-h-64 object-contain rounded-lg border border-border"
+                    />
+                  ) : (
+                    <p className="text-muted-foreground text-sm">غير متوفر</p>
+                  )}
+                </div>
+                
+                {/* Action buttons in dialog */}
+                {selectedKyc?.status === 'submitted' && (
+                  <div className="flex gap-2 pt-4 border-t border-border">
+                    <Button
+                      className="flex-1"
+                      onClick={() => {
+                        handleKYCAction(selectedKyc.id, selectedKyc.user_id, 'verified');
+                        handleCloseKycViewer();
+                      }}
+                    >
+                      <CheckCircle className="w-4 h-4 ml-1" />
+                      قبول التحقق
+                    </Button>
+                    <Button
+                      className="flex-1"
+                      variant="destructive"
+                      onClick={() => {
+                        handleKYCAction(selectedKyc.id, selectedKyc.user_id, 'rejected');
+                        handleCloseKycViewer();
+                      }}
+                    >
+                      <XCircle className="w-4 h-4 ml-1" />
+                      رفض
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">
+                فشل في تحميل الوثائق
+              </p>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </motion.div>
   );
