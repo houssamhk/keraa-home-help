@@ -53,14 +53,25 @@ export function ProfilePage({ userId, onBack, onSettings, onNavigate }: ProfileP
   const fetchProfile = async () => {
     if (!targetUserId) return;
 
+    // Use the secure get_safe_profile function instead of direct table access
+    // This ensures phone is only visible to: owner, admins, or with mutual consent
     const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', targetUserId)
+      .rpc('get_safe_profile', { target_user_id: targetUserId })
       .maybeSingle();
 
     if (!error && data) {
-      setProfile(data as UserProfile);
+      // Also fetch created_at separately since it's not in the safe profile function
+      const { data: profileMeta } = await supabase
+        .from('profiles')
+        .select('created_at')
+        .eq('user_id', targetUserId)
+        .maybeSingle();
+      
+      setProfile({
+        ...data,
+        id: data.user_id, // Map user_id to id for compatibility
+        created_at: profileMeta?.created_at || new Date().toISOString(),
+      } as UserProfile);
     }
     setLoading(false);
   };
