@@ -8,6 +8,8 @@ import { SplashScreen } from "@/components/onboarding/SplashScreen";
 import { RoleSelection } from "@/components/onboarding/RoleSelection";
 import { KYCFlow } from "@/components/onboarding/KYCFlow";
 import { AIVoiceHub } from "@/components/home/AIVoiceHub";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
 import { LeafletMap } from "@/components/map/LeafletMap";
 import { AuthPage } from "@/pages/AuthPage";
 import { SettingsPage } from "@/pages/SettingsPage";
@@ -257,6 +259,8 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <OfflineIndicator />
+        <InstallPrompt />
         <AppContent />
       </TooltipProvider>
     </AuthProvider>
