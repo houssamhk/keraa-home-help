@@ -30,6 +30,8 @@ import { AdminDashboard } from "@/pages/AdminDashboard";
 import { AppointmentsPage } from "@/pages/AppointmentsPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { FavoritesPage } from "@/pages/FavoritesPage";
+import { ServiceRequestsPage } from "@/pages/ServiceRequestsPage";
+import { WalletPage } from "@/pages/WalletPage";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import type { UserRole } from "@/types/user";
 
@@ -40,7 +42,7 @@ type AppScreen =
   | 'settings' | 'properties' | 'property-detail' | 'handymen' | 'handyman-detail' | 'chat'
   | 'owner-dashboard' | 'add-property' | 'handyman-dashboard'
   | 'contracts' | 'create-contract' | 'arrabon' | 'alerts' | 'bills'
-  | 'admin' | 'appointments' | 'profile' | 'favorites';
+  | 'admin' | 'appointments' | 'profile' | 'favorites' | 'service-requests' | 'wallet';
 
 interface PropertyData {
   id: string;
@@ -132,7 +134,8 @@ function AppContent() {
       '/handyman-dashboard': 'handyman-dashboard', '/contracts': 'contracts',
       '/arrabon': 'arrabon', '/alerts': 'alerts', '/bills': 'bills',
       '/admin': 'admin', '/appointments': 'appointments', '/profile': 'profile',
-      '/kyc': 'kyc', '/favorites': 'favorites'
+      '/kyc': 'kyc', '/favorites': 'favorites', '/service-requests': 'service-requests',
+      '/wallet': 'wallet'
     };
     setChatUserId(undefined);
     setCurrentScreen(routeMap[route] || 'home');
@@ -241,6 +244,10 @@ function AppContent() {
         return <AdminDashboard onBack={() => setCurrentScreen('home')} />;
       case 'appointments': 
         return <AppointmentsPage onBack={() => setCurrentScreen('home')} />;
+      case 'service-requests':
+        return <ServiceRequestsPage onBack={() => setCurrentScreen('home')} onChat={(id) => { setChatUserId(id); setCurrentScreen('chat'); }} />;
+      case 'wallet':
+        return <WalletPage onBack={() => setCurrentScreen('home')} />;
       default: 
         return null;
     }

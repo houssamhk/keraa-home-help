@@ -741,6 +741,42 @@ export type Database = {
           },
         ]
       }
+      push_subscriptions: {
+        Row: {
+          auth_key: string
+          created_at: string
+          device_info: Json | null
+          endpoint: string
+          id: string
+          is_active: boolean | null
+          p256dh_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auth_key: string
+          created_at?: string
+          device_info?: Json | null
+          endpoint: string
+          id?: string
+          is_active?: boolean | null
+          p256dh_key: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auth_key?: string
+          created_at?: string
+          device_info?: Json | null
+          endpoint?: string
+          id?: string
+          is_active?: boolean | null
+          p256dh_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       reports: {
         Row: {
           admin_notes: string | null
@@ -884,6 +920,81 @@ export type Database = {
         }
         Relationships: []
       }
+      service_requests: {
+        Row: {
+          address: string | null
+          cancellation_reason: string | null
+          client_id: string
+          client_rating: number | null
+          client_review: string | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          estimated_price: number | null
+          final_price: number | null
+          handyman_id: string
+          handyman_rating: number | null
+          handyman_review: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          preferred_date: string
+          preferred_time: string | null
+          service_type: string
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          cancellation_reason?: string | null
+          client_id: string
+          client_rating?: number | null
+          client_review?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_price?: number | null
+          final_price?: number | null
+          handyman_id: string
+          handyman_rating?: number | null
+          handyman_review?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          preferred_date: string
+          preferred_time?: string | null
+          service_type: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          cancellation_reason?: string | null
+          client_id?: string
+          client_rating?: number | null
+          client_review?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_price?: number | null
+          final_price?: number | null
+          handyman_id?: string
+          handyman_rating?: number | null
+          handyman_review?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          preferred_date?: string
+          preferred_time?: string | null
+          service_type?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -898,6 +1009,83 @@ export type Database = {
         Update: {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          metadata: Json | null
+          reference_id: string | null
+          reference_type: string | null
+          status: string
+          type: string
+          wallet_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          reference_id?: string | null
+          reference_type?: string | null
+          status?: string
+          type: string
+          wallet_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          reference_id?: string | null
+          reference_type?: string | null
+          status?: string
+          type?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallets: {
+        Row: {
+          balance: number
+          created_at: string
+          currency: string
+          id: string
+          pending_balance: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          pending_balance?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          pending_balance?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -1114,6 +1302,7 @@ export type Database = {
         Args: { new_status: string; reason?: string; target_user_id: string }
         Returns: boolean
       }
+      ensure_user_wallet: { Args: never; Returns: string }
       get_handyman_details: {
         Args: { handyman_user_id: string }
         Returns: {
@@ -1155,6 +1344,25 @@ export type Database = {
       }
       has_verified_contract_with: {
         Args: { target_user_id: string }
+        Returns: boolean
+      }
+      hold_escrow: {
+        Args: {
+          p_amount: number
+          p_description?: string
+          p_reference_id: string
+          p_wallet_id: string
+        }
+        Returns: boolean
+      }
+      release_escrow: {
+        Args: {
+          p_amount: number
+          p_description?: string
+          p_reference_id: string
+          p_to_user_id: string
+          p_wallet_id: string
+        }
         Returns: boolean
       }
       revoke_phone_consent: { Args: { contract_id: string }; Returns: boolean }
