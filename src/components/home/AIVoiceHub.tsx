@@ -58,6 +58,7 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
     { id: 'contracts', icon: MessageSquare, label: 'العقود', route: '/contracts' },
     { id: 'bills', icon: CreditCard, label: 'الفواتير', route: '/bills' },
     { id: 'appointments', icon: Calendar, label: 'المواعيد', route: '/appointments' },
+    { id: 'service-requests', icon: Wrench, label: 'طلباتي', route: '/service-requests' },
   ];
 
   const suggestions = [
