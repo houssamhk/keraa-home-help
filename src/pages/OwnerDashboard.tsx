@@ -9,9 +9,9 @@ import {
   Trash2, 
   MessageSquare,
   TrendingUp,
-  Users,
-  DollarSign,
-  BarChart3
+  Star,
+  BarChart3,
+  Building2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -20,6 +20,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { usePropertyViews } from '@/hooks/usePropertyViews';
 import { OwnerAnalytics } from '@/components/dashboard/OwnerAnalytics';
+import { FeaturedListingDialog } from '@/components/premium/FeaturedListingDialog';
+import { AgencySubscriptionDialog } from '@/components/premium/AgencySubscriptionDialog';
+import { FeaturedBadge } from '@/components/premium/FeaturedBadge';
 
 interface Property {
   id: string;
@@ -31,6 +34,7 @@ interface Property {
   property_type: string;
   is_available: boolean;
   created_at: string;
+  is_featured?: boolean;
 }
 
 interface OwnerDashboardProps {
@@ -82,6 +86,17 @@ export function OwnerDashboard({ onBack, onAddProperty, onEditProperty }: OwnerD
     if (!user) return;
     
     setIsLoading(true);
+    
+    // Fetch featured listings for this user
+    const { data: featuredData } = await supabase
+      .from('featured_listings')
+      .select('property_id')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .gt('expires_at', new Date().toISOString());
+    
+    const featuredIds = new Set(featuredData?.map(f => f.property_id) || []);
+    
     const { data, error } = await supabase
       .from('properties')
       .select('*')
@@ -89,7 +104,11 @@ export function OwnerDashboard({ onBack, onAddProperty, onEditProperty }: OwnerD
       .order('created_at', { ascending: false });
     
     if (!error && data) {
-      setProperties(data);
+      const propertiesWithFeatured = data.map(p => ({
+        ...p,
+        is_featured: featuredIds.has(p.id)
+      }));
+      setProperties(propertiesWithFeatured);
       setStats(prev => ({
         ...prev,
         totalProperties: data.length,
@@ -156,6 +175,19 @@ export function OwnerDashboard({ onBack, onAddProperty, onEditProperty }: OwnerD
             <Plus className="w-4 h-4" />
             <span>إضافة عقار</span>
           </Button>
+        </div>
+        
+        {/* Agency Subscription Button */}
+        <div className="px-6 mb-4">
+          <AgencySubscriptionDialog 
+            trigger={
+              <Button variant="outline" size="sm" className="w-full gap-2">
+                <Building2 className="w-4 h-4" />
+                <span>اشتراك الوكالات - باقات احترافية</span>
+              </Button>
+            }
+            onSuccess={fetchProperties}
+          />
         </div>
       </motion.header>
 
@@ -318,7 +350,10 @@ export function OwnerDashboard({ onBack, onAddProperty, onEditProperty }: OwnerD
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
-                        <h3 className="font-medium text-foreground">{property.title}</h3>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-medium text-foreground">{property.title}</h3>
+                          {property.is_featured && <FeaturedBadge size="sm" />}
+                        </div>
                         <p className="text-sm text-muted-foreground">{property.address}، {property.city}</p>
                       </div>
                       <span className={`px-2 py-1 rounded-full text-xs ${
@@ -335,6 +370,19 @@ export function OwnerDashboard({ onBack, onAddProperty, onEditProperty }: OwnerD
                         {formatPrice(property.price, property.price_period)}
                       </span>
                       <div className="flex gap-2">
+                        {/* Featured Listing Button */}
+                        {!property.is_featured && (
+                          <FeaturedListingDialog
+                            propertyId={property.id}
+                            propertyTitle={property.title}
+                            trigger={
+                              <Button variant="gold" size="icon" title="تمييز الإعلان">
+                                <Star className="w-4 h-4" />
+                              </Button>
+                            }
+                            onSuccess={fetchProperties}
+                          />
+                        )}
                         <Button 
                           variant="glass" 
                           size="icon"

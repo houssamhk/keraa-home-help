@@ -7,6 +7,7 @@ import { AISearchBar } from '@/components/search/AISearchBar';
 import { SearchAlertDialog } from '@/components/alerts/SearchAlertDialog';
 import { useFavorites } from '@/hooks/useFavorites';
 import { PropertyCardSkeleton } from '@/components/common/PropertyCardSkeleton';
+import { FeaturedBadge } from '@/components/premium/FeaturedBadge';
 
 interface Property {
   id: string;
@@ -23,6 +24,7 @@ interface Property {
   amenities?: string[];
   description?: string;
   owner_id?: string;
+  is_featured?: boolean;
 }
 
 interface SearchFilters {
@@ -53,6 +55,15 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
   const fetchProperties = async () => {
     setIsLoading(true);
     
+    // First get featured property IDs
+    const { data: featuredData } = await supabase
+      .from('featured_listings')
+      .select('property_id')
+      .eq('status', 'active')
+      .gt('expires_at', new Date().toISOString());
+    
+    const featuredIds = new Set(featuredData?.map(f => f.property_id) || []);
+    
     let query = supabase
       .from('properties')
       .select('*')
@@ -80,7 +91,10 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
     const { data, error } = await query;
     
     if (!error && data) {
-      let filteredData = data as Property[];
+      let filteredData = data.map(p => ({
+        ...p,
+        is_featured: featuredIds.has(p.id)
+      })) as Property[];
       
       // Filter by amenities if specified
       if (filters.amenities && filters.amenities.length > 0) {
@@ -89,6 +103,13 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
           return filters.amenities!.every(a => p.amenities!.includes(a));
         });
       }
+      
+      // Sort: featured properties first, then by date
+      filteredData.sort((a, b) => {
+        if (a.is_featured && !b.is_featured) return -1;
+        if (!a.is_featured && b.is_featured) return 1;
+        return 0;
+      });
       
       setProperties(filteredData);
     }
@@ -248,6 +269,12 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
                     <span className="text-muted-foreground text-sm">
                       {getPropertyTypeText(property.property_type)}
                     </span>
+                  </div>
+                )}
+                {/* Featured Badge */}
+                {property.is_featured && (
+                  <div className="absolute top-3 right-3">
+                    <FeaturedBadge size="sm" />
                   </div>
                 )}
                 <button
