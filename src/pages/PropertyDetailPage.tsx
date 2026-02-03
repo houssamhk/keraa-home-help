@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   ArrowRight, MapPin, Bed, Bath, Ruler, Heart, MessageCircle, 
-  FileText, CreditCard, Share2, Phone, Calendar, Home,
-  Flame, Snowflake, Car, Trees, Waves, Wifi, Armchair, Flag
+  FileText, CreditCard, Share2, Calendar, Home,
+  Flame, Snowflake, Car, Trees, Waves, Wifi, Armchair, Flag, Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,7 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { usePropertyViews } from '@/hooks/usePropertyViews';
 import { ReportDialog } from '@/components/common/ReportDialog';
 import { BookViewingDialog } from '@/components/property/BookViewingDialog';
+import { VerificationServiceDialog } from '@/components/premium/VerificationServiceDialog';
 import { toast } from 'sonner';
 
 interface Property {
@@ -338,6 +339,32 @@ export function PropertyDetailPage({
                 >
                   حجز
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Verification Service Card */}
+          <Card className="bg-green-500/5 border-green-500/20">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-500/20 rounded-lg">
+                    <Shield className="w-5 h-5 text-green-500" />
+                  </div>
+                  <div>
+                    <p className="font-medium">التقرير الموثوق</p>
+                    <p className="text-xs text-muted-foreground">فحص العقار وتوثيق الأوراق</p>
+                  </div>
+                </div>
+                <VerificationServiceDialog
+                  propertyId={property.id}
+                  propertyTitle={property.title}
+                  trigger={
+                    <Button size="sm" variant="outline" className="text-green-600 border-green-500/30 hover:bg-green-500/10">
+                      طلب
+                    </Button>
+                  }
+                />
               </div>
             </CardContent>
           </Card>

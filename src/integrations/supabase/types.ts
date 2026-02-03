@@ -14,6 +14,125 @@ export type Database = {
   }
   public: {
     Tables: {
+      agency_packages: {
+        Row: {
+          analytics_access: boolean | null
+          created_at: string
+          dedicated_support: boolean | null
+          id: string
+          is_active: boolean | null
+          max_listings: number | null
+          monthly_price: number
+          name: string
+          name_ar: string
+          priority_display: boolean | null
+          verified_badge: boolean | null
+        }
+        Insert: {
+          analytics_access?: boolean | null
+          created_at?: string
+          dedicated_support?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          max_listings?: number | null
+          monthly_price: number
+          name: string
+          name_ar: string
+          priority_display?: boolean | null
+          verified_badge?: boolean | null
+        }
+        Update: {
+          analytics_access?: boolean | null
+          created_at?: string
+          dedicated_support?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          max_listings?: number | null
+          monthly_price?: number
+          name?: string
+          name_ar?: string
+          priority_display?: boolean | null
+          verified_badge?: boolean | null
+        }
+        Relationships: []
+      }
+      agency_subscriptions: {
+        Row: {
+          agency_address: string | null
+          agency_logo_url: string | null
+          agency_name: string
+          agency_phone: string | null
+          auto_renew: boolean | null
+          commercial_register: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          last_payment_at: string | null
+          next_payment_at: string | null
+          package_id: string
+          payment_method: string | null
+          rejection_reason: string | null
+          starts_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          agency_address?: string | null
+          agency_logo_url?: string | null
+          agency_name: string
+          agency_phone?: string | null
+          auto_renew?: boolean | null
+          commercial_register?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          last_payment_at?: string | null
+          next_payment_at?: string | null
+          package_id: string
+          payment_method?: string | null
+          rejection_reason?: string | null
+          starts_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          agency_address?: string | null
+          agency_logo_url?: string | null
+          agency_name?: string
+          agency_phone?: string | null
+          auto_renew?: boolean | null
+          commercial_register?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          last_payment_at?: string | null
+          next_payment_at?: string | null
+          package_id?: string
+          payment_method?: string | null
+          rejection_reason?: string | null
+          starts_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_subscriptions_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "agency_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointments: {
         Row: {
           appointment_date: string
@@ -395,6 +514,98 @@ export type Database = {
           },
         ]
       }
+      featured_listings: {
+        Row: {
+          created_at: string
+          duration_days: number
+          expires_at: string | null
+          feature_type: string
+          id: string
+          payment_method: string
+          payment_proof_url: string | null
+          payment_reference: string | null
+          price_paid: number
+          property_id: string
+          starts_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration_days: number
+          expires_at?: string | null
+          feature_type?: string
+          id?: string
+          payment_method: string
+          payment_proof_url?: string | null
+          payment_reference?: string | null
+          price_paid: number
+          property_id: string
+          starts_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration_days?: number
+          expires_at?: string | null
+          feature_type?: string
+          id?: string
+          payment_method?: string
+          payment_proof_url?: string | null
+          payment_reference?: string | null
+          price_paid?: number
+          property_id?: string
+          starts_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "featured_listings_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      featured_pricing: {
+        Row: {
+          created_at: string
+          discount_percentage: number | null
+          duration_days: number
+          id: string
+          is_active: boolean | null
+          price: number
+        }
+        Insert: {
+          created_at?: string
+          discount_percentage?: number | null
+          duration_days: number
+          id?: string
+          is_active?: boolean | null
+          price: number
+        }
+        Update: {
+          created_at?: string
+          discount_percentage?: number | null
+          duration_days?: number
+          id?: string
+          is_active?: boolean | null
+          price?: number
+        }
+        Relationships: []
+      }
       handymen: {
         Row: {
           created_at: string | null
@@ -589,6 +800,57 @@ export type Database = {
           title?: string
           type?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      payment_history: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string | null
+          id: string
+          payment_method: string
+          payment_proof_url: string | null
+          payment_reference: string | null
+          payment_type: string
+          reference_id: string
+          rejection_reason: string | null
+          status: string
+          user_id: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string | null
+          id?: string
+          payment_method: string
+          payment_proof_url?: string | null
+          payment_reference?: string | null
+          payment_type: string
+          reference_id: string
+          rejection_reason?: string | null
+          status?: string
+          user_id: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string | null
+          id?: string
+          payment_method?: string
+          payment_proof_url?: string | null
+          payment_reference?: string | null
+          payment_type?: string
+          reference_id?: string
+          rejection_reason?: string | null
+          status?: string
+          user_id?: string
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Relationships: []
       }
@@ -1013,6 +1275,126 @@ export type Database = {
         }
         Relationships: []
       }
+      verification_requests: {
+        Row: {
+          assigned_to: string | null
+          completed_at: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          paid_at: string | null
+          payment_method: string
+          payment_proof_url: string | null
+          payment_reference: string | null
+          preferred_date: string | null
+          price_paid: number
+          property_id: string
+          report_summary: string | null
+          report_url: string | null
+          requester_id: string
+          service_id: string
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          payment_method: string
+          payment_proof_url?: string | null
+          payment_reference?: string | null
+          preferred_date?: string | null
+          price_paid: number
+          property_id: string
+          report_summary?: string | null
+          report_url?: string | null
+          requester_id: string
+          service_id: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string
+          payment_proof_url?: string | null
+          payment_reference?: string | null
+          preferred_date?: string | null
+          price_paid?: number
+          property_id?: string
+          report_summary?: string | null
+          report_url?: string | null
+          requester_id?: string
+          service_id?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verification_requests_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "verification_requests_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "verification_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      verification_services: {
+        Row: {
+          created_at: string
+          description: string | null
+          description_ar: string | null
+          estimated_days: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          name_ar: string
+          price: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          description_ar?: string | null
+          estimated_days?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          name_ar: string
+          price: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          description_ar?: string | null
+          estimated_days?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          name_ar?: string
+          price?: number
+        }
+        Relationships: []
+      }
       wallet_transactions: {
         Row: {
           amount: number
@@ -1335,6 +1717,7 @@ export type Database = {
         }[]
       }
       give_phone_consent: { Args: { contract_id: string }; Returns: boolean }
+      has_agency_subscription: { Args: { user_uuid: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1354,6 +1737,18 @@ export type Database = {
           p_wallet_id: string
         }
         Returns: boolean
+      }
+      is_property_featured: {
+        Args: { property_uuid: string }
+        Returns: boolean
+      }
+      pay_for_featured_listing: {
+        Args: {
+          p_duration_days: number
+          p_feature_type?: string
+          p_property_id: string
+        }
+        Returns: string
       }
       release_escrow: {
         Args: {

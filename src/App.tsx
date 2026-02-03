@@ -32,6 +32,7 @@ import { ProfilePage } from "@/pages/ProfilePage";
 import { FavoritesPage } from "@/pages/FavoritesPage";
 import { ServiceRequestsPage } from "@/pages/ServiceRequestsPage";
 import { WalletPage } from "@/pages/WalletPage";
+import { AgencyDashboard } from "@/pages/AgencyDashboard";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import type { UserRole } from "@/types/user";
 
@@ -42,7 +43,8 @@ type AppScreen =
   | 'settings' | 'properties' | 'property-detail' | 'handymen' | 'handyman-detail' | 'chat'
   | 'owner-dashboard' | 'add-property' | 'handyman-dashboard'
   | 'contracts' | 'create-contract' | 'arrabon' | 'alerts' | 'bills'
-  | 'admin' | 'appointments' | 'profile' | 'favorites' | 'service-requests' | 'wallet';
+  | 'admin' | 'appointments' | 'profile' | 'favorites' | 'service-requests' | 'wallet'
+  | 'agency-dashboard';
 
 interface PropertyData {
   id: string;
@@ -135,7 +137,7 @@ function AppContent() {
       '/arrabon': 'arrabon', '/alerts': 'alerts', '/bills': 'bills',
       '/admin': 'admin', '/appointments': 'appointments', '/profile': 'profile',
       '/kyc': 'kyc', '/favorites': 'favorites', '/service-requests': 'service-requests',
-      '/wallet': 'wallet'
+      '/wallet': 'wallet', '/agency-dashboard': 'agency-dashboard'
     };
     setChatUserId(undefined);
     setCurrentScreen(routeMap[route] || 'home');
@@ -248,6 +250,8 @@ function AppContent() {
         return <ServiceRequestsPage onBack={() => setCurrentScreen('home')} onChat={(id) => { setChatUserId(id); setCurrentScreen('chat'); }} />;
       case 'wallet':
         return <WalletPage onBack={() => setCurrentScreen('home')} />;
+      case 'agency-dashboard':
+        return <AgencyDashboard onBack={() => setCurrentScreen('home')} />;
       default: 
         return null;
     }
