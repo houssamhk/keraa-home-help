@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { 
   ArrowRight, Users, Home, Calendar, Shield, Search, 
   CheckCircle, XCircle, Clock, Eye, Trash2, UserCheck,
-  Building, FileText, Bell, Image, Loader2
+  Building, FileText, Bell, Image, Loader2, CreditCard
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +15,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminRole } from '@/hooks/useAdminRole';
 import { useKycDocuments } from '@/hooks/useKycDocuments';
+import { PaymentManagement } from '@/components/admin/PaymentManagement';
+import { DemandHeatmap } from '@/components/admin/DemandHeatmap';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -362,11 +364,13 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
 
         {/* Tabs */}
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-4">
+          <TabsList className="grid w-full grid-cols-6 mb-4">
             <TabsTrigger value="users" className="text-xs">المستخدمين</TabsTrigger>
             <TabsTrigger value="properties" className="text-xs">العقارات</TabsTrigger>
             <TabsTrigger value="appointments" className="text-xs">المواعيد</TabsTrigger>
             <TabsTrigger value="kyc" className="text-xs">التحقق</TabsTrigger>
+            <TabsTrigger value="payments" className="text-xs">المدفوعات</TabsTrigger>
+            <TabsTrigger value="heatmap" className="text-xs">الخريطة</TabsTrigger>
           </TabsList>
 
           {/* Users Tab */}
@@ -607,6 +611,16 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Payments Tab */}
+          <TabsContent value="payments">
+            <PaymentManagement />
+          </TabsContent>
+
+          {/* Heatmap Tab */}
+          <TabsContent value="heatmap">
+            <DemandHeatmap />
           </TabsContent>
         </Tabs>
 
