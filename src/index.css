@@ -156,7 +156,7 @@
   }
 }
 
-/* Mobile optimizations */
+/* Mobile-first optimizations for native app */
 @supports (padding: max(0px)) {
   .safe-top {
     padding-top: max(1rem, env(safe-area-inset-top));
@@ -164,6 +164,23 @@
   .safe-bottom {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
+  .safe-left {
+    padding-left: max(0px, env(safe-area-inset-left));
+  }
+  .safe-right {
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
+}
+
+/* Full height on mobile */
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
 }
 
 /* Smooth scrolling for mobile */
@@ -175,6 +192,42 @@
 /* Remove tap highlight on mobile */
 * {
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* Touch-friendly interactions */
+button, a, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* Prevent text selection on UI elements */
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Keyboard visibility */
+body.keyboard-visible {
+  /* Adjust layout when keyboard is shown */
+}
+
+body.keyboard-visible .fixed-bottom-actions {
+  display: none;
+}
+
+/* Native app pull-to-refresh prevention */
+body {
+  overscroll-behavior-y: contain;
+}
+
+/* Mobile bottom navigation safe area */
+.mobile-nav {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+/* Native app status bar spacing */
+.native-header {
+  padding-top: max(1rem, calc(env(safe-area-inset-top) + 0.5rem));
 }
 
 /* Leaflet map styles */
