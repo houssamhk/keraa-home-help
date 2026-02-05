@@ -4,12 +4,14 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AnimatePresence } from "framer-motion";
+import { Capacitor } from "@capacitor/core";
 import { SplashScreen } from "@/components/onboarding/SplashScreen";
 import { RoleSelection } from "@/components/onboarding/RoleSelection";
 import { KYCFlow } from "@/components/onboarding/KYCFlow";
 import { AIVoiceHub } from "@/components/home/AIVoiceHub";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
+import { MobileBottomNav } from "@/components/navigation/MobileBottomNav";
 import { LeafletMap } from "@/components/map/LeafletMap";
 import { AuthPage } from "@/pages/AuthPage";
 import { SettingsPage } from "@/pages/SettingsPage";
@@ -46,6 +48,12 @@ type AppScreen =
   | 'admin' | 'appointments' | 'profile' | 'favorites' | 'service-requests' | 'wallet'
   | 'agency-dashboard';
 
+// Screens that should show bottom navigation
+const SCREENS_WITH_NAV: AppScreen[] = [
+  'home', 'properties', 'handymen', 'chat', 'profile', 'favorites',
+  'owner-dashboard', 'handyman-dashboard', 'contracts', 'wallet'
+];
+
 interface PropertyData {
   id: string;
   title: string;
@@ -72,6 +80,7 @@ function AppContent() {
   const [selectedHandymanId, setSelectedHandymanId] = useState<string | undefined>();
   const [createContractPropertyId, setCreateContractPropertyId] = useState<string | undefined>();
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isNative] = useState(() => Capacitor.isNativePlatform());
 
   // Handle splash screen completion and initial routing
   const handleSplashComplete = () => {
@@ -84,13 +93,10 @@ function AppContent() {
     if (isLoading) return;
 
     if (!user) {
-      // Not logged in - show auth
       setCurrentScreen('auth');
     } else if (!profile?.role_type) {
-      // Logged in but no role selected
       setCurrentScreen('role-selection');
     } else {
-      // Logged in with role - go to home (KYC is optional, can be done later)
       setCurrentScreen('home');
     }
   };
@@ -99,14 +105,12 @@ function AppContent() {
   useEffect(() => {
     if (!isInitialized || isLoading) return;
     
-    // If user logs out, go to auth
     if (!user && currentScreen !== 'auth' && currentScreen !== 'splash') {
       setCurrentScreen('auth');
     }
   }, [user, isLoading, isInitialized, currentScreen]);
 
   const handleAuthSuccess = () => {
-    // After login/signup, check if role is set
     if (profile?.role_type) {
       setCurrentScreen('home');
     } else {
@@ -115,8 +119,6 @@ function AppContent() {
   };
 
   const handleRoleSelect = async (role: UserRole) => {
-    // Role will be saved in RoleSelection component
-    // Then show KYC with skip option
     setCurrentScreen('kyc');
   };
 
@@ -125,7 +127,6 @@ function AppContent() {
   };
 
   const handleKYCSkip = () => {
-    // User skipped KYC - still go to home but they'll have restrictions
     setCurrentScreen('home');
   };
 
@@ -137,7 +138,7 @@ function AppContent() {
       '/arrabon': 'arrabon', '/alerts': 'alerts', '/bills': 'bills',
       '/admin': 'admin', '/appointments': 'appointments', '/profile': 'profile',
       '/kyc': 'kyc', '/favorites': 'favorites', '/service-requests': 'service-requests',
-      '/wallet': 'wallet', '/agency-dashboard': 'agency-dashboard'
+      '/wallet': 'wallet', '/agency-dashboard': 'agency-dashboard', '/home': 'home'
     };
     setChatUserId(undefined);
     setCurrentScreen(routeMap[route] || 'home');
@@ -158,8 +159,8 @@ function AppContent() {
     setCurrentScreen('create-contract');
   };
 
-  // Check if user needs KYC for certain actions
   const needsKYC = user && profile && !profile.kyc_verified;
+  const showBottomNav = user && SCREENS_WITH_NAV.includes(currentScreen);
 
   const renderScreen = () => {
     switch (currentScreen) {
@@ -190,7 +191,6 @@ function AppContent() {
           <LeafletMap 
             onBack={() => setCurrentScreen('home')} 
             onViewProperty={(id) => {
-              // Fetch property and navigate
               setCurrentScreen('properties');
             }}
           />
@@ -258,8 +258,20 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <AnimatePresence mode="wait">{renderScreen()}</AnimatePresence>
+    <div className="h-full flex flex-col bg-background overflow-hidden">
+      {/* Main content area */}
+      <div className={`flex-1 overflow-auto ${showBottomNav ? 'pb-16' : ''}`}>
+        <AnimatePresence mode="wait">{renderScreen()}</AnimatePresence>
+      </div>
+      
+      {/* Bottom Navigation for mobile */}
+      {showBottomNav && (
+        <MobileBottomNav 
+          currentScreen={currentScreen}
+          onNavigate={handleNavigate}
+          userRole={profile?.role_type as UserRole}
+        />
+      )}
     </div>
   );
 }
@@ -271,7 +283,8 @@ const App = () => (
         <Toaster />
         <Sonner />
         <OfflineIndicator />
-        <InstallPrompt />
+        {/* Only show PWA install prompt on web */}
+        {!Capacitor.isNativePlatform() && <InstallPrompt />}
         <AppContent />
       </TooltipProvider>
     </AuthProvider>

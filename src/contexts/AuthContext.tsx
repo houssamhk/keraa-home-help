@@ -8,7 +8,7 @@ interface Profile {
   full_name: string | null;
   phone: string | null;
   avatar_url: string | null;
-  role_type: 'tenant' | 'provider' | 'owner';
+  role_type: 'tenant' | 'provider' | 'owner' | 'handyman';
   kyc_verified: boolean;
   settings: {
     theme: 'dark' | 'light';
