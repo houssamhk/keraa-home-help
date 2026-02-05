@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, MapPin, Bed, Bath, Ruler, Heart } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { AISearchBar } from '@/components/search/AISearchBar';
 import { SearchAlertDialog } from '@/components/alerts/SearchAlertDialog';
-import { useFavorites } from '@/hooks/useFavorites';
 import { PropertyCardSkeleton } from '@/components/common/PropertyCardSkeleton';
-import { FeaturedBadge } from '@/components/premium/FeaturedBadge';
+import { PropertyCard } from '@/components/property/PropertyCard';
 
 interface Property {
   id: string;
@@ -46,7 +45,6 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState<SearchFilters>({});
-  const { isFavorite, toggleFavorite } = useFavorites();
 
   useEffect(() => {
     fetchProperties();
@@ -118,22 +116,6 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
 
   const handleFiltersChange = (newFilters: SearchFilters) => {
     setFilters(newFilters);
-  };
-
-  const handleToggleFavorite = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    await toggleFavorite(id);
-  };
-
-  const formatPrice = (price: number, period: string) => {
-    const periodText = {
-      day: 'يوم',
-      week: 'أسبوع',
-      month: 'شهر',
-      year: 'سنة'
-    }[period] || 'شهر';
-    
-    return `${price.toLocaleString('ar-DZ')} دج/${periodText}`;
   };
 
   const getPropertyTypeText = (type: string) => {
@@ -229,8 +211,8 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
         </p>
       </div>
 
-      {/* Properties List */}
-      <div className="px-6 pb-6 space-y-4">
+      {/* Properties Grid */}
+      <div className="px-6 pb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {isLoading ? (
           <>
             <PropertyCardSkeleton />
@@ -239,82 +221,12 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
           </>
         ) : (
           displayProperties.map((property, index) => (
-            <motion.div
+            <PropertyCard
               key={property.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="glass-card overflow-hidden"
+              property={property}
+              index={index}
               onClick={() => onViewProperty(property)}
-            >
-              {/* Property Image */}
-              <div className="relative h-48 bg-gradient-to-br from-muted to-surface-elevated">
-                {property.images && property.images.length > 0 ? (
-                  <img
-                    src={property.images[0]}
-                    alt={property.title}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                      target.parentElement!.classList.add('flex', 'items-center', 'justify-center');
-                      const fallback = document.createElement('span');
-                      fallback.className = 'text-muted-foreground text-sm';
-                      fallback.textContent = getPropertyTypeText(property.property_type);
-                      target.parentElement!.appendChild(fallback);
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <span className="text-muted-foreground text-sm">
-                      {getPropertyTypeText(property.property_type)}
-                    </span>
-                  </div>
-                )}
-                {/* Featured Badge */}
-                {property.is_featured && (
-                  <div className="absolute top-3 right-3">
-                    <FeaturedBadge size="sm" />
-                  </div>
-                )}
-                <button
-                  onClick={(e) => handleToggleFavorite(e, property.id)}
-                  className="absolute top-3 left-3 w-10 h-10 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center transition-colors hover:bg-primary/20"
-                >
-                  <Heart
-                    className={`w-5 h-5 transition-colors ${isFavorite(property.id) ? 'fill-primary text-primary' : 'text-foreground'}`}
-                  />
-                </button>
-                <div className="absolute bottom-3 right-3 px-3 py-1 rounded-full bg-primary text-primary-foreground text-sm font-medium">
-                  {formatPrice(property.price, property.price_period)}
-                </div>
-              </div>
-
-              {/* Details */}
-              <div className="p-4">
-                <h3 className="font-semibold text-foreground text-lg mb-2">{property.title}</h3>
-                
-                <div className="flex items-center gap-2 text-muted-foreground text-sm mb-3">
-                  <MapPin className="w-4 h-4" />
-                  <span>{property.address}، {property.city}</span>
-                </div>
-
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Bed className="w-4 h-4" />
-                    <span>{property.bedrooms}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Bath className="w-4 h-4" />
-                    <span>{property.bathrooms}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Ruler className="w-4 h-4" />
-                    <span>{property.area_sqm} م²</span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+            />
           ))
         )}
       </div>

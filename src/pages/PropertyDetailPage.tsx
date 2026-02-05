@@ -5,6 +5,7 @@ import {
   FileText, CreditCard, Share2, Calendar, Home,
   Flame, Snowflake, Car, Trees, Waves, Wifi, Armchair, Flag, Shield
 } from 'lucide-react';
+import { PropertyMediaGallery } from '@/components/property/PropertyMediaGallery';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,6 +16,11 @@ import { ReportDialog } from '@/components/common/ReportDialog';
 import { BookViewingDialog } from '@/components/property/BookViewingDialog';
 import { VerificationServiceDialog } from '@/components/premium/VerificationServiceDialog';
 import { toast } from 'sonner';
+
+interface MediaItem {
+  url: string;
+  type: 'image' | 'video' | '360';
+}
 
 interface Property {
   id: string;
@@ -32,6 +38,21 @@ interface Property {
   description?: string;
   owner_id?: string;
 }
+
+// Helper to parse media from images array
+const parseMedia = (images: string[]): MediaItem[] => {
+  if (!images || images.length === 0) return [];
+  
+  return images.map(url => {
+    if (url.match(/\.(mp4|webm|mov|avi)$/i) || url.includes('/video/')) {
+      return { url, type: 'video' as const };
+    }
+    if (url.includes('360') || url.includes('panorama') || url.includes('pano')) {
+      return { url, type: '360' as const };
+    }
+    return { url, type: 'image' as const };
+  });
+};
 
 interface PropertyDetailPageProps {
   property: Property;
@@ -166,22 +187,16 @@ export function PropertyDetailPage({
 
   return (
     <div className="min-h-screen bg-background pb-32">
-      {/* Header with Image */}
+      {/* Header with Media Gallery */}
       <div className="relative">
-        <div className="h-64 bg-gradient-to-br from-muted to-surface-elevated flex items-center justify-center">
-          {property.images && property.images.length > 0 ? (
-            <img 
-              src={property.images[0]} 
-              alt={property.title}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <Home className="w-16 h-16 text-muted-foreground" />
-          )}
-        </div>
+        <PropertyMediaGallery 
+          media={parseMedia(property.images)}
+          title={property.title}
+          aspectRatio="video"
+        />
         
-        {/* Header Actions */}
-        <div className="absolute top-4 left-4 right-4 flex justify-between">
+        {/* Header Actions - Overlay */}
+        <div className="absolute top-4 left-4 right-4 flex justify-between z-10">
           <Button 
             variant="glass" 
             size="icon" 
@@ -219,7 +234,7 @@ export function PropertyDetailPage({
         </div>
 
         {/* Price Badge */}
-        <div className="absolute bottom-4 right-4 px-4 py-2 rounded-full bg-primary text-primary-foreground font-bold">
+        <div className="absolute bottom-4 right-4 px-4 py-2 rounded-full bg-primary text-primary-foreground font-bold z-10">
           {formatPrice(property.price, property.price_period)}
         </div>
       </div>
