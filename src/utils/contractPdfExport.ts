@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import { Capacitor } from '@capacitor/core';
 
 interface ContractData {
   id: string;
@@ -24,69 +25,86 @@ interface PartyInfo {
   role: 'landlord' | 'tenant';
 }
 
+const formatDate = (dateStr: string) => {
+  return new Date(dateStr).toLocaleDateString('ar-DZ', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
+
+const formatDateEn = (dateStr: string) => {
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
+
 export async function exportContractToPdf(
   contract: ContractData,
   landlordInfo: PartyInfo,
   tenantInfo: PartyInfo
 ): Promise<void> {
-  // Create PDF with RTL support
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
-    format: 'a4'
+    format: 'a4',
   });
 
-  // Add Arabic font support - using built-in font with manual RTL handling
-  doc.setFont('helvetica', 'normal');
-  
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 20;
-  let yPos = margin;
+  const contentWidth = pageWidth - 2 * margin;
+  let yPos = 0;
 
-  // Helper function for RTL text (reverse for display)
-  const rtlText = (text: string) => text.split('').reverse().join('');
+  // ========= Page 1: Header & Contract Info =========
+
+  // Gold header band
+  doc.setFillColor(26, 26, 26);
+  doc.rect(0, 0, pageWidth, 45, 'F');
   
-  // Helper function to add centered text
-  const addCenteredText = (text: string, y: number, fontSize: number = 12) => {
-    doc.setFontSize(fontSize);
-    const textWidth = doc.getTextWidth(text);
-    doc.text(text, (pageWidth - textWidth) / 2, y);
-  };
+  // Gold accent line
+  doc.setFillColor(212, 175, 55);
+  doc.rect(0, 45, pageWidth, 2, 'F');
 
-  // Helper function to add right-aligned text
-  const addRightText = (text: string, y: number, fontSize: number = 11) => {
-    doc.setFontSize(fontSize);
-    doc.text(text, pageWidth - margin, y, { align: 'right' });
-  };
-
-  // Header - Logo area
-  doc.setFillColor(212, 175, 55); // Gold color
-  doc.rect(0, 0, pageWidth, 35, 'F');
-  
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(24);
-  addCenteredText('SAKANI', 15);
-  
-  doc.setFontSize(14);
-  addCenteredText('Digital Contract', 28);
-
-  // Reset text color
-  doc.setTextColor(0, 0, 0);
-  yPos = 50;
-
-  // Contract Title
-  doc.setFontSize(18);
+  // Logo text
+  doc.setTextColor(212, 175, 55);
+  doc.setFontSize(28);
   doc.setFont('helvetica', 'bold');
-  addCenteredText(contract.title, yPos);
-  yPos += 15;
+  doc.text('SAKANI', pageWidth / 2, 18, { align: 'center' });
 
-  // Contract Type Badge
+  // Subtitle
+  doc.setTextColor(200, 200, 200);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  const contractType = contract.contract_type === 'rental' ? 'Rental Contract' : 'Service Contract';
-  addCenteredText(`[ ${contractType} ]`, yPos);
-  yPos += 15;
+  doc.text('Digital Contract Platform', pageWidth / 2, 26, { align: 'center' });
+
+  // Contract type
+  const contractTypeLabel = contract.contract_type === 'rental' ? 'RENTAL CONTRACT' : 'SERVICE CONTRACT';
+  doc.setTextColor(212, 175, 55);
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.text(contractTypeLabel, pageWidth / 2, 38, { align: 'center' });
+
+  doc.setTextColor(0, 0, 0);
+  yPos = 58;
+
+  // Contract title box
+  doc.setFillColor(245, 245, 245);
+  doc.roundedRect(margin, yPos, contentWidth, 18, 3, 3, 'F');
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text(contract.title, pageWidth / 2, yPos + 11, { align: 'center' });
+  yPos += 28;
+
+  // Contract reference & date
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 100, 100);
+  doc.text(`Ref: ${contract.id.slice(0, 8).toUpperCase()}`, margin, yPos);
+  doc.text(`Date: ${formatDateEn(contract.created_at)}`, pageWidth - margin, yPos, { align: 'right' });
+  yPos += 10;
 
   // Divider
   doc.setDrawColor(212, 175, 55);
@@ -94,18 +112,38 @@ export async function exportContractToPdf(
   doc.line(margin, yPos, pageWidth - margin, yPos);
   yPos += 10;
 
-  // Contract Details Section
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  addRightText('Contract Details', yPos, 14);
-  yPos += 10;
+  // ========= Contract Details Section =========
+  const drawSectionTitle = (title: string, y: number): number => {
+    doc.setFillColor(212, 175, 55);
+    doc.rect(margin, y, 4, 8, 'F');
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(26, 26, 26);
+    doc.text(title, margin + 8, y + 6);
+    return y + 14;
+  };
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(11);
+  const drawField = (label: string, value: string, y: number, x: number = margin): number => {
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(120, 120, 120);
+    doc.text(label, x, y);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 30, 30);
+    doc.text(value, x, y + 5);
+    return y + 12;
+  };
 
-  // Contract ID
-  addRightText(`Contract ID: ${contract.id.slice(0, 8)}...`, yPos);
-  yPos += 8;
+  yPos = drawSectionTitle('CONTRACT DETAILS', yPos);
+
+  // Two-column layout
+  const colWidth = contentWidth / 2;
+  const leftX = margin;
+  const rightX = margin + colWidth;
+
+  let leftY = yPos;
+  let rightY = yPos;
 
   // Status
   const statusLabels: Record<string, string> = {
@@ -113,194 +151,254 @@ export async function exportContractToPdf(
     active: 'Active',
     completed: 'Completed',
     cancelled: 'Cancelled',
-    disputed: 'Disputed'
+    disputed: 'Disputed',
+    signed: 'Signed',
   };
-  addRightText(`Status: ${statusLabels[contract.status] || contract.status}`, yPos);
-  yPos += 8;
+  leftY = drawField('Status', statusLabels[contract.status] || contract.status, leftY, leftX);
 
-  // Dates
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+  // Start date
+  leftY = drawField('Start Date', formatDateEn(contract.start_date), leftY, leftX);
 
-  addRightText(`Start Date: ${formatDate(contract.start_date)}`, yPos);
-  yPos += 8;
-
+  // End date
   if (contract.end_date) {
-    addRightText(`End Date: ${formatDate(contract.end_date)}`, yPos);
-    yPos += 8;
+    leftY = drawField('End Date', formatDateEn(contract.end_date), leftY, leftX);
   }
 
-  // Financial Details
+  // Monthly amount
   if (contract.monthly_amount) {
-    addRightText(`Monthly Amount: ${contract.monthly_amount.toLocaleString()} DZD`, yPos);
-    yPos += 8;
+    rightY = drawField('Monthly Amount', `${contract.monthly_amount.toLocaleString()} DZD`, rightY, rightX);
   }
 
+  // Total amount
   if (contract.total_amount) {
-    addRightText(`Total Amount: ${contract.total_amount.toLocaleString()} DZD`, yPos);
-    yPos += 8;
+    rightY = drawField('Total Amount', `${contract.total_amount.toLocaleString()} DZD`, rightY, rightX);
   }
 
-  yPos += 5;
+  // Duration
+  if (contract.start_date && contract.end_date) {
+    const start = new Date(contract.start_date);
+    const end = new Date(contract.end_date);
+    const months = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 30));
+    rightY = drawField('Duration', `${months} months`, rightY, rightX);
+  }
 
-  // Parties Section
-  doc.setDrawColor(200, 200, 200);
+  yPos = Math.max(leftY, rightY) + 8;
+
+  // ========= Parties Section =========
+  doc.setDrawColor(220, 220, 220);
   doc.line(margin, yPos, pageWidth - margin, yPos);
-  yPos += 10;
+  yPos += 8;
 
-  doc.setFontSize(14);
+  yPos = drawSectionTitle('CONTRACT PARTIES', yPos);
+
+  // Party boxes
+  const partyBoxWidth = (contentWidth - 10) / 2;
+  const partyBoxHeight = 30;
+
+  // Landlord box
+  doc.setFillColor(250, 248, 240);
+  doc.setDrawColor(212, 175, 55);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(leftX, yPos, partyBoxWidth, partyBoxHeight, 2, 2, 'FD');
+
+  const landlordLabel = contract.contract_type === 'rental' ? 'LANDLORD' : 'PROVIDER';
+  doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
-  addRightText('Contract Parties', yPos, 14);
-  yPos += 10;
-
-  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(212, 175, 55);
+  doc.text(landlordLabel, leftX + 5, yPos + 6);
   doc.setFontSize(11);
-
-  // Landlord/Provider
-  const landlordLabel = contract.contract_type === 'rental' ? 'Landlord' : 'Service Provider';
-  addRightText(`${landlordLabel}: ${landlordInfo.name}`, yPos);
-  yPos += 8;
+  doc.setTextColor(30, 30, 30);
+  doc.text(landlordInfo.name, leftX + 5, yPos + 14);
   if (landlordInfo.phone) {
-    addRightText(`Phone: ${landlordInfo.phone}`, yPos);
-    yPos += 8;
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.text(landlordInfo.phone, leftX + 5, yPos + 20);
   }
 
-  yPos += 5;
+  // Tenant box
+  const tenantBoxX = leftX + partyBoxWidth + 10;
+  doc.setFillColor(250, 248, 240);
+  doc.roundedRect(tenantBoxX, yPos, partyBoxWidth, partyBoxHeight, 2, 2, 'FD');
 
-  // Tenant/Client
-  const tenantLabel = contract.contract_type === 'rental' ? 'Tenant' : 'Client';
-  addRightText(`${tenantLabel}: ${tenantInfo.name}`, yPos);
-  yPos += 8;
+  const tenantLabel = contract.contract_type === 'rental' ? 'TENANT' : 'CLIENT';
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(212, 175, 55);
+  doc.text(tenantLabel, tenantBoxX + 5, yPos + 6);
+  doc.setFontSize(11);
+  doc.setTextColor(30, 30, 30);
+  doc.text(tenantInfo.name, tenantBoxX + 5, yPos + 14);
   if (tenantInfo.phone) {
-    addRightText(`Phone: ${tenantInfo.phone}`, yPos);
-    yPos += 8;
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.text(tenantInfo.phone, tenantBoxX + 5, yPos + 20);
   }
 
-  yPos += 5;
+  yPos += partyBoxHeight + 12;
 
-  // Terms Section
+  // ========= Terms Section =========
   if (contract.terms) {
-    doc.setDrawColor(200, 200, 200);
+    doc.setDrawColor(220, 220, 220);
     doc.line(margin, yPos, pageWidth - margin, yPos);
-    yPos += 10;
+    yPos += 8;
 
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    addRightText('Terms & Conditions', yPos, 14);
-    yPos += 10;
+    yPos = drawSectionTitle('TERMS & CONDITIONS', yPos);
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
+    doc.setFontSize(9);
+    doc.setTextColor(50, 50, 50);
     
-    // Split terms into lines
-    const termsLines = doc.splitTextToSize(contract.terms, pageWidth - 2 * margin);
-    termsLines.forEach((line: string) => {
-      if (yPos > pageHeight - 60) {
+    const termsLines = doc.splitTextToSize(contract.terms, contentWidth);
+    for (const line of termsLines) {
+      if (yPos > pageHeight - 50) {
         doc.addPage();
         yPos = margin;
       }
-      doc.text(line, pageWidth - margin, yPos, { align: 'right' });
-      yPos += 6;
-    });
+      doc.text(line, margin, yPos);
+      yPos += 5;
+    }
   }
 
-  // Description
+  // ========= Description Section =========
   if (contract.description) {
     yPos += 5;
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    addRightText('Description', yPos, 14);
-    yPos += 10;
+    if (yPos > pageHeight - 60) {
+      doc.addPage();
+      yPos = margin;
+    }
+    
+    yPos = drawSectionTitle('DESCRIPTION', yPos);
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
+    doc.setFontSize(9);
+    doc.setTextColor(50, 50, 50);
     
-    const descLines = doc.splitTextToSize(contract.description, pageWidth - 2 * margin);
-    descLines.forEach((line: string) => {
-      if (yPos > pageHeight - 60) {
+    const descLines = doc.splitTextToSize(contract.description, contentWidth);
+    for (const line of descLines) {
+      if (yPos > pageHeight - 50) {
         doc.addPage();
         yPos = margin;
       }
-      doc.text(line, pageWidth - margin, yPos, { align: 'right' });
-      yPos += 6;
-    });
+      doc.text(line, margin, yPos);
+      yPos += 5;
+    }
   }
 
-  // Signatures Section
-  yPos = Math.max(yPos + 15, pageHeight - 55);
-  
-  if (yPos > pageHeight - 55) {
+  // ========= Signatures Section =========
+  if (yPos > pageHeight - 70) {
     doc.addPage();
-    yPos = margin + 20;
+    yPos = margin;
+  } else {
+    yPos += 10;
+    doc.setDrawColor(220, 220, 220);
+    doc.line(margin, yPos, pageWidth - margin, yPos);
+    yPos += 8;
   }
 
+  yPos = drawSectionTitle('DIGITAL SIGNATURES', yPos);
+
+  const sigBoxWidth = (contentWidth - 10) / 2;
+  const sigBoxHeight = 35;
+
+  // Landlord signature
   doc.setDrawColor(200, 200, 200);
-  doc.line(margin, yPos, pageWidth - margin, yPos);
-  yPos += 10;
+  doc.setLineWidth(0.3);
+  doc.roundedRect(leftX, yPos, sigBoxWidth, sigBoxHeight, 2, 2, 'D');
 
-  doc.setFontSize(14);
+  doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
-  addCenteredText('Digital Signatures', yPos);
-  yPos += 15;
-
-  // Signature boxes
-  const boxWidth = (pageWidth - 3 * margin) / 2;
-  const boxHeight = 25;
-  const leftBoxX = margin;
-  const rightBoxX = pageWidth - margin - boxWidth;
-
-  // Tenant signature box (left)
-  doc.setDrawColor(150, 150, 150);
-  doc.rect(leftBoxX, yPos, boxWidth, boxHeight);
+  doc.setTextColor(100, 100, 100);
+  doc.text(landlordLabel, leftX + 5, yPos + 6);
   doc.setFontSize(10);
-  doc.text(tenantLabel, leftBoxX + 5, yPos + 8);
-  doc.text(tenantInfo.name, leftBoxX + 5, yPos + 16);
-  
-  if (contract.tenant_signed) {
-    doc.setTextColor(0, 150, 0);
-    doc.text('✓ Signed', leftBoxX + 5, yPos + 22);
-    if (contract.tenant_signed_at) {
-      doc.setFontSize(8);
-      doc.text(formatDate(contract.tenant_signed_at), leftBoxX + boxWidth - 5, yPos + 22, { align: 'right' });
-    }
-  } else {
-    doc.setTextColor(200, 0, 0);
-    doc.text('✗ Not Signed', leftBoxX + 5, yPos + 22);
-  }
-  doc.setTextColor(0, 0, 0);
+  doc.setTextColor(30, 30, 30);
+  doc.text(landlordInfo.name, leftX + 5, yPos + 14);
 
-  // Landlord signature box (right)
-  doc.rect(rightBoxX, yPos, boxWidth, boxHeight);
-  doc.setFontSize(10);
-  doc.text(landlordLabel, rightBoxX + 5, yPos + 8);
-  doc.text(landlordInfo.name, rightBoxX + 5, yPos + 16);
-  
   if (contract.landlord_signed) {
-    doc.setTextColor(0, 150, 0);
-    doc.text('✓ Signed', rightBoxX + 5, yPos + 22);
+    doc.setTextColor(34, 139, 34);
+    doc.setFontSize(9);
+    doc.text('✓ Digitally Signed', leftX + 5, yPos + 22);
     if (contract.landlord_signed_at) {
-      doc.setFontSize(8);
-      doc.text(formatDate(contract.landlord_signed_at), rightBoxX + boxWidth - 5, yPos + 22, { align: 'right' });
+      doc.setFontSize(7);
+      doc.setTextColor(100, 100, 100);
+      doc.text(formatDateEn(contract.landlord_signed_at), leftX + 5, yPos + 28);
     }
   } else {
-    doc.setTextColor(200, 0, 0);
-    doc.text('✗ Not Signed', rightBoxX + 5, yPos + 22);
+    doc.setTextColor(200, 50, 50);
+    doc.setFontSize(9);
+    doc.text('Awaiting Signature', leftX + 5, yPos + 22);
   }
-  doc.setTextColor(0, 0, 0);
 
-  // Footer
-  yPos = pageHeight - 15;
-  doc.setFontSize(8);
-  doc.setTextColor(128, 128, 128);
-  addCenteredText(`Generated by Sakani Platform - ${new Date().toLocaleString()}`, yPos);
-  addCenteredText('This is a digital document. For legal purposes, please verify with the platform.', yPos + 5);
+  // Tenant signature
+  const sigTenantX = leftX + sigBoxWidth + 10;
+  doc.setDrawColor(200, 200, 200);
+  doc.roundedRect(sigTenantX, yPos, sigBoxWidth, sigBoxHeight, 2, 2, 'D');
 
-  // Save the PDF
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(100, 100, 100);
+  doc.text(tenantLabel, sigTenantX + 5, yPos + 6);
+  doc.setFontSize(10);
+  doc.setTextColor(30, 30, 30);
+  doc.text(tenantInfo.name, sigTenantX + 5, yPos + 14);
+
+  if (contract.tenant_signed) {
+    doc.setTextColor(34, 139, 34);
+    doc.setFontSize(9);
+    doc.text('✓ Digitally Signed', sigTenantX + 5, yPos + 22);
+    if (contract.tenant_signed_at) {
+      doc.setFontSize(7);
+      doc.setTextColor(100, 100, 100);
+      doc.text(formatDateEn(contract.tenant_signed_at), sigTenantX + 5, yPos + 28);
+    }
+  } else {
+    doc.setTextColor(200, 50, 50);
+    doc.setFontSize(9);
+    doc.text('Awaiting Signature', sigTenantX + 5, yPos + 22);
+  }
+
+  // ========= Footer =========
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    // Footer line
+    doc.setDrawColor(212, 175, 55);
+    doc.setLineWidth(0.5);
+    doc.line(margin, pageHeight - 18, pageWidth - margin, pageHeight - 18);
+
+    doc.setFontSize(7);
+    doc.setTextColor(130, 130, 130);
+    doc.setFont('helvetica', 'normal');
+    doc.text(
+      `Generated by Sakani Platform | ${new Date().toLocaleDateString('en-US')} | This is a legally binding digital document`,
+      pageWidth / 2,
+      pageHeight - 12,
+      { align: 'center' }
+    );
+    doc.text(`Page ${i} of ${totalPages}`, pageWidth - margin, pageHeight - 12, { align: 'right' });
+  }
+
+  // Save the PDF - handle mobile differently
   const fileName = `contract_${contract.id.slice(0, 8)}_${new Date().toISOString().split('T')[0]}.pdf`;
-  doc.save(fileName);
+
+  if (Capacitor.isNativePlatform()) {
+    // On mobile, create a blob and trigger download via a data URL
+    const pdfBlob = doc.output('blob');
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    
+    // Create a temporary link and trigger download
+    const link = document.createElement('a');
+    link.href = pdfUrl;
+    link.download = fileName;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    
+    // Clean up
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(pdfUrl);
+    }, 1000);
+  } else {
+    doc.save(fileName);
+  }
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Moon, Sun, Bell, Globe, LogOut, User, Shield, ChevronLeft, BellRing, Database, Trash2, Loader2 } from 'lucide-react';
+import { ArrowRight, Moon, Sun, Bell, Globe, LogOut, User, Shield, ChevronLeft, BellRing, Database, Trash2, Loader2, ShieldCheck, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,9 +10,10 @@ import { seedDemoData, clearDemoData } from '@/utils/seedDemoData';
 
 interface SettingsPageProps {
   onBack: () => void;
+  onStartKYC?: () => void;
 }
 
-export function SettingsPage({ onBack }: SettingsPageProps) {
+export function SettingsPage({ onBack, onStartKYC }: SettingsPageProps) {
   const { user, profile, updateSettings, signOut } = useAuth();
   const { toast } = useToast();
   const { isSupported, permission, requestPermission, isLoading: pushLoading, showNotification } = usePushNotifications();
@@ -146,6 +147,37 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
             </div>
           </div>
         </motion.div>
+
+        {/* KYC Verification Section */}
+        {!profile?.kyc_verified && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="glass-card p-4 border border-yellow-500/30"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-yellow-500" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-medium text-foreground">التحقق من الهوية</h3>
+                <p className="text-xs text-muted-foreground">لم يتم التحقق من هويتك بعد</p>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              بعض الميزات غير متاحة بدون التحقق من الهوية مثل إنشاء العقود والمحادثات.
+            </p>
+            <Button 
+              variant="gold" 
+              className="w-full gap-2"
+              onClick={onStartKYC}
+            >
+              <ShieldCheck className="w-5 h-5" />
+              بدء التحقق الآن
+            </Button>
+          </motion.div>
+        )}
 
         {/* Appearance */}
         <motion.div
