@@ -131,6 +131,27 @@ function AppContent() {
   };
 
   const handleNavigate = (route: string) => {
+    // Handle dynamic routes like /property/UUID
+    if (route.startsWith('/property/')) {
+      const propertyId = route.replace('/property/', '');
+      // Load property and navigate
+      import('@/integrations/supabase/client').then(({ supabase }) => {
+        supabase.from('properties').select('*').eq('id', propertyId).maybeSingle().then(({ data }) => {
+          if (data) {
+            setSelectedProperty(data as PropertyData);
+            setCurrentScreen('property-detail');
+          }
+        });
+      });
+      return;
+    }
+    if (route.startsWith('/handyman/')) {
+      const handymanId = route.replace('/handyman/', '');
+      setSelectedHandymanId(handymanId);
+      setCurrentScreen('handyman-detail');
+      return;
+    }
+
     const routeMap: Record<string, AppScreen> = {
       '/map': 'map', '/properties': 'properties', '/handymen': 'handymen',
       '/settings': 'settings', '/chat': 'chat', '/owner-dashboard': 'owner-dashboard',
@@ -174,8 +195,8 @@ function AppContent() {
         return (
           <KYCFlow 
             onComplete={handleKYCComplete} 
-            onBack={() => setCurrentScreen('role-selection')}
-            onSkip={handleKYCSkip}
+            onBack={() => setCurrentScreen(profile?.role_type ? 'settings' : 'role-selection')}
+            onSkip={() => setCurrentScreen(profile?.role_type ? 'settings' : 'home')}
           />
         );
       case 'home': 
@@ -196,7 +217,7 @@ function AppContent() {
           />
         );
       case 'settings': 
-        return <SettingsPage onBack={() => setCurrentScreen('home')} />;
+        return <SettingsPage onBack={() => setCurrentScreen('home')} onStartKYC={() => setCurrentScreen('kyc')} />;
       case 'profile':
         return <ProfilePage onBack={() => setCurrentScreen('home')} onNavigate={handleNavigate} />;
       case 'properties': 

@@ -27,6 +27,52 @@ import { useChat } from "@/hooks/useChat";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 import { useFavorites } from "@/hooks/useFavorites";
 
+// Parse markdown-style links [text](url) and render as clickable buttons
+function renderMessageWithLinks(content: string, onNavigate: (route: string) => void) {
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = linkRegex.exec(content)) !== null) {
+    // Add text before the link
+    if (match.index > lastIndex) {
+      parts.push(content.slice(lastIndex, match.index));
+    }
+
+    const linkText = match[1];
+    const linkUrl = match[2];
+
+    // If it's an internal route, make it clickable
+    if (linkUrl.startsWith('/')) {
+      parts.push(
+        <button
+          key={match.index}
+          onClick={() => onNavigate(linkUrl)}
+          className="inline-flex items-center gap-1 text-primary underline underline-offset-2 font-medium hover:text-primary/80 transition-colors mx-1"
+        >
+          {linkText} →
+        </button>
+      );
+    } else {
+      parts.push(
+        <a key={match.index} href={linkUrl} target="_blank" rel="noopener noreferrer" className="text-primary underline">
+          {linkText}
+        </a>
+      );
+    }
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : content;
+}
+
 interface AIVoiceHubProps {
   userName?: string;
   onNavigate: (route: string) => void;
@@ -181,7 +227,13 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
                     <span className="text-xs">جاري التحدث...</span>
                   </div>
                 )}
-                <p className="text-sm whitespace-pre-wrap" dir="auto">{msg.content}</p>
+                {msg.role === "assistant" ? (
+                  <div className="text-sm whitespace-pre-wrap" dir="auto">
+                    {renderMessageWithLinks(msg.content, onNavigate)}
+                  </div>
+                ) : (
+                  <p className="text-sm whitespace-pre-wrap" dir="auto">{msg.content}</p>
+                )}
               </div>
             </motion.div>
           ))}
