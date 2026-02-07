@@ -80,7 +80,7 @@ function AppContent() {
   const [selectedHandymanId, setSelectedHandymanId] = useState<string | undefined>();
   const [createContractPropertyId, setCreateContractPropertyId] = useState<string | undefined>();
   const [isInitialized, setIsInitialized] = useState(false);
-  const [isNative] = useState(() => Capacitor.isNativePlatform());
+  const [isNative] = useState(() => typeof window !== 'undefined' && Capacitor.isNativePlatform());
 
   // Handle splash screen completion and initial routing
   const handleSplashComplete = () => {
@@ -279,10 +279,12 @@ function AppContent() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-background overflow-hidden">
+    <div className="h-dvh flex flex-col bg-background overflow-hidden">
       {/* Main content area */}
-      <div className={`flex-1 overflow-auto ${showBottomNav ? 'pb-16' : ''}`}>
-        <AnimatePresence mode="wait">{renderScreen()}</AnimatePresence>
+      <div className={`flex-1 overflow-hidden ${showBottomNav ? 'pb-16' : ''}`}>
+        <AnimatePresence mode="wait">
+          <div className="h-full overflow-auto">{renderScreen()}</div>
+        </AnimatePresence>
       </div>
       
       {/* Bottom Navigation for mobile */}
