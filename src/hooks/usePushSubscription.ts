@@ -51,11 +51,12 @@ export function usePushSubscription() {
       const registration = await navigator.serviceWorker.ready;
 
       // Check for existing subscription
-      let pushSubscription = await registration.pushManager.getSubscription();
+      const reg = registration as any;
+      let pushSubscription = await reg.pushManager.getSubscription();
 
       if (!pushSubscription) {
         // Create new subscription
-        pushSubscription = await registration.pushManager.subscribe({
+        pushSubscription = await reg.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
         });
@@ -108,7 +109,8 @@ export function usePushSubscription() {
 
     try {
       const registration = await navigator.serviceWorker.ready;
-      const pushSubscription = await registration.pushManager.getSubscription();
+      const reg = registration as any;
+      const pushSubscription = await reg.pushManager.getSubscription();
 
       if (pushSubscription) {
         await pushSubscription.unsubscribe();
@@ -136,7 +138,8 @@ export function usePushSubscription() {
 
     try {
       const registration = await navigator.serviceWorker.ready;
-      const pushSubscription = await registration.pushManager.getSubscription();
+      const reg = registration as any;
+      const pushSubscription = await reg.pushManager.getSubscription();
       setSubscription(pushSubscription);
       return pushSubscription;
     } catch (error) {
