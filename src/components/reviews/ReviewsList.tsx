@@ -52,7 +52,7 @@ export function ReviewsList({ userId }: ReviewsListProps) {
       // Fetch reviewer names
       const reviewerIds = [...new Set(data.map(r => r.reviewer_id))];
       const { data: profiles } = await supabase
-        .from('profiles')
+        .from('public_profiles')
         .select('user_id, full_name')
         .in('user_id', reviewerIds);
 

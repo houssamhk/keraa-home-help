@@ -60,12 +60,14 @@ export function ProfilePage({ userId, onBack, onSettings, onNavigate }: ProfileP
       .maybeSingle();
 
     if (!error && data) {
-      // Also fetch created_at separately since it's not in the safe profile function
-      const { data: profileMeta } = await supabase
-        .from('profiles')
-        .select('created_at')
-        .eq('user_id', targetUserId)
-        .maybeSingle();
+      // Fetch created_at - use public_profiles for other users, profiles for own
+      const { data: profileMeta } = isOwnProfile 
+        ? await supabase
+            .from('profiles')
+            .select('created_at')
+            .eq('user_id', targetUserId)
+            .maybeSingle()
+        : { data: null };
       
       setProfile({
         ...data,
