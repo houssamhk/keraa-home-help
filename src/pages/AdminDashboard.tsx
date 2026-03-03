@@ -175,10 +175,17 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
     setSignedUrls(null);
     
     try {
+      // Use secure audit-logged function to access KYC documents
+      const { data: kycData, error: rpcError } = await supabase
+        .rpc('admin_get_kyc_verification', { target_user_id: kyc.user_id })
+        .maybeSingle();
+      
+      if (rpcError) throw rpcError;
+      
       const urls = await getSignedUrls({
-        id_front_url: kyc.id_front_url,
-        id_back_url: kyc.id_back_url,
-        selfie_url: kyc.selfie_url,
+        id_front_url: kycData?.id_front_url || kyc.id_front_url,
+        id_back_url: kycData?.id_back_url || kyc.id_back_url,
+        selfie_url: kycData?.selfie_url || kyc.selfie_url,
       });
       setSignedUrls(urls);
     } catch (error) {
@@ -198,25 +205,29 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
   };
 
   const handleKYCAction = async (kycId: string, userId: string, action: 'verified' | 'rejected') => {
-    const { error } = await supabase
-      .from('kyc_verifications')
-      .update({ 
-        status: action,
-        verified_at: action === 'verified' ? new Date().toISOString() : null
-      })
-      .eq('id', kycId);
+    // Prompt for rejection reason if rejecting
+    let reason: string | null = null;
+    if (action === 'rejected') {
+      reason = prompt('أدخل سبب الرفض:');
+      if (!reason) {
+        toast.error('يجب إدخال سبب الرفض');
+        return;
+      }
+    }
+
+    // Use secure RPC function with audit logging
+    const { error } = await supabase.rpc('admin_verify_kyc', {
+      target_user_id: userId,
+      new_status: action,
+      reason: reason,
+    });
 
     if (!error) {
-      // Update profile kyc_verified status
-      if (action === 'verified') {
-        await supabase
-          .from('profiles')
-          .update({ kyc_verified: true })
-          .eq('user_id', userId);
-      }
       toast.success(action === 'verified' ? 'تم التحقق بنجاح' : 'تم الرفض');
       fetchKYCRequests();
       fetchUsers();
+    } else {
+      toast.error('فشل في تحديث الحالة');
     }
   };
 
