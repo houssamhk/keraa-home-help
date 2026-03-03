@@ -145,9 +145,7 @@ export function KYCFlow({ onComplete, onBack, onSkip }: KYCFlowProps) {
           });
       }
 
-      // Update profile KYC status (mark as verified for now - in production this would be approved by admin)
-      await updateProfile({ kyc_verified: true } as any);
-
+      // KYC documents submitted - admin will review and verify
       setCurrentStep('complete');
     } catch (error) {
       console.error('KYC upload error:', error);
