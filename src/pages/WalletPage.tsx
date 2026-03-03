@@ -177,11 +177,8 @@ export function WalletPage({ onBack }: WalletPageProps) {
       return;
     }
 
-    const { data: urlData } = supabase.storage
-      .from('payment-proofs')
-      .getPublicUrl(path);
-
-    setProofUrl(urlData.publicUrl);
+    // Store the file path only (not a public URL) since bucket is private
+    setProofUrl(path);
     setProofUploading(false);
     toast.success('تم رفع الإثبات بنجاح');
   };

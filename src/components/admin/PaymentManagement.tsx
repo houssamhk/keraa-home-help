@@ -15,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { usePaymentProofUrl } from '@/hooks/usePaymentProofUrl';
 
 interface PaymentRecord {
   id: string;
@@ -70,6 +71,7 @@ interface VerificationRequest {
 }
 
 export function PaymentManagement() {
+  const { getSignedProofUrl, loading: proofLoading } = usePaymentProofUrl();
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [featuredListings, setFeaturedListings] = useState<FeaturedListing[]>([]);
   const [agencySubscriptions, setAgencySubscriptions] = useState<AgencySubscription[]>([]);
@@ -82,6 +84,7 @@ export function PaymentManagement() {
   const [proofDialogOpen, setProofDialogOpen] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [selectedProofUrl, setSelectedProofUrl] = useState<string | null>(null);
+  const [loadingProof, setLoadingProof] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<{ type: string; id: string } | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [processingAction, setProcessingAction] = useState(false);
@@ -171,13 +174,18 @@ export function PaymentManagement() {
     }
   };
 
-  const handleViewProof = (proofUrl: string | null) => {
-    if (proofUrl) {
-      setSelectedProofUrl(proofUrl);
-      setProofDialogOpen(true);
-    } else {
+  const handleViewProof = async (proofUrl: string | null) => {
+    if (!proofUrl) {
       toast.error('لا يوجد إثبات دفع');
+      return;
     }
+    setLoadingProof(true);
+    setProofDialogOpen(true);
+    setSelectedProofUrl(null);
+    
+    const signedUrl = await getSignedProofUrl(proofUrl);
+    setSelectedProofUrl(signedUrl);
+    setLoadingProof(false);
   };
 
   const handleApprovePayment = async (type: string, id: string) => {
@@ -605,14 +613,22 @@ export function PaymentManagement() {
           <DialogHeader>
             <DialogTitle>إثبات الدفع</DialogTitle>
           </DialogHeader>
-          {selectedProofUrl ? (
-            <img 
-              src={selectedProofUrl} 
-              alt="Payment Proof" 
-              className="w-full rounded-lg"
-            />
+          {loadingProof ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <span className="mr-2">جاري تحميل الإثبات...</span>
+            </div>
+          ) : selectedProofUrl ? (
+            <div>
+              <img 
+                src={selectedProofUrl} 
+                alt="Payment Proof" 
+                className="w-full rounded-lg"
+              />
+              <p className="text-xs text-muted-foreground mt-2">⚠️ رابط آمن ينتهي خلال 5 دقائق</p>
+            </div>
           ) : (
-            <p className="text-center text-muted-foreground py-8">لا يوجد إثبات</p>
+            <p className="text-center text-muted-foreground py-8">فشل في تحميل الإثبات</p>
           )}
         </DialogContent>
       </Dialog>

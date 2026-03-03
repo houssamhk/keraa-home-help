@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Upload, CheckCircle, Clock, XCircle, AlertCircle, Camera, FileText, CreditCard, Building2 } from 'lucide-react';
+import { ArrowRight, Upload, CheckCircle, Clock, XCircle, AlertCircle, Camera, FileText, CreditCard, Building2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePaymentProofUrl } from '@/hooks/usePaymentProofUrl';
 
 interface ArrabonPageProps {
   onBack: () => void;
@@ -45,6 +46,7 @@ interface Contract {
 const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
+  const { getSignedProofUrl } = usePaymentProofUrl();
   const [arrabons, setArrabons] = useState<Arrabon[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,6 +54,7 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
   const [showForm, setShowForm] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [signedProofUrls, setSignedProofUrls] = useState<Record<string, string | null>>({});
   
   const [formData, setFormData] = useState({
     contract_id: contractId || '',
@@ -67,6 +70,22 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
   useEffect(() => {
     fetchData();
   }, [user]);
+
+  // Load signed URLs for payment proofs whenever arrabons change
+  useEffect(() => {
+    const loadSignedUrls = async () => {
+      const urls: Record<string, string | null> = {};
+      await Promise.all(
+        arrabons
+          .filter(a => a.payment_proof_url)
+          .map(async (a) => {
+            urls[a.id] = await getSignedProofUrl(a.payment_proof_url);
+          })
+      );
+      setSignedProofUrls(urls);
+    };
+    if (arrabons.length > 0) loadSignedUrls();
+  }, [arrabons, getSignedProofUrl]);
 
   const fetchData = async () => {
     if (!user) return;
@@ -120,11 +139,8 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
 
     if (uploadError) throw uploadError;
 
-    const { data } = supabase.storage
-      .from('payment-proofs')
-      .getPublicUrl(fileName);
-
-    return data.publicUrl;
+    // Store the file path only (not a public URL) since bucket is private
+    return fileName;
   };
 
   const handleSubmitArrabon = async (e: React.FormEvent) => {
@@ -526,13 +542,14 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
                         </p>
                       )}
 
-                      {arrabon.payment_proof_url && (
+                      {arrabon.payment_proof_url && signedProofUrls[arrabon.id] && (
                         <div className="mb-3">
                           <img
-                            src={arrabon.payment_proof_url}
+                            src={signedProofUrls[arrabon.id]!}
                             alt="Payment proof"
                             className="max-h-32 rounded-lg border border-border"
                           />
+                          <p className="text-xs text-muted-foreground mt-1">⚠️ رابط آمن ينتهي خلال 5 دقائق</p>
                         </div>
                       )}
 

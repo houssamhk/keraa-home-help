@@ -72,7 +72,7 @@ export function ChatPage({ onBack, conversationId: initialConversationId, otherU
         data.map(async (conv) => {
           const otherUserId = conv.participant_1 === user.id ? conv.participant_2 : conv.participant_1;
           const { data: profile } = await supabase
-            .from('profiles')
+            .from('conversation_partner_profiles')
             .select('full_name, avatar_url')
             .eq('user_id', otherUserId)
             .single();
