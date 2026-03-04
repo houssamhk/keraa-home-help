@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { MapPin, Bed, Bath, Ruler, Heart, Play, RotateCcw, Image as ImageIcon } from 'lucide-react';
 import { useFavorites } from '@/hooks/useFavorites';
 import { FeaturedBadge } from '@/components/premium/FeaturedBadge';
+import { useSignedUrl } from '@/hooks/useSignedUrl';
 import { cn } from '@/lib/utils';
 
 interface MediaItem {
@@ -72,6 +73,7 @@ export function PropertyCard({ property, index = 0, onClick }: PropertyCardProps
   const { isFavorite, toggleFavorite } = useFavorites();
   const media = parseMedia(property.images);
   const firstMedia = media[0];
+  const { signedUrl: firstMediaUrl } = useSignedUrl(firstMedia?.url);
   
   const handleToggleFavorite = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -96,7 +98,7 @@ export function PropertyCard({ property, index = 0, onClick }: PropertyCardProps
             {firstMedia.type === 'video' ? (
               <div className="relative w-full h-full">
                 <video
-                  src={firstMedia.url}
+                  src={firstMediaUrl}
                   className="w-full h-full object-cover"
                   muted
                   playsInline
@@ -115,7 +117,7 @@ export function PropertyCard({ property, index = 0, onClick }: PropertyCardProps
               </div>
             ) : (
               <img
-                src={firstMedia.url}
+                src={firstMediaUrl}
                 alt={property.title}
                 className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                 onError={(e) => {

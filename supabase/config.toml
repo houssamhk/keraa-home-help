@@ -9,5 +9,8 @@ verify_jwt = false
 [functions.check-alerts]
 verify_jwt = false
 
+[functions.check-expiry-notifications]
+verify_jwt = false
+
 [functions.text-to-speech]
 verify_jwt = false

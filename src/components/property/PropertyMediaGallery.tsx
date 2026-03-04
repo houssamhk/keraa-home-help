@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Play, RotateCcw, Expand, X, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { useSignedUrls } from '@/hooks/useSignedUrl';
 import { cn } from '@/lib/utils';
 
 interface MediaItem {
@@ -30,8 +31,18 @@ export function PropertyMediaGallery({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
-  const currentMedia = media[currentIndex];
-  const hasMultipleMedia = media.length > 1;
+  // Resolve signed URLs for all media
+  const rawUrls = media.map(m => m.url);
+  const { signedUrls } = useSignedUrls(rawUrls);
+
+  // Create resolved media items with signed URLs
+  const resolvedMedia = media.map((m, i) => ({
+    ...m,
+    url: signedUrls[i] || m.url,
+  }));
+
+  const currentMedia = resolvedMedia[currentIndex];
+  const hasMultipleMedia = resolvedMedia.length > 1;
 
   const aspectRatioClass = {
     video: 'aspect-video',
@@ -41,14 +52,14 @@ export function PropertyMediaGallery({
 
   const goToNext = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    setCurrentIndex((prev) => (prev + 1) % media.length);
+    setCurrentIndex((prev) => (prev + 1) % resolvedMedia.length);
     setIs360Active(false);
     setRotation({ x: 0, y: 0 });
   };
 
   const goToPrev = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    setCurrentIndex((prev) => (prev - 1 + media.length) % media.length);
+    setCurrentIndex((prev) => (prev - 1 + resolvedMedia.length) % resolvedMedia.length);
     setIs360Active(false);
     setRotation({ x: 0, y: 0 });
   };
@@ -235,7 +246,7 @@ export function PropertyMediaGallery({
         {/* Dots Indicator */}
         {hasMultipleMedia && (
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-            {media.map((item, index) => (
+            {resolvedMedia.map((item, index) => (
               <button
                 key={index}
                 onClick={(e) => {
@@ -256,7 +267,7 @@ export function PropertyMediaGallery({
         {/* Media Counter */}
         {hasMultipleMedia && (
           <div className="absolute bottom-3 right-3 bg-black/60 text-white px-2 py-1 rounded text-xs">
-            {currentIndex + 1} / {media.length}
+            {currentIndex + 1} / {resolvedMedia.length}
           </div>
         )}
       </div>
@@ -300,7 +311,7 @@ export function PropertyMediaGallery({
             {/* Thumbnails */}
             {hasMultipleMedia && (
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-black/60 p-2 rounded-lg">
-                {media.map((item, index) => (
+                {resolvedMedia.map((item, index) => (
                   <button
                     key={index}
                     onClick={() => setCurrentIndex(index)}

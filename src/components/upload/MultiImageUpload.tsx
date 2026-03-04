@@ -129,12 +129,9 @@ export function MultiImageUpload({
           continue;
         }
 
-        const { data: urlData } = supabase.storage
-          .from(bucket)
-          .getPublicUrl(data.path);
-
+        // Store relative path (not full URL) for private bucket compatibility
         newFiles.push({
-          url: urlData.publicUrl,
+          url: data.path,
           type: isVideo ? 'video' : 'image'
         });
 
