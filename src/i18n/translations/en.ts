@@ -227,6 +227,7 @@ export const en = {
     tenant: 'Tenant',
     provider: 'Provider',
     owner: 'Owner',
+    handyman: 'Handyman',
     verified: 'Verified',
     kycTitle: 'Identity Verification',
     kycNotVerified: 'Your identity is not yet verified',

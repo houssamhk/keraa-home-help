@@ -227,6 +227,7 @@ export const fr = {
     tenant: 'Locataire',
     provider: 'Prestataire',
     owner: 'Propriétaire',
+    handyman: 'Artisan',
     verified: 'Vérifié',
     kycTitle: "Vérification d'identité",
     kycNotVerified: "Votre identité n'est pas encore vérifiée",
