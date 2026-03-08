@@ -631,6 +631,11 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
             <PaymentManagement />
           </TabsContent>
 
+          {/* Support Requests Tab */}
+          <TabsContent value="support">
+            <SupportRequestsManagement />
+          </TabsContent>
+
           {/* Heatmap Tab */}
           <TabsContent value="heatmap">
             <DemandHeatmap />
