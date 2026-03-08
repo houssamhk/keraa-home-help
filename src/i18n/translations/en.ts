@@ -84,6 +84,9 @@ export const en = {
     wallet: 'Wallet',
     bills: 'Bills',
     appointments: 'Appointments',
+    ownerDashboard: 'Owner Dashboard',
+    handymanDashboard: 'Handyman Dashboard',
+    admin: 'Admin Panel',
   },
 
   // Bottom Nav
@@ -224,6 +227,7 @@ export const en = {
     tenant: 'Tenant',
     provider: 'Provider',
     owner: 'Owner',
+    handyman: 'Handyman',
     verified: 'Verified',
     kycTitle: 'Identity Verification',
     kycNotVerified: 'Your identity is not yet verified',

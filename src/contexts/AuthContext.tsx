@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         full_name: data.full_name,
         phone: data.phone,
         avatar_url: data.avatar_url,
-        role_type: (data.role_type as 'tenant' | 'provider' | 'owner') || 'tenant',
+        role_type: (data.role_type as 'tenant' | 'provider' | 'owner' | 'handyman') || 'tenant',
         kyc_verified: data.kyc_verified || false,
         settings: {
           theme: (data.settings as { theme?: string })?.theme === 'light' ? 'light' : 'dark',

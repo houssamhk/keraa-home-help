@@ -84,6 +84,9 @@ export const fr = {
     wallet: 'Portefeuille',
     bills: 'Factures',
     appointments: 'Rendez-vous',
+    ownerDashboard: 'Tableau de bord propriétaire',
+    handymanDashboard: 'Tableau de bord artisan',
+    admin: 'Panneau d\'administration',
   },
 
   // Bottom Nav
@@ -224,6 +227,7 @@ export const fr = {
     tenant: 'Locataire',
     provider: 'Prestataire',
     owner: 'Propriétaire',
+    handyman: 'Artisan',
     verified: 'Vérifié',
     kycTitle: "Vérification d'identité",
     kycNotVerified: "Votre identité n'est pas encore vérifiée",

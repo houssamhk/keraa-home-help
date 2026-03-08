@@ -67,10 +67,13 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC, userRole,
     { id: 'favorites', icon: Heart, label: t.quickActions.favorites, route: '/favorites', badge: favorites.size > 0 ? favorites.size : undefined },
     { id: 'handymen', icon: Wrench, label: t.quickActions.handymen, route: '/handymen' },
     { id: 'map', icon: Map, label: t.quickActions.map, route: '/map' },
+    ...(userRole === 'owner' ? [{ id: 'owner-dashboard', icon: Home, label: t.quickActions.ownerDashboard, route: '/owner-dashboard' }] : []),
+    ...(userRole === 'handyman' ? [{ id: 'handyman-dashboard', icon: Wrench, label: t.quickActions.handymanDashboard, route: '/handyman-dashboard' }] : []),
     { id: 'contracts', icon: MessageSquare, label: t.quickActions.contracts, route: '/contracts' },
     { id: 'wallet', icon: Wallet, label: t.quickActions.wallet, route: '/wallet' },
     { id: 'bills', icon: CreditCard, label: t.quickActions.bills, route: '/bills' },
     { id: 'appointments', icon: Calendar, label: t.quickActions.appointments, route: '/appointments' },
+    ...(isAdmin ? [{ id: 'admin', icon: Shield, label: t.quickActions.admin, route: '/admin' }] : []),
   ];
 
   const suggestions = t.home.suggestions;
