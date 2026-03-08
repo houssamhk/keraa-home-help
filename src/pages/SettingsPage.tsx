@@ -19,9 +19,15 @@ export function SettingsPage({ onBack, onStartKYC }: SettingsPageProps) {
   const { isSupported, permission, requestPermission, isLoading: pushLoading, showNotification } = usePushNotifications();
   const [isLoadingDemo, setIsLoadingDemo] = useState(false);
   const [isClearingDemo, setIsClearingDemo] = useState(false);
+  const [localTheme, setLocalTheme] = useState<string>(
+    () => profile?.settings?.theme || localStorage.getItem('sakani-theme') || 'dark'
+  );
 
   const handleThemeChange = async (isDark: boolean) => {
     const newTheme = isDark ? 'dark' : 'light';
+    
+    // Update local state immediately for UI
+    setLocalTheme(newTheme);
     
     // Apply immediately to DOM and localStorage
     localStorage.setItem('sakani-theme', newTheme);
