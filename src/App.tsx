@@ -226,6 +226,8 @@ function AppContent() {
             userName={profile?.full_name || user?.email?.split('@')[0] || "ضيف"} 
             onNavigate={handleNavigate}
             needsKYC={needsKYC}
+            userRole={profile?.role_type}
+            isAdmin={isAdmin}
           />
         );
       case 'map': 
