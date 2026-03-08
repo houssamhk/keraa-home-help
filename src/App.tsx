@@ -43,7 +43,15 @@ const ServiceRequestsPage = lazy(() => import("@/pages/ServiceRequestsPage").the
 const WalletPage = lazy(() => import("@/pages/WalletPage").then(m => ({ default: m.WalletPage })));
 const AgencyDashboard = lazy(() => import("@/pages/AgencyDashboard").then(m => ({ default: m.AgencyDashboard })));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      retry: 2,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 type AppScreen = 
   | 'splash' | 'auth' | 'role-selection' | 'kyc' | 'home' | 'map' 
