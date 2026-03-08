@@ -21,13 +21,16 @@ export function SettingsPage({ onBack, onStartKYC }: SettingsPageProps) {
   const [isClearingDemo, setIsClearingDemo] = useState(false);
 
   const handleThemeChange = async (isDark: boolean) => {
-    await updateSettings({ theme: isDark ? 'dark' : 'light' });
+    const newTheme = isDark ? 'dark' : 'light';
+    await updateSettings({ theme: newTheme });
     
-    // Apply theme to document
+    // Apply theme to document immediately
     if (isDark) {
       document.documentElement.classList.add('dark');
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#111827');
     } else {
       document.documentElement.classList.remove('dark');
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#0e7490');
     }
     
     toast({
