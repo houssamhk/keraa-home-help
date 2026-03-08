@@ -99,6 +99,8 @@ const QUICK_AMOUNTS = [1000, 2000, 5000, 10000, 20000, 50000];
 
 export function WalletPage({ onBack }: WalletPageProps) {
   const { user } = useAuth();
+  const { t, dir } = useLanguage();
+  const BackArrow = dir === 'rtl' ? ArrowRight : ArrowLeft;
   const [wallet, setWallet] = useState<WalletData | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
