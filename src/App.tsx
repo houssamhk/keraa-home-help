@@ -157,12 +157,30 @@ function AppContent() {
   }, [profile, user, isLoading, isInitialized, currentScreen]);
 
   const handleAuthSuccess = () => {
-    const onboarded = user ? localStorage.getItem(`onboarded_${user.id}`) : null;
-    if (onboarded) {
-      setCurrentScreen('home');
-    } else {
-      setCurrentScreen('role-selection');
-    }
+    // user state might not be updated yet due to async onAuthStateChange
+    // Use supabase to get current session directly
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const currentUserId = session?.user?.id || user?.id;
+      if (!currentUserId) {
+        // Fallback: go to home, the useEffect watchers will handle redirect
+        setCurrentScreen('home');
+        return;
+      }
+      const onboarded = localStorage.getItem(`onboarded_${currentUserId}`);
+      if (onboarded) {
+        setCurrentScreen('home');
+      } else {
+        // Check if profile already exists in DB (returning user)
+        supabase.from('profiles').select('role_type').eq('user_id', currentUserId).maybeSingle().then(({ data: profileData }) => {
+          if (profileData && profileData.role_type) {
+            localStorage.setItem(`onboarded_${currentUserId}`, 'true');
+            setCurrentScreen('home');
+          } else {
+            setCurrentScreen('role-selection');
+          }
+        });
+      }
+    });
   };
 
   const handleRoleSelect = async (role: UserRole) => {
