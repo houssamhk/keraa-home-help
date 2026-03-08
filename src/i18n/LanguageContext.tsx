@@ -4,9 +4,9 @@ import { fr } from './translations/fr';
 import { en } from './translations/en';
 
 export type Language = 'ar' | 'fr' | 'en';
-type Translations = typeof ar;
+type Translations = Omit<typeof ar, 'dir'> & { dir: 'rtl' | 'ltr' };
 
-const translationsMap: Record<Language, Translations> = { ar, fr, en };
+const translationsMap: Record<Language, Translations> = { ar, fr, en } as Record<Language, Translations>;
 
 interface LanguageContextType {
   language: Language;
