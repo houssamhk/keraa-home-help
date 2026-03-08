@@ -265,8 +265,11 @@ function AppContent() {
         return (
           <KYCFlow 
             onComplete={handleKYCComplete} 
-            onBack={() => setCurrentScreen(profile?.role_type ? 'settings' : 'role-selection')}
-            onSkip={() => setCurrentScreen(profile?.role_type ? 'settings' : 'home')}
+            onBack={() => {
+              const isOnboarded = user && localStorage.getItem(`onboarded_${user.id}`);
+              setCurrentScreen(isOnboarded ? 'settings' : 'role-selection');
+            }}
+            onSkip={() => setCurrentScreen('home')}
           />
         );
       case 'home': 
