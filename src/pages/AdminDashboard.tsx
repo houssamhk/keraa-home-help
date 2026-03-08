@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAdminRole } from '@/hooks/useAdminRole';
 import { useKycDocuments } from '@/hooks/useKycDocuments';
 import { PaymentManagement } from '@/components/admin/PaymentManagement';
+import { SupportRequestsManagement } from '@/components/admin/SupportRequestsManagement';
 import { DemandHeatmap } from '@/components/admin/DemandHeatmap';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -375,12 +376,13 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
 
         {/* Tabs */}
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 mb-4">
+          <TabsList className="grid w-full grid-cols-7 mb-4">
             <TabsTrigger value="users" className="text-xs">المستخدمين</TabsTrigger>
             <TabsTrigger value="properties" className="text-xs">العقارات</TabsTrigger>
             <TabsTrigger value="appointments" className="text-xs">المواعيد</TabsTrigger>
             <TabsTrigger value="kyc" className="text-xs">التحقق</TabsTrigger>
             <TabsTrigger value="payments" className="text-xs">المدفوعات</TabsTrigger>
+            <TabsTrigger value="support" className="text-xs">الطلبات</TabsTrigger>
             <TabsTrigger value="heatmap" className="text-xs">الخريطة</TabsTrigger>
           </TabsList>
 
@@ -627,6 +629,11 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
           {/* Payments Tab */}
           <TabsContent value="payments">
             <PaymentManagement />
+          </TabsContent>
+
+          {/* Support Requests Tab */}
+          <TabsContent value="support">
+            <SupportRequestsManagement />
           </TabsContent>
 
           {/* Heatmap Tab */}
