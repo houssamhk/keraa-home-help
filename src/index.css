@@ -1,76 +1,130 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  /* ===== LIGHT THEME (default) ===== */
   :root {
-    /* Core palette - Premium dark with warm amber accents */
-    --background: 240 6% 7%;
-    --foreground: 40 33% 96%;
+    --background: 40 20% 97%;
+    --foreground: 220 20% 14%;
     
-    --card: 240 5% 10%;
-    --card-foreground: 40 33% 96%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 14%;
     
-    --popover: 240 5% 12%;
-    --popover-foreground: 40 33% 96%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 14%;
     
-    /* Warm amber gold - primary brand */
-    --primary: 30 52% 65%;
-    --primary-foreground: 240 6% 7%;
+    /* Warm teal-blue primary */
+    --primary: 195 70% 36%;
+    --primary-foreground: 0 0% 100%;
     
-    /* Muted cream secondary */
-    --secondary: 35 30% 92%;
-    --secondary-foreground: 240 6% 7%;
+    --secondary: 210 20% 93%;
+    --secondary-foreground: 220 20% 20%;
     
-    --muted: 240 5% 18%;
-    --muted-foreground: 30 10% 60%;
+    --muted: 210 15% 92%;
+    --muted-foreground: 220 10% 46%;
     
-    /* Accent - rich gold */
-    --accent: 38 65% 55%;
-    --accent-foreground: 240 6% 7%;
+    /* Warm amber accent */
+    --accent: 32 90% 52%;
+    --accent-foreground: 0 0% 100%;
     
     --destructive: 0 72% 51%;
-    --destructive-foreground: 40 33% 96%;
+    --destructive-foreground: 0 0% 100%;
     
-    --border: 240 5% 20%;
-    --input: 240 5% 15%;
-    --ring: 30 52% 65%;
+    --border: 220 13% 87%;
+    --input: 220 13% 91%;
+    --ring: 195 70% 36%;
     
-    --radius: 1rem;
+    --radius: 0.875rem;
     
     /* Custom tokens */
-    --gold-glow: 30 70% 50%;
-    --cream: 40 33% 96%;
-    --deep-charcoal: 240 6% 7%;
-    --surface-elevated: 240 5% 12%;
-    --surface-glass: 240 5% 15%;
+    --gold-glow: 32 90% 52%;
+    --cream: 40 20% 97%;
+    --deep-charcoal: 220 20% 14%;
+    --surface-elevated: 0 0% 100%;
+    --surface-glass: 210 15% 96%;
     
     /* Gradients */
-    --gradient-gold: linear-gradient(135deg, hsl(30 52% 65%), hsl(38 65% 55%));
-    --gradient-dark: linear-gradient(180deg, hsl(240 6% 7%), hsl(240 5% 12%));
-    --gradient-glass: linear-gradient(135deg, hsl(240 5% 15% / 0.8), hsl(240 5% 10% / 0.6));
+    --gradient-gold: linear-gradient(135deg, hsl(195 70% 36%), hsl(32 90% 52%));
+    --gradient-dark: linear-gradient(180deg, hsl(40 20% 97%), hsl(210 15% 92%));
+    --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.9), hsl(210 15% 96% / 0.7));
     
     /* Shadows */
-    --shadow-gold: 0 0 60px hsl(30 70% 50% / 0.3);
-    --shadow-elevated: 0 20px 40px hsl(0 0% 0% / 0.4);
-    --shadow-card: 0 4px 20px hsl(0 0% 0% / 0.3);
+    --shadow-gold: 0 0 40px hsl(195 70% 36% / 0.15);
+    --shadow-elevated: 0 10px 30px hsl(220 20% 14% / 0.08);
+    --shadow-card: 0 2px 12px hsl(220 20% 14% / 0.06);
     
     /* Sidebar */
-    --sidebar-background: 240 5% 10%;
-    --sidebar-foreground: 40 33% 96%;
-    --sidebar-primary: 30 52% 65%;
-    --sidebar-primary-foreground: 240 6% 7%;
-    --sidebar-accent: 240 5% 18%;
-    --sidebar-accent-foreground: 40 33% 96%;
-    --sidebar-border: 240 5% 20%;
-    --sidebar-ring: 30 52% 65%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 20% 14%;
+    --sidebar-primary: 195 70% 36%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 15% 92%;
+    --sidebar-accent-foreground: 220 20% 14%;
+    --sidebar-border: 220 13% 87%;
+    --sidebar-ring: 195 70% 36%;
   }
 
+  /* ===== DARK THEME ===== */
   .dark {
-    --background: 240 6% 7%;
-    --foreground: 40 33% 96%;
+    --background: 220 18% 8%;
+    --foreground: 40 20% 95%;
+    
+    --card: 220 16% 12%;
+    --card-foreground: 40 20% 95%;
+    
+    --popover: 220 16% 14%;
+    --popover-foreground: 40 20% 95%;
+    
+    /* Brighter teal in dark mode */
+    --primary: 195 65% 50%;
+    --primary-foreground: 220 18% 8%;
+    
+    --secondary: 220 14% 18%;
+    --secondary-foreground: 40 20% 90%;
+    
+    --muted: 220 14% 18%;
+    --muted-foreground: 220 10% 55%;
+    
+    /* Warm amber accent */
+    --accent: 32 85% 56%;
+    --accent-foreground: 220 18% 8%;
+    
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 40 20% 95%;
+    
+    --border: 220 14% 20%;
+    --input: 220 14% 16%;
+    --ring: 195 65% 50%;
+    
+    /* Custom tokens */
+    --gold-glow: 32 85% 50%;
+    --cream: 40 20% 95%;
+    --deep-charcoal: 220 18% 8%;
+    --surface-elevated: 220 16% 14%;
+    --surface-glass: 220 14% 16%;
+    
+    /* Gradients */
+    --gradient-gold: linear-gradient(135deg, hsl(195 65% 50%), hsl(32 85% 56%));
+    --gradient-dark: linear-gradient(180deg, hsl(220 18% 8%), hsl(220 16% 14%));
+    --gradient-glass: linear-gradient(135deg, hsl(220 14% 16% / 0.8), hsl(220 16% 12% / 0.6));
+    
+    /* Shadows */
+    --shadow-gold: 0 0 50px hsl(195 65% 50% / 0.2);
+    --shadow-elevated: 0 15px 35px hsl(0 0% 0% / 0.3);
+    --shadow-card: 0 4px 16px hsl(0 0% 0% / 0.25);
+    
+    /* Sidebar */
+    --sidebar-background: 220 16% 12%;
+    --sidebar-foreground: 40 20% 95%;
+    --sidebar-primary: 195 65% 50%;
+    --sidebar-primary-foreground: 220 18% 8%;
+    --sidebar-accent: 220 14% 18%;
+    --sidebar-accent-foreground: 40 20% 95%;
+    --sidebar-border: 220 14% 20%;
+    --sidebar-ring: 195 65% 50%;
   }
 }
 
@@ -81,17 +135,18 @@
   
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'IBM Plex Sans Arabic', 'DM Sans', system-ui, sans-serif;
   }
   
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Playfair Display', serif;
+    font-family: 'IBM Plex Sans Arabic', 'Playfair Display', serif;
+    font-weight: 700;
   }
 }
 
 @layer components {
   .glass-card {
-    @apply bg-surface-glass/80 backdrop-blur-xl border border-border/50 rounded-2xl;
+    @apply bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl;
   }
   
   .gold-text {
@@ -131,10 +186,10 @@
 
 @keyframes pulse-gold {
   0%, 100% {
-    box-shadow: 0 0 20px hsl(30 70% 50% / 0.4), 0 0 60px hsl(30 70% 50% / 0.2);
+    box-shadow: 0 0 20px hsl(195 65% 50% / 0.3), 0 0 60px hsl(195 65% 50% / 0.15);
   }
   50% {
-    box-shadow: 0 0 40px hsl(30 70% 50% / 0.6), 0 0 80px hsl(30 70% 50% / 0.3);
+    box-shadow: 0 0 40px hsl(195 65% 50% / 0.5), 0 0 80px hsl(195 65% 50% / 0.25);
   }
 }
 
@@ -149,10 +204,10 @@
 
 @keyframes glow {
   from {
-    box-shadow: 0 0 20px hsl(30 70% 50% / 0.3);
+    box-shadow: 0 0 20px hsl(195 65% 50% / 0.2);
   }
   to {
-    box-shadow: 0 0 40px hsl(30 70% 50% / 0.5), 0 0 60px hsl(30 70% 50% / 0.2);
+    box-shadow: 0 0 40px hsl(195 65% 50% / 0.4), 0 0 60px hsl(195 65% 50% / 0.15);
   }
 }
 
@@ -235,7 +290,7 @@ body {
   width: 100% !important;
   height: 100% !important;
   min-height: 100vh;
-  background: hsl(240 6% 10%);
+  background: hsl(var(--background));
   z-index: 1;
 }
 
@@ -249,17 +304,17 @@ body {
 
 .leaflet-control-zoom {
   border: none !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+  box-shadow: var(--shadow-elevated) !important;
 }
 
 .leaflet-control-zoom a {
-  background: hsl(240 5% 15%) !important;
-  color: hsl(40 33% 96%) !important;
-  border: 1px solid hsl(240 5% 25%) !important;
+  background: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+  border: 1px solid hsl(var(--border)) !important;
 }
 
 .leaflet-control-zoom a:hover {
-  background: hsl(240 5% 20%) !important;
+  background: hsl(var(--muted)) !important;
 }
 
 .custom-marker {
@@ -268,14 +323,14 @@ body {
 }
 
 .leaflet-popup-content-wrapper {
-  background: hsl(240 5% 12%);
-  color: hsl(40 33% 96%);
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
   border-radius: 12px;
-  border: 1px solid hsl(240 5% 20%);
+  border: 1px solid hsl(var(--border));
 }
 
 .leaflet-popup-tip {
-  background: hsl(240 5% 12%);
+  background: hsl(var(--card));
 }
 
 @keyframes ping {
