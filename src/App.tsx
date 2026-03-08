@@ -152,6 +152,9 @@ function AppContent() {
   };
 
   const handleRoleSelect = async (role: UserRole) => {
+    if (user) {
+      localStorage.setItem(`onboarded_${user.id}`, 'true');
+    }
     setCurrentScreen('kyc');
   };
 
