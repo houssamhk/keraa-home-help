@@ -18,10 +18,11 @@ async function getAuthenticatedUser(req: Request) {
   });
 
   const token = authHeader.replace("Bearer ", "");
-  const { data, error } = await supabase.auth.getUser(token);
-  if (error || !data?.user) return null;
+  const { data, error } = await supabase.auth.getClaims(token);
+  if (error || !data?.claims) return null;
 
-  return { user: data.user, supabase };
+  const userId = data.claims.sub as string;
+  return { userId, supabase };
 }
 
 async function buildUserContext(supabase: any, userId: string) {
