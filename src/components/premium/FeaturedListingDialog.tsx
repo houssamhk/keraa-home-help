@@ -207,9 +207,6 @@ export function FeaturedListingDialog({
     }
   };
 
-  const paymentReference_state = useState('');
-  const paymentReference = paymentReference_state[0];
-  const setPaymentReference = paymentReference_state[1];
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
