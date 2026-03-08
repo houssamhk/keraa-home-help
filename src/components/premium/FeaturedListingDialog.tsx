@@ -267,6 +267,32 @@ export function FeaturedListingDialog({
           <div>
             <label className="text-sm font-medium mb-3 block">طريقة الدفع</label>
             <div className="space-y-2">
+              {/* SATIM Online Payment */}
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('satim')}
+                className={`w-full p-3 rounded-lg border-2 flex items-center justify-between transition-all ${
+                  paymentMethod === 'satim'
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Globe className="w-5 h-5 text-blue-400" />
+                  <div className="text-right">
+                    <div className="font-medium flex items-center gap-2">
+                      دفع إلكتروني
+                      <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">فوري</span>
+                    </div>
+                    <div className="text-sm text-muted-foreground">CIB / البطاقة الذهبية</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Shield className="w-3 h-3 text-green-400" />
+                  {paymentMethod === 'satim' && <Check className="w-5 h-5 text-primary" />}
+                </div>
+              </button>
+
               {/* Wallet */}
               <button
                 type="button"
