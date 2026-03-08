@@ -24,6 +24,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 interface WalletPageProps {
   onBack: () => void;
