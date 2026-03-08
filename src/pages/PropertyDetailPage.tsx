@@ -100,6 +100,8 @@ export function PropertyDetailPage({
   const { user } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { logView } = usePropertyViews();
+  const { dir } = useLanguage();
+  const BackArrow = dir === 'rtl' ? ArrowRight : ArrowLeft;
   const [reportOpen, setReportOpen] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
 
