@@ -84,6 +84,9 @@ export const fr = {
     wallet: 'Portefeuille',
     bills: 'Factures',
     appointments: 'Rendez-vous',
+    ownerDashboard: 'Tableau de bord propriétaire',
+    handymanDashboard: 'Tableau de bord artisan',
+    admin: 'Panneau d\'administration',
   },
 
   // Bottom Nav

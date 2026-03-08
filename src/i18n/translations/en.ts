@@ -84,6 +84,9 @@ export const en = {
     wallet: 'Wallet',
     bills: 'Bills',
     appointments: 'Appointments',
+    ownerDashboard: 'Owner Dashboard',
+    handymanDashboard: 'Handyman Dashboard',
+    admin: 'Admin Panel',
   },
 
   // Bottom Nav
