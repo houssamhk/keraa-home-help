@@ -13,6 +13,7 @@ import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import { useTheme } from "@/hooks/useTheme";
+import { useAdminRole } from "@/hooks/useAdminRole";
 import type { UserRole } from "@/types/user";
 
 // Lazy load all pages
@@ -94,7 +95,8 @@ function PageLoader() {
 
 function AppContent() {
   const { user, profile, isLoading } = useAuth();
-  useTheme(); // Apply theme from user settings
+  const { isAdmin } = useAdminRole();
+  useTheme();
   
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('splash');
   const [chatUserId, setChatUserId] = useState<string | undefined>();
@@ -144,6 +146,14 @@ function AppContent() {
   const handleKYCSkip = () => setCurrentScreen('home');
 
   const handleNavigate = (route: string) => {
+    // Role-based route guards
+    const userRole = profile?.role_type;
+    if (route === '/owner-dashboard' && userRole !== 'owner') return;
+    if (route === '/add-property' && userRole !== 'owner') return;
+    if (route === '/handyman-dashboard' && userRole !== 'handyman') return;
+    if (route === '/admin' && !isAdmin) return;
+    if (route === '/agency-dashboard' && userRole !== 'owner') return;
+
     if (route.startsWith('/property/')) {
       const propertyId = route.replace('/property/', '');
       import('@/integrations/supabase/client').then(({ supabase }) => {
@@ -216,6 +226,8 @@ function AppContent() {
             userName={profile?.full_name || user?.email?.split('@')[0] || "ضيف"} 
             onNavigate={handleNavigate}
             needsKYC={needsKYC}
+            userRole={profile?.role_type}
+            isAdmin={isAdmin}
           />
         );
       case 'map': 
