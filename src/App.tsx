@@ -130,6 +130,18 @@ function AppContent() {
     }
   }, [user, isLoading, isInitialized, currentScreen]);
 
+  // When profile loads after auth, redirect from role-selection if role already set
+  useEffect(() => {
+    if (!isInitialized || isLoading || !user || !profile) return;
+    if (currentScreen === 'role-selection' && profile.role_type && profile.role_type !== 'tenant') {
+      setCurrentScreen('home');
+    }
+    // Also handle post-auth: if stuck on auth but user+profile are ready
+    if (currentScreen === 'auth' && profile.role_type) {
+      setCurrentScreen('home');
+    }
+  }, [profile, user, isLoading, isInitialized, currentScreen]);
+
   const handleAuthSuccess = () => {
     if (profile?.role_type) {
       setCurrentScreen('home');
