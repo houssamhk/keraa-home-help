@@ -16,7 +16,9 @@ import {
   Upload,
   Copy,
   CheckCircle2,
-  Image as ImageIcon
+  Globe,
+  Smartphone,
+  Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -26,6 +28,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { createSatimPayment, MANUAL_PAYMENT_METHODS, type ManualPaymentMethod } from '@/services/paymentService';
 
 interface WalletPageProps {
   onBack: () => void;
@@ -47,43 +50,8 @@ interface Transaction {
   created_at: string;
 }
 
-type PaymentMethod = 'ccp' | 'baridimob' | 'dahabia';
-
-interface PaymentInfo {
-  label: string;
-  icon: string;
-  color: string;
-  accountName: string;
-  accountNumber: string;
-  instructions: string;
-}
-
-const PAYMENT_METHODS: Record<PaymentMethod, PaymentInfo> = {
-  ccp: {
-    label: 'CCP',
-    icon: '🏦',
-    color: 'from-green-500/20 to-green-600/10 border-green-500/30',
-    accountName: 'سكني للخدمات العقارية',
-    accountNumber: '00799999 0019940 31',
-    instructions: 'قم بتحويل المبلغ إلى حساب CCP أعلاه ثم ارفع إثبات الدفع'
-  },
-  baridimob: {
-    label: 'BaridiMob',
-    icon: '📱',
-    color: 'from-yellow-500/20 to-yellow-600/10 border-yellow-500/30',
-    accountName: 'سكني للخدمات العقارية',
-    accountNumber: '00799999001994031',
-    instructions: 'أرسل المبلغ عبر تطبيق بريدي موب إلى الرقم أعلاه ثم ارفع لقطة شاشة التأكيد'
-  },
-  dahabia: {
-    label: 'بطاقة الذهبية',
-    icon: '💳',
-    color: 'from-amber-500/20 to-amber-600/10 border-amber-500/30',
-    accountName: 'سكني',
-    accountNumber: '6280 XXXX XXXX 4521',
-    instructions: 'حوّل المبلغ إلى بطاقة الذهبية أعلاه عبر GAB أو تطبيق الذهبية ثم ارفع الإثبات'
-  }
-};
+type PaymentCategory = 'online' | 'manual';
+type ManualMethod = ManualPaymentMethod;
 
 const transactionTypes: Record<string, { label: string; icon: typeof ArrowUpCircle; color: string }> = {
   deposit: { label: 'إيداع', icon: ArrowDownCircle, color: 'text-green-400' },
@@ -109,12 +77,39 @@ export function WalletPage({ onBack }: WalletPageProps) {
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
   const [amount, setAmount] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState<PaymentMethod | null>(null);
-  const [depositStep, setDepositStep] = useState<'amount' | 'method' | 'proof' | 'done'>('amount');
+  const [paymentCategory, setPaymentCategory] = useState<PaymentCategory | null>(null);
+  const [selectedManual, setSelectedManual] = useState<ManualMethod | null>(null);
+  const [depositStep, setDepositStep] = useState<'amount' | 'category' | 'method' | 'proof' | 'processing' | 'done'>('amount');
   const [paymentReference, setPaymentReference] = useState('');
   const [proofUploading, setProofUploading] = useState(false);
   const [proofUrl, setProofUrl] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Check for payment callback status
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const paymentStatus = params.get('payment_status');
+    const ref = params.get('ref');
+    
+    if (paymentStatus) {
+      switch (paymentStatus) {
+        case 'success':
+          toast.success('تم الدفع بنجاح! ✅ سيتم تحديث رصيدك.');
+          break;
+        case 'failed':
+          toast.error('فشلت عملية الدفع. يرجى المحاولة مرة أخرى.');
+          break;
+        case 'pending':
+          toast.info('عملية الدفع قيد المعالجة...');
+          break;
+        case 'error':
+          toast.error('حدث خطأ في معالجة الدفع.');
+          break;
+      }
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
   useEffect(() => {
     if (user) fetchWallet();
@@ -171,7 +166,7 @@ export function WalletPage({ onBack }: WalletPageProps) {
     const ext = file.name.split('.').pop();
     const path = `${user.id}/deposit-${Date.now()}.${ext}`;
 
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from('payment-proofs')
       .upload(path, file);
 
@@ -181,14 +176,52 @@ export function WalletPage({ onBack }: WalletPageProps) {
       return;
     }
 
-    // Store the file path only (not a public URL) since bucket is private
     setProofUrl(path);
     setProofUploading(false);
     toast.success('تم رفع الإثبات بنجاح');
   };
 
-  const handleSubmitDeposit = async () => {
-    if (!wallet || !amount || !selectedPayment || !user) return;
+  // دفع إلكتروني عبر SATIM
+  const handleOnlinePayment = async () => {
+    if (!wallet || !amount) return;
+    
+    const depositAmount = parseFloat(amount);
+    if (isNaN(depositAmount) || depositAmount < 100) {
+      toast.error('الحد الأدنى للإيداع 100 دج');
+      return;
+    }
+
+    setIsProcessing(true);
+    setDepositStep('processing');
+
+    try {
+      const result = await createSatimPayment({
+        amount: depositAmount,
+        payment_type: 'wallet_deposit',
+        reference_id: wallet.id,
+        description: `شحن المحفظة - ${depositAmount} دج`,
+      });
+
+      if (result.redirect_url) {
+        // Redirect to SATIM payment page
+        toast.info('جاري توجيهك لصفحة الدفع...');
+        window.location.href = result.redirect_url;
+      } else if (result.mode === 'development') {
+        // SATIM not yet configured
+        toast.info(result.message || 'بوابة الدفع الإلكتروني غير مفعلة حالياً');
+        setDepositStep('category');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'فشل في إنشاء عملية الدفع');
+      setDepositStep('category');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // دفع يدوي (CCP, BaridiMob, Dahabia)
+  const handleSubmitManualDeposit = async () => {
+    if (!wallet || !amount || !selectedManual || !user) return;
     
     const depositAmount = parseFloat(amount);
     if (isNaN(depositAmount) || depositAmount < 100) {
@@ -199,22 +232,20 @@ export function WalletPage({ onBack }: WalletPageProps) {
     setIsProcessing(true);
 
     try {
-      // Create pending transaction
       await supabase.from('wallet_transactions').insert({
         wallet_id: wallet.id,
         type: 'deposit',
         amount: depositAmount,
-        description: `إيداع عبر ${PAYMENT_METHODS[selectedPayment].label}`,
+        description: `إيداع عبر ${MANUAL_PAYMENT_METHODS[selectedManual].label}`,
         status: 'pending'
       });
 
-      // Create payment history record for admin review
       await supabase.from('payment_history').insert({
         user_id: user.id,
         payment_type: 'wallet_deposit',
         reference_id: wallet.id,
         amount: depositAmount,
-        payment_method: selectedPayment,
+        payment_method: selectedManual,
         payment_reference: paymentReference || null,
         payment_proof_url: proofUrl || null,
         status: 'pending'
@@ -230,7 +261,7 @@ export function WalletPage({ onBack }: WalletPageProps) {
   };
 
   const handleWithdraw = async () => {
-    if (!wallet || !amount || !selectedPayment) return;
+    if (!wallet || !amount || !selectedManual) return;
     
     const withdrawAmount = parseFloat(amount);
     if (isNaN(withdrawAmount) || withdrawAmount <= 0) {
@@ -249,7 +280,7 @@ export function WalletPage({ onBack }: WalletPageProps) {
         wallet_id: wallet.id,
         type: 'withdrawal',
         amount: withdrawAmount,
-        description: `سحب إلى ${PAYMENT_METHODS[selectedPayment].label} - ${paymentReference}`,
+        description: `سحب إلى ${MANUAL_PAYMENT_METHODS[selectedManual].label} - ${paymentReference}`,
         status: 'pending'
       });
 
@@ -266,7 +297,8 @@ export function WalletPage({ onBack }: WalletPageProps) {
 
   const resetDialog = () => {
     setAmount('');
-    setSelectedPayment(null);
+    setPaymentCategory(null);
+    setSelectedManual(null);
     setDepositStep('amount');
     setPaymentReference('');
     setProofUrl(null);
@@ -437,7 +469,7 @@ export function WalletPage({ onBack }: WalletPageProps) {
                 <Button
                   variant="gold"
                   className="w-full"
-                  onClick={() => setDepositStep('method')}
+                  onClick={() => setDepositStep('category')}
                   disabled={!amount || parseFloat(amount) < 100}
                 >
                   التالي - اختر طريقة الدفع
@@ -445,50 +477,96 @@ export function WalletPage({ onBack }: WalletPageProps) {
               </motion.div>
             )}
 
-            {/* Step 2: Payment Method */}
-            {depositStep === 'method' && (
-              <motion.div key="method" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3 mt-4">
-                <p className="text-sm text-muted-foreground">المبلغ: <span className="text-foreground font-bold">{parseFloat(amount).toLocaleString('ar-DZ')} دج</span></p>
-                
-                {(Object.keys(PAYMENT_METHODS) as PaymentMethod[]).map((method) => {
-                  const info = PAYMENT_METHODS[method];
+            {/* Step 2: Payment Category (Online vs Manual) */}
+            {depositStep === 'category' && (
+              <motion.div key="category" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3 mt-4">
+                <p className="text-sm text-muted-foreground">
+                  المبلغ: <span className="text-foreground font-bold">{parseFloat(amount).toLocaleString('ar-DZ')} دج</span>
+                </p>
+
+                {/* Online Payment - SATIM */}
+                <button
+                  onClick={() => { setPaymentCategory('online'); handleOnlinePayment(); }}
+                  className="w-full glass-card p-4 text-right border border-transparent hover:border-primary/30 transition-all bg-gradient-to-br from-blue-500/10 to-primary/5"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/30 to-primary/20 flex items-center justify-center">
+                      <Globe className="w-6 h-6 text-blue-400" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-foreground">الدفع الإلكتروني</p>
+                        <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-medium">فوري</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">CIB / البطاقة الذهبية (Dahabia)</p>
+                    </div>
+                    <Shield className="w-4 h-4 text-green-400" />
+                  </div>
+                  <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border/30">
+                    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                      <CreditCard className="w-3 h-3" /> CIB
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                      <CreditCard className="w-3 h-3" /> Dahabia
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[10px] text-green-400">
+                      <Shield className="w-3 h-3" /> SATIM آمن
+                    </div>
+                  </div>
+                </button>
+
+                {/* Manual Payment Options */}
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-border/30" />
+                  </div>
+                  <div className="relative flex justify-center text-xs">
+                    <span className="bg-background px-3 text-muted-foreground">أو التحويل اليدوي</span>
+                  </div>
+                </div>
+
+                {(Object.keys(MANUAL_PAYMENT_METHODS) as ManualMethod[]).map((method) => {
+                  const info = MANUAL_PAYMENT_METHODS[method];
                   return (
                     <button
                       key={method}
-                      onClick={() => { setSelectedPayment(method); setDepositStep('proof'); }}
-                      className={`w-full glass-card p-4 text-right border transition-all ${
-                        selectedPayment === method ? info.color : 'border-transparent hover:border-primary/20'
-                      }`}
+                      onClick={() => { 
+                        setPaymentCategory('manual');
+                        setSelectedManual(method);
+                        setDepositStep('proof');
+                      }}
+                      className="w-full glass-card p-3 text-right border border-transparent hover:border-primary/20 transition-all"
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-2xl">{info.icon}</span>
-                        <div>
-                          <p className="font-medium text-foreground">{info.label}</p>
-                          <p className="text-xs text-muted-foreground">{info.instructions.slice(0, 40)}...</p>
+                        <div className="flex-1">
+                          <p className="font-medium text-foreground text-sm">{info.label}</p>
+                          <p className="text-[10px] text-muted-foreground">تحويل يدوي - مراجعة خلال 24 ساعة</p>
                         </div>
+                        <Smartphone className="w-4 h-4 text-muted-foreground" />
                       </div>
                     </button>
                   );
                 })}
-                
+
                 <Button variant="glass" className="w-full" onClick={() => setDepositStep('amount')}>
                   رجوع
                 </Button>
               </motion.div>
             )}
 
-            {/* Step 3: Upload Proof */}
-            {depositStep === 'proof' && selectedPayment && (
+            {/* Step 3: Upload Proof (Manual only) */}
+            {depositStep === 'proof' && selectedManual && (
               <motion.div key="proof" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4 mt-4">
-                <div className={`glass-card p-4 bg-gradient-to-br ${PAYMENT_METHODS[selectedPayment].color} border`}>
+                <div className={`glass-card p-4 bg-gradient-to-br ${MANUAL_PAYMENT_METHODS[selectedManual].color} border`}>
                   <p className="text-xs text-muted-foreground mb-1">حوّل المبلغ إلى:</p>
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-foreground font-medium text-sm">{PAYMENT_METHODS[selectedPayment].accountName}</p>
+                    <p className="text-foreground font-medium text-sm">{MANUAL_PAYMENT_METHODS[selectedManual].accountName}</p>
                   </div>
                   <div className="flex items-center justify-between glass-card p-2 rounded-lg">
-                    <p className="text-foreground font-mono text-sm">{PAYMENT_METHODS[selectedPayment].accountNumber}</p>
+                    <p className="text-foreground font-mono text-sm">{MANUAL_PAYMENT_METHODS[selectedManual].accountNumber}</p>
                     <button
-                      onClick={() => copyToClipboard(PAYMENT_METHODS[selectedPayment].accountNumber, 'account')}
+                      onClick={() => copyToClipboard(MANUAL_PAYMENT_METHODS[selectedManual].accountNumber, 'account')}
                       className="text-primary p-1"
                     >
                       {copiedField === 'account' ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -499,7 +577,7 @@ export function WalletPage({ onBack }: WalletPageProps) {
                   </p>
                 </div>
 
-                <p className="text-xs text-muted-foreground">{PAYMENT_METHODS[selectedPayment].instructions}</p>
+                <p className="text-xs text-muted-foreground">{MANUAL_PAYMENT_METHODS[selectedManual].instructions}</p>
 
                 {/* Payment Reference */}
                 <div>
@@ -539,13 +617,13 @@ export function WalletPage({ onBack }: WalletPageProps) {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button variant="glass" className="flex-1" onClick={() => setDepositStep('method')}>
+                  <Button variant="glass" className="flex-1" onClick={() => setDepositStep('category')}>
                     رجوع
                   </Button>
                   <Button
                     variant="gold"
                     className="flex-1"
-                    onClick={handleSubmitDeposit}
+                    onClick={handleSubmitManualDeposit}
                     disabled={isProcessing}
                   >
                     {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'إرسال طلب الإيداع'}
@@ -554,7 +632,18 @@ export function WalletPage({ onBack }: WalletPageProps) {
               </motion.div>
             )}
 
-            {/* Step 4: Done */}
+            {/* Processing Step */}
+            {depositStep === 'processing' && (
+              <motion.div key="processing" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-8">
+                <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
+                <h3 className="text-lg font-bold text-foreground mb-2">جاري تجهيز الدفع...</h3>
+                <p className="text-sm text-muted-foreground">
+                  سيتم توجيهك لصفحة الدفع الآمنة
+                </p>
+              </motion.div>
+            )}
+
+            {/* Done Step */}
             {depositStep === 'done' && (
               <motion.div key="done" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-6">
                 <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
@@ -564,7 +653,7 @@ export function WalletPage({ onBack }: WalletPageProps) {
                 <p className="text-sm text-muted-foreground mb-4">
                   سيتم مراجعة إثبات الدفع وشحن محفظتك خلال فترة قصيرة
                 </p>
-                <Button variant="gold" className="w-full" onClick={() => { resetDialog(); setShowDepositDialog(false); }}>
+                <Button variant="gold" className="w-full" onClick={() => { resetDialog(); setShowDepositDialog(false); fetchWallet(); }}>
                   تم
                 </Button>
               </motion.div>
@@ -605,14 +694,14 @@ export function WalletPage({ onBack }: WalletPageProps) {
             <div>
               <label className="text-sm text-muted-foreground mb-2 block">طريقة الاستلام</label>
               <div className="space-y-2">
-                {(Object.keys(PAYMENT_METHODS) as PaymentMethod[]).map((method) => {
-                  const info = PAYMENT_METHODS[method];
+                {(Object.keys(MANUAL_PAYMENT_METHODS) as ManualMethod[]).map((method) => {
+                  const info = MANUAL_PAYMENT_METHODS[method];
                   return (
                     <button
                       key={method}
-                      onClick={() => setSelectedPayment(method)}
+                      onClick={() => setSelectedManual(method)}
                       className={`w-full glass-card p-3 text-right flex items-center gap-3 border transition-all ${
-                        selectedPayment === method ? 'border-primary/50 bg-primary/5' : 'border-transparent'
+                        selectedManual === method ? 'border-primary/50 bg-primary/5' : 'border-transparent'
                       }`}
                     >
                       <span className="text-xl">{info.icon}</span>
@@ -623,10 +712,10 @@ export function WalletPage({ onBack }: WalletPageProps) {
               </div>
             </div>
 
-            {selectedPayment && (
+            {selectedManual && (
               <div>
                 <label className="text-sm text-muted-foreground mb-1 block">
-                  رقم حسابك ({PAYMENT_METHODS[selectedPayment].label})
+                  رقم حسابك ({MANUAL_PAYMENT_METHODS[selectedManual].label})
                 </label>
                 <div className="glass-card px-3 py-2">
                   <input
@@ -648,7 +737,7 @@ export function WalletPage({ onBack }: WalletPageProps) {
                 variant="gold"
                 className="flex-1"
                 onClick={handleWithdraw}
-                disabled={isProcessing || !amount || !selectedPayment || !paymentReference}
+                disabled={isProcessing || !amount || !selectedManual || !paymentReference}
               >
                 {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'تأكيد السحب'}
               </Button>
