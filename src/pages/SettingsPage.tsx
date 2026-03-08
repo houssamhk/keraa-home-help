@@ -19,9 +19,15 @@ export function SettingsPage({ onBack, onStartKYC }: SettingsPageProps) {
   const { isSupported, permission, requestPermission, isLoading: pushLoading, showNotification } = usePushNotifications();
   const [isLoadingDemo, setIsLoadingDemo] = useState(false);
   const [isClearingDemo, setIsClearingDemo] = useState(false);
+  const [localTheme, setLocalTheme] = useState<string>(
+    () => profile?.settings?.theme || localStorage.getItem('sakani-theme') || 'dark'
+  );
 
   const handleThemeChange = async (isDark: boolean) => {
     const newTheme = isDark ? 'dark' : 'light';
+    
+    // Update local state immediately for UI
+    setLocalTheme(newTheme);
     
     // Apply immediately to DOM and localStorage
     localStorage.setItem('sakani-theme', newTheme);
@@ -108,7 +114,8 @@ export function SettingsPage({ onBack, onStartKYC }: SettingsPageProps) {
     });
   };
 
-  const settings = profile?.settings || { theme: 'dark', language: 'ar', notifications: true };
+  const currentTheme = profile?.settings?.theme || localStorage.getItem('sakani-theme') || 'dark';
+  const settings = profile?.settings || { theme: currentTheme as 'dark' | 'light', language: 'ar', notifications: true };
 
   return (
     <div className="min-h-screen bg-background safe-area-inset">
@@ -194,7 +201,7 @@ export function SettingsPage({ onBack, onStartKYC }: SettingsPageProps) {
           
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {settings.theme === 'dark' ? (
+              {localTheme === 'dark' ? (
                 <Moon className="w-5 h-5 text-primary" />
               ) : (
                 <Sun className="w-5 h-5 text-primary" />
@@ -202,7 +209,7 @@ export function SettingsPage({ onBack, onStartKYC }: SettingsPageProps) {
               <span className="text-foreground">الوضع الداكن</span>
             </div>
             <Switch
-              checked={settings.theme === 'dark'}
+              checked={localTheme === 'dark'}
               onCheckedChange={(checked) => handleThemeChange(checked)}
             />
           </div>
