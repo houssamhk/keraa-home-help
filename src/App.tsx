@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,37 +6,40 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AnimatePresence } from "framer-motion";
 import { Capacitor } from "@capacitor/core";
 import { SplashScreen } from "@/components/onboarding/SplashScreen";
-import { RoleSelection } from "@/components/onboarding/RoleSelection";
-import { KYCFlow } from "@/components/onboarding/KYCFlow";
-import { AIVoiceHub } from "@/components/home/AIVoiceHub";
-import { InstallPrompt } from "@/components/pwa/InstallPrompt";
-import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
 import { MobileBottomNav } from "@/components/navigation/MobileBottomNav";
-import { LeafletMap } from "@/components/map/LeafletMap";
-import { AuthPage } from "@/pages/AuthPage";
-import { SettingsPage } from "@/pages/SettingsPage";
-import { PropertiesPage } from "@/pages/PropertiesPage";
-import { PropertyDetailPage } from "@/pages/PropertyDetailPage";
-import { HandymenPage } from "@/pages/HandymenPage";
-import { ChatPage } from "@/pages/ChatPage";
-import { OwnerDashboard } from "@/pages/OwnerDashboard";
-import { AddPropertyPage } from "@/pages/AddPropertyPage";
-import { HandymanDashboard } from "@/pages/HandymanDashboard";
-import { HandymanDetailPage } from "@/pages/HandymanDetailPage";
-import { ContractsPage } from "@/pages/ContractsPage";
-import { CreateContractPage } from "@/pages/CreateContractPage";
-import ArrabonPage from "@/pages/ArrabonPage";
-import AlertsPage from "@/pages/AlertsPage";
-import { BillsPage } from "@/pages/BillsPage";
-import { AdminDashboard } from "@/pages/AdminDashboard";
-import { AppointmentsPage } from "@/pages/AppointmentsPage";
-import { ProfilePage } from "@/pages/ProfilePage";
-import { FavoritesPage } from "@/pages/FavoritesPage";
-import { ServiceRequestsPage } from "@/pages/ServiceRequestsPage";
-import { WalletPage } from "@/pages/WalletPage";
-import { AgencyDashboard } from "@/pages/AgencyDashboard";
+import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/hooks/useTheme";
 import type { UserRole } from "@/types/user";
+
+// Lazy load all pages
+const RoleSelection = lazy(() => import("@/components/onboarding/RoleSelection").then(m => ({ default: m.RoleSelection })));
+const KYCFlow = lazy(() => import("@/components/onboarding/KYCFlow").then(m => ({ default: m.KYCFlow })));
+const AIVoiceHub = lazy(() => import("@/components/home/AIVoiceHub").then(m => ({ default: m.AIVoiceHub })));
+const LeafletMap = lazy(() => import("@/components/map/LeafletMap").then(m => ({ default: m.LeafletMap })));
+const AuthPage = lazy(() => import("@/pages/AuthPage").then(m => ({ default: m.AuthPage })));
+const SettingsPage = lazy(() => import("@/pages/SettingsPage").then(m => ({ default: m.SettingsPage })));
+const PropertiesPage = lazy(() => import("@/pages/PropertiesPage").then(m => ({ default: m.PropertiesPage })));
+const PropertyDetailPage = lazy(() => import("@/pages/PropertyDetailPage").then(m => ({ default: m.PropertyDetailPage })));
+const HandymenPage = lazy(() => import("@/pages/HandymenPage").then(m => ({ default: m.HandymenPage })));
+const ChatPage = lazy(() => import("@/pages/ChatPage").then(m => ({ default: m.ChatPage })));
+const OwnerDashboard = lazy(() => import("@/pages/OwnerDashboard").then(m => ({ default: m.OwnerDashboard })));
+const AddPropertyPage = lazy(() => import("@/pages/AddPropertyPage").then(m => ({ default: m.AddPropertyPage })));
+const HandymanDashboard = lazy(() => import("@/pages/HandymanDashboard").then(m => ({ default: m.HandymanDashboard })));
+const HandymanDetailPage = lazy(() => import("@/pages/HandymanDetailPage").then(m => ({ default: m.HandymanDetailPage })));
+const ContractsPage = lazy(() => import("@/pages/ContractsPage").then(m => ({ default: m.ContractsPage })));
+const CreateContractPage = lazy(() => import("@/pages/CreateContractPage").then(m => ({ default: m.CreateContractPage })));
+const ArrabonPage = lazy(() => import("@/pages/ArrabonPage"));
+const AlertsPage = lazy(() => import("@/pages/AlertsPage"));
+const BillsPage = lazy(() => import("@/pages/BillsPage").then(m => ({ default: m.BillsPage })));
+const AdminDashboard = lazy(() => import("@/pages/AdminDashboard").then(m => ({ default: m.AdminDashboard })));
+const AppointmentsPage = lazy(() => import("@/pages/AppointmentsPage").then(m => ({ default: m.AppointmentsPage })));
+const ProfilePage = lazy(() => import("@/pages/ProfilePage").then(m => ({ default: m.ProfilePage })));
+const FavoritesPage = lazy(() => import("@/pages/FavoritesPage").then(m => ({ default: m.FavoritesPage })));
+const ServiceRequestsPage = lazy(() => import("@/pages/ServiceRequestsPage").then(m => ({ default: m.ServiceRequestsPage })));
+const WalletPage = lazy(() => import("@/pages/WalletPage").then(m => ({ default: m.WalletPage })));
+const AgencyDashboard = lazy(() => import("@/pages/AgencyDashboard").then(m => ({ default: m.AgencyDashboard })));
 
 const queryClient = new QueryClient();
 
@@ -48,7 +51,6 @@ type AppScreen =
   | 'admin' | 'appointments' | 'profile' | 'favorites' | 'service-requests' | 'wallet'
   | 'agency-dashboard';
 
-// Screens that should show bottom navigation
 const SCREENS_WITH_NAV: AppScreen[] = [
   'home', 'properties', 'handymen', 'chat', 'profile', 'favorites',
   'owner-dashboard', 'handyman-dashboard', 'contracts', 'wallet'
@@ -71,8 +73,19 @@ interface PropertyData {
   owner_id?: string;
 }
 
+// Loading spinner for lazy components
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center h-full bg-background">
+      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
+
 function AppContent() {
   const { user, profile, isLoading } = useAuth();
+  useTheme(); // Apply theme from user settings
+  
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('splash');
   const [chatUserId, setChatUserId] = useState<string | undefined>();
   const [editPropertyId, setEditPropertyId] = useState<string | undefined>();
@@ -82,16 +95,13 @@ function AppContent() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isNative] = useState(() => typeof window !== 'undefined' && Capacitor.isNativePlatform());
 
-  // Handle splash screen completion and initial routing
   const handleSplashComplete = () => {
     setIsInitialized(true);
     determineInitialScreen();
   };
 
-  // Determine which screen to show based on auth state
   const determineInitialScreen = () => {
     if (isLoading) return;
-
     if (!user) {
       setCurrentScreen('auth');
     } else if (!profile?.role_type) {
@@ -101,10 +111,8 @@ function AppContent() {
     }
   };
 
-  // Re-evaluate screen when auth state changes (after initialization)
   useEffect(() => {
     if (!isInitialized || isLoading) return;
-    
     if (!user && currentScreen !== 'auth' && currentScreen !== 'splash') {
       setCurrentScreen('auth');
     }
@@ -122,19 +130,12 @@ function AppContent() {
     setCurrentScreen('kyc');
   };
 
-  const handleKYCComplete = () => {
-    setCurrentScreen('home');
-  };
-
-  const handleKYCSkip = () => {
-    setCurrentScreen('home');
-  };
+  const handleKYCComplete = () => setCurrentScreen('home');
+  const handleKYCSkip = () => setCurrentScreen('home');
 
   const handleNavigate = (route: string) => {
-    // Handle dynamic routes like /property/UUID
     if (route.startsWith('/property/')) {
       const propertyId = route.replace('/property/', '');
-      // Load property and navigate
       import('@/integrations/supabase/client').then(({ supabase }) => {
         supabase.from('properties').select('*').eq('id', propertyId).maybeSingle().then(({ data }) => {
           if (data) {
@@ -211,9 +212,7 @@ function AppContent() {
         return (
           <LeafletMap 
             onBack={() => setCurrentScreen('home')} 
-            onViewProperty={(id) => {
-              setCurrentScreen('properties');
-            }}
+            onViewProperty={(id) => setCurrentScreen('properties')}
           />
         );
       case 'settings': 
@@ -280,14 +279,14 @@ function AppContent() {
 
   return (
     <div className="h-dvh flex flex-col bg-background overflow-hidden">
-      {/* Main content area */}
       <div className={`flex-1 overflow-hidden ${showBottomNav ? 'pb-16' : ''}`}>
         <AnimatePresence mode="wait">
-          <div className="h-full overflow-auto">{renderScreen()}</div>
+          <Suspense fallback={<PageLoader />}>
+            <div className="h-full overflow-auto">{renderScreen()}</div>
+          </Suspense>
         </AnimatePresence>
       </div>
       
-      {/* Bottom Navigation for mobile */}
       {showBottomNav && (
         <MobileBottomNav 
           currentScreen={currentScreen}
@@ -306,7 +305,6 @@ const App = () => (
         <Toaster />
         <Sonner />
         <OfflineIndicator />
-        {/* Only show PWA install prompt on web */}
         {!Capacitor.isNativePlatform() && <InstallPrompt />}
         <AppContent />
       </TooltipProvider>
