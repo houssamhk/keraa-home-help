@@ -376,12 +376,13 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
 
         {/* Tabs */}
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 mb-4">
+          <TabsList className="grid w-full grid-cols-7 mb-4">
             <TabsTrigger value="users" className="text-xs">المستخدمين</TabsTrigger>
             <TabsTrigger value="properties" className="text-xs">العقارات</TabsTrigger>
             <TabsTrigger value="appointments" className="text-xs">المواعيد</TabsTrigger>
             <TabsTrigger value="kyc" className="text-xs">التحقق</TabsTrigger>
             <TabsTrigger value="payments" className="text-xs">المدفوعات</TabsTrigger>
+            <TabsTrigger value="support" className="text-xs">الطلبات</TabsTrigger>
             <TabsTrigger value="heatmap" className="text-xs">الخريطة</TabsTrigger>
           </TabsList>
 
