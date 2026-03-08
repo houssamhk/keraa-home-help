@@ -283,7 +283,7 @@ serve(async (req) => {
 
     // Build context in parallel
     const [{ userName, userContext, profile }, searchContext] = await Promise.all([
-      buildUserContext(supabase, user.id),
+      buildUserContext(supabase, userId),
       buildSearchContext(supabase, lowerMsg),
     ]);
 
