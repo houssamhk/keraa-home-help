@@ -55,15 +55,23 @@ serve(async (req) => {
     const body: PaymentRequest = await req.json();
     const { amount, payment_type, reference_id, description, return_url } = body;
 
-    // Validation
-    if (!amount || amount < 100) {
+    // Strict validation
+    const validPaymentTypes = ["wallet_deposit", "featured_listing", "agency_subscription", "verification_service"];
+    if (!payment_type || !validPaymentTypes.includes(payment_type)) {
       return new Response(
-        JSON.stringify({ error: "الحد الأدنى للمبلغ 100 دج" }),
+        JSON.stringify({ error: "نوع الدفع غير صالح" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    if (!payment_type || !reference_id) {
+    if (!amount || typeof amount !== 'number' || amount < 100 || amount > 10000000) {
+      return new Response(
+        JSON.stringify({ error: "المبلغ غير صالح (100 - 10,000,000 دج)" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!reference_id || typeof reference_id !== 'string' || reference_id.length > 100) {
       return new Response(
         JSON.stringify({ error: "بيانات الدفع غير مكتملة" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }

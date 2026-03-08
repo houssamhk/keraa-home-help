@@ -47,7 +47,7 @@ export function NotificationCenter({ onNavigate }: NotificationCenterProps) {
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('New notification:', payload);
+          // Notification received
           const newNotification = payload.new as Notification;
           setNotifications(prev => [newNotification, ...prev]);
           setUnreadCount(prev => prev + 1);
