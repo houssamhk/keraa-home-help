@@ -302,13 +302,15 @@ function AppContent() {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <OfflineIndicator />
-        {!Capacitor.isNativePlatform() && <InstallPrompt />}
-        <AppContent />
-      </TooltipProvider>
+      <LanguageProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <OfflineIndicator />
+          {!Capacitor.isNativePlatform() && <InstallPrompt />}
+          <AppContent />
+        </TooltipProvider>
+      </LanguageProvider>
     </AuthProvider>
   </QueryClientProvider>
 );
