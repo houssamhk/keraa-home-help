@@ -172,7 +172,7 @@ export function SettingsPage({ onBack, onStartKYC }: SettingsPageProps) {
 
   const getRoleLabel = () => {
     if (profile?.role_type === 'tenant') return t.settings.tenant;
-    if (profile?.role_type === 'handyman') return t.settings.handyman || 'حرفي';
+    if (profile?.role_type === 'handyman') return t.settings.handyman;
     if (profile?.role_type === 'owner') return t.settings.owner;
     if (profile?.role_type === 'provider') return t.settings.provider;
     return t.settings.tenant;
