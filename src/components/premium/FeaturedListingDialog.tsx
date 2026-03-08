@@ -99,6 +99,53 @@ export function FeaturedListingDialog({
         });
         return;
       }
+    } else if (paymentMethod === 'satim') {
+      // Handle SATIM online payment
+      setIsSatimProcessing(true);
+      try {
+        // First create a pending featured listing
+        const { data: listing, error: listingError } = await supabase
+          .from('featured_listings')
+          .insert({
+            property_id: propertyId,
+            user_id: user.id,
+            feature_type: 'top_results',
+            duration_days: selectedDuration,
+            price_paid: price,
+            status: 'pending',
+            payment_method: 'satim_cib',
+          })
+          .select('id')
+          .single();
+
+        if (listingError) throw listingError;
+
+        const result = await createSatimPayment({
+          amount: price,
+          payment_type: 'featured_listing',
+          reference_id: listing.id,
+          description: `تمييز عقار: ${propertyTitle}`,
+        });
+
+        if (result.redirect_url) {
+          window.location.href = result.redirect_url;
+          return;
+        } else {
+          toast({
+            title: 'بوابة الدفع غير مفعلة',
+            description: 'استخدم المحفظة أو التحويل اليدوي حالياً',
+          });
+        }
+      } catch (error: any) {
+        toast({
+          title: 'خطأ',
+          description: error.message || 'فشل في إنشاء عملية الدفع',
+          variant: 'destructive'
+        });
+      } finally {
+        setIsSatimProcessing(false);
+      }
+      return;
     } else if (!paymentReference) {
       toast({
         title: 'خطأ',
@@ -112,7 +159,6 @@ export function FeaturedListingDialog({
 
     try {
       if (paymentMethod === 'wallet') {
-        // Use the database function to pay from wallet
         const { data, error } = await supabase.rpc('pay_for_featured_listing', {
           p_property_id: propertyId,
           p_duration_days: selectedDuration,
@@ -126,7 +172,6 @@ export function FeaturedListingDialog({
           description: `تم تمييز عقارك لمدة ${getDurationLabel(selectedDuration)}`
         });
       } else {
-        // Create pending featured listing for manual payment
         const { error } = await supabase
           .from('featured_listings')
           .insert({
@@ -160,6 +205,10 @@ export function FeaturedListingDialog({
       setIsLoading(false);
     }
   };
+
+  const paymentReference_state = useState('');
+  const paymentReference = paymentReference_state[0];
+  const setPaymentReference = paymentReference_state[1];
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
