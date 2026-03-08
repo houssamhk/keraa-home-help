@@ -34,7 +34,7 @@ export function usePushNotifications() {
   const registerServiceWorker = async () => {
     try {
       const registration = await navigator.serviceWorker.register('/sw.js');
-      console.log('Service Worker registered:', registration.scope);
+      // SW registered successfully
       
       // Check if already subscribed
       const reg = registration as any;
