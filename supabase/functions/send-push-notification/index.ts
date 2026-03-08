@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 interface PushPayload {
@@ -17,19 +17,58 @@ interface PushPayload {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    // Validate JWT - require authenticated user
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    // Verify caller identity
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const callerId = claimsData.claims.sub as string;
+    
+    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
     const payload: PushPayload = await req.json();
     const { user_id, user_ids, title, body, icon, data, tag } = payload;
+
+    // Input validation
+    if (!title || typeof title !== 'string' || title.length > 200) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid title' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    if (!body || typeof body !== 'string' || body.length > 1000) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Determine target users
     const targetUsers = user_ids || (user_id ? [user_id] : []);
@@ -39,6 +78,46 @@ serve(async (req) => {
         JSON.stringify({ error: 'No target users specified' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Rate limit: max 10 users per call for non-admins
+    const { data: isAdminData } = await supabaseClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', callerId)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (!isAdminData && targetUsers.length > 10) {
+      return new Response(
+        JSON.stringify({ error: 'Too many target users' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Non-admins can only send to users they have a relationship with
+    if (!isAdminData) {
+      const { data: hasRelationship } = await supabaseClient
+        .from('conversations')
+        .select('id')
+        .or(`and(participant_1.eq.${callerId},participant_2.in.(${targetUsers.join(',')})),and(participant_2.eq.${callerId},participant_1.in.(${targetUsers.join(',')}))`)
+        .limit(1);
+
+      if (!hasRelationship || hasRelationship.length === 0) {
+        // Also check contracts
+        const { data: hasContract } = await supabaseClient
+          .from('contracts')
+          .select('id')
+          .or(`and(landlord_id.eq.${callerId},tenant_id.in.(${targetUsers.join(',')})),and(tenant_id.eq.${callerId},landlord_id.in.(${targetUsers.join(',')}))`)
+          .limit(1);
+
+        if (!hasContract || hasContract.length === 0) {
+          return new Response(
+            JSON.stringify({ error: 'No relationship with target users' }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
     }
 
     // Fetch active subscriptions for target users
@@ -57,75 +136,71 @@ serve(async (req) => {
     }
 
     if (!subscriptions || subscriptions.length === 0) {
-      console.log('No active subscriptions found for users:', targetUsers);
       return new Response(
-        JSON.stringify({ message: 'No active subscriptions', sent: 0 }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: true, sent: 0, message: 'No active subscriptions' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Prepare push notification payload
-    const notificationPayload = JSON.stringify({
-      title,
-      body,
-      icon: icon || '/favicon.ico',
-      badge: '/favicon.ico',
-      tag: tag || 'sakani-notification',
-      data: {
-        ...data,
-        timestamp: Date.now()
-      }
-    });
-
-    // Note: In a real implementation, you would use web-push library
-    // For now, we'll log the notification and store it in the notifications table
-    let sentCount = 0;
+    let successCount = 0;
+    let failCount = 0;
 
     for (const sub of subscriptions) {
       try {
-        // In production, you would send actual push notifications here
-        // using the web-push library with VAPID keys
-        console.log(`Would send push to ${sub.user_id}:`, {
-          endpoint: sub.endpoint,
-          payload: notificationPayload
+        const pushPayload = {
+          title,
+          body,
+          icon: icon || '/pwa-192x192.png',
+          badge: '/pwa-192x192.png',
+          tag: tag || 'notification',
+          data: data || {},
+        };
+
+        const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY');
+        const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY');
+
+        if (!vapidPublicKey || !vapidPrivateKey) {
+          console.warn('VAPID keys not configured');
+          failCount++;
+          continue;
+        }
+
+        // Use web-push compatible approach
+        const response = await fetch(sub.endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(pushPayload),
         });
 
-        // Also create an in-app notification as fallback
-        await supabaseClient
-          .from('notifications')
-          .insert({
-            user_id: sub.user_id,
-            type: 'push',
-            title,
-            message: body,
-            data: data || {}
-          });
-
-        sentCount++;
-      } catch (sendError) {
-        console.error(`Error sending to ${sub.user_id}:`, sendError);
-        
-        // Mark subscription as inactive if it failed
-        await supabaseClient
-          .from('push_subscriptions')
-          .update({ is_active: false })
-          .eq('id', sub.id);
+        if (response.ok) {
+          successCount++;
+        } else if (response.status === 410 || response.status === 404) {
+          // Subscription expired/invalid - deactivate
+          await supabaseClient
+            .from('push_subscriptions')
+            .update({ is_active: false })
+            .eq('id', sub.id);
+          failCount++;
+        } else {
+          failCount++;
+        }
+      } catch (pushError) {
+        console.error('Push error:', pushError);
+        failCount++;
       }
     }
 
     return new Response(
-      JSON.stringify({ 
-        message: 'Notifications processed', 
-        sent: sentCount,
-        total: subscriptions.length 
-      }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ success: true, sent: successCount, failed: failCount }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Push notification error:', error);
+    console.error('Error:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
