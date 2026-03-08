@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Star, Clock, Wallet, CreditCard, Loader2, Check, Sparkles } from 'lucide-react';
+import { Star, Clock, Wallet, CreditCard, Loader2, Check, Sparkles, Globe, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -11,6 +11,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { createSatimPayment } from '@/services/paymentService';
 
 interface FeaturedPricing {
   id: string;
