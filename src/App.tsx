@@ -116,9 +116,9 @@ function AppContent() {
     if (isLoading) return;
     if (!user) {
       setCurrentScreen('auth');
-    } else if (!profile?.role_type) {
-      setCurrentScreen('role-selection');
     } else {
+      // Always go to home - profile will load async
+      // Role selection is only shown for new signups via handleAuthSuccess
       setCurrentScreen('home');
     }
   };
