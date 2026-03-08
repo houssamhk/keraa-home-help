@@ -272,7 +272,7 @@ serve(async (req) => {
       );
     }
 
-    const { user, supabase } = auth;
+    const { userId, supabase } = auth;
     const { messages } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
