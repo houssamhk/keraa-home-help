@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Home, MapPin, DollarSign, Bed, Bath, Ruler, Loader2 } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Home, MapPin, DollarSign, Bed, Bath, Ruler, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { LocationPicker } from '@/components/map/LocationPicker';
 import { MultiImageUpload, type MediaFile } from '@/components/upload/MultiImageUpload';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 interface AddPropertyPageProps {
   onBack: () => void;
@@ -17,9 +18,11 @@ interface AddPropertyPageProps {
 export function AddPropertyPage({ onBack, onSuccess, editPropertyId }: AddPropertyPageProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t, dir } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
+  const BackArrow = dir === 'rtl' ? ArrowRight : ArrowLeft;
   
   const [formData, setFormData] = useState({
     title: '',
@@ -36,7 +39,6 @@ export function AddPropertyPage({ onBack, onSuccess, editPropertyId }: AddProper
     longitude: null as number | null
   });
 
-  // Fetch property data when editing
   useEffect(() => {
     if (editPropertyId) {
       fetchPropertyData();
@@ -69,7 +71,6 @@ export function AddPropertyPage({ onBack, onSuccess, editPropertyId }: AddProper
         longitude: data.longitude || null
       });
       
-      // Convert existing images to MediaFile format
       if (data.images && data.images.length > 0) {
         const existingMedia: MediaFile[] = data.images.map((url: string, index: number) => ({
           id: `existing-${index}`,
@@ -84,38 +85,30 @@ export function AddPropertyPage({ onBack, onSuccess, editPropertyId }: AddProper
   };
 
   const propertyTypes = [
-    { id: 'apartment', label: 'شقة' },
-    { id: 'house', label: 'منزل' },
-    { id: 'villa', label: 'فيلا' },
-    { id: 'studio', label: 'استوديو' },
-    { id: 'room', label: 'غرفة' }
+    { id: 'apartment', label: t.propertiesPage.apartment },
+    { id: 'house', label: t.propertiesPage.house },
+    { id: 'villa', label: t.propertiesPage.villa },
+    { id: 'studio', label: t.propertiesPage.studio },
+    { id: 'room', label: t.propertiesPage.room },
   ];
 
   const pricePeriods = [
-    { id: 'day', label: 'يومياً' },
-    { id: 'week', label: 'أسبوعياً' },
-    { id: 'month', label: 'شهرياً' },
-    { id: 'year', label: 'سنوياً' }
+    { id: 'day', label: t.addPropertyPage.daily },
+    { id: 'week', label: t.addPropertyPage.weekly },
+    { id: 'month', label: t.addPropertyPage.monthly },
+    { id: 'year', label: t.addPropertyPage.yearly },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!user) {
-      toast({
-        title: 'خطأ',
-        description: 'يجب تسجيل الدخول أولاً',
-        variant: 'destructive'
-      });
+      toast({ title: t.error, description: t.loginRequired, variant: 'destructive' });
       return;
     }
 
     if (!formData.title || !formData.address || !formData.city || !formData.price) {
-      toast({
-        title: 'خطأ',
-        description: 'يرجى ملء جميع الحقول المطلوبة',
-        variant: 'destructive'
-      });
+      toast({ title: t.error, description: t.requiredFields, variant: 'destructive' });
       return;
     }
 
@@ -141,14 +134,12 @@ export function AddPropertyPage({ onBack, onSuccess, editPropertyId }: AddProper
     let error;
     
     if (editPropertyId) {
-      // Update existing property
       const { error: updateError } = await supabase
         .from('properties')
         .update(propertyData)
         .eq('id', editPropertyId);
       error = updateError;
     } else {
-      // Insert new property
       const { error: insertError } = await supabase
         .from('properties')
         .insert(propertyData);
@@ -159,14 +150,14 @@ export function AddPropertyPage({ onBack, onSuccess, editPropertyId }: AddProper
 
     if (error) {
       toast({
-        title: 'خطأ',
-        description: editPropertyId ? 'فشل في تحديث العقار' : 'فشل في إضافة العقار',
+        title: t.error,
+        description: editPropertyId ? t.addPropertyPage.updateFailed : t.addPropertyPage.addFailed,
         variant: 'destructive'
       });
     } else {
       toast({
-        title: 'تم بنجاح',
-        description: editPropertyId ? 'تم تحديث العقار بنجاح' : 'تم إضافة العقار بنجاح'
+        title: t.success,
+        description: editPropertyId ? t.addPropertyPage.updateSuccess : t.addPropertyPage.addSuccess
       });
       onSuccess();
     }
@@ -182,25 +173,22 @@ export function AddPropertyPage({ onBack, onSuccess, editPropertyId }: AddProper
 
   return (
     <div className="min-h-screen bg-background safe-area-inset">
-      {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="px-6 pt-6 pb-4 flex items-center gap-4"
       >
         <Button variant="glass" size="icon" onClick={onBack}>
-          <ArrowRight className="w-5 h-5" />
+          <BackArrow className="w-5 h-5" />
         </Button>
         <h1 className="font-serif text-2xl font-bold text-foreground">
-          {editPropertyId ? 'تعديل العقار' : 'إضافة عقار جديد'}
+          {editPropertyId ? t.addPropertyPage.editTitle : t.addPropertyPage.addTitle}
         </h1>
       </motion.header>
 
-      {/* Form */}
       <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-4 overflow-y-auto">
-        {/* Media Upload */}
         <div>
-          <label className="text-sm text-muted-foreground mb-2 block">الصور والفيديوهات</label>
+          <label className="text-sm text-muted-foreground mb-2 block">{t.addPropertyPage.mediaLabel}</label>
           <div className="glass-card p-4">
             <MultiImageUpload
               bucket="property-media"
@@ -212,30 +200,28 @@ export function AddPropertyPage({ onBack, onSuccess, editPropertyId }: AddProper
           </div>
         </div>
 
-        {/* Title */}
         <div>
-          <label className="text-sm text-muted-foreground mb-2 block">عنوان الإعلان *</label>
+          <label className="text-sm text-muted-foreground mb-2 block">{t.addPropertyPage.adTitle}</label>
           <div className="glass-card flex items-center gap-3 px-4 py-3">
             <Home className="w-5 h-5 text-muted-foreground" />
             <input
               type="text"
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              placeholder="مثال: شقة فاخرة في حيدرة"
+              placeholder={t.addPropertyPage.adTitlePlaceholder}
               className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground"
               dir="auto"
             />
           </div>
         </div>
 
-        {/* Description */}
         <div>
-          <label className="text-sm text-muted-foreground mb-2 block">الوصف</label>
+          <label className="text-sm text-muted-foreground mb-2 block">{t.addPropertyPage.description}</label>
           <div className="glass-card px-4 py-3">
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="وصف تفصيلي للعقار..."
+              placeholder={t.addPropertyPage.descriptionPlaceholder}
               rows={3}
               className="w-full bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground resize-none"
               dir="auto"
@@ -243,30 +229,29 @@ export function AddPropertyPage({ onBack, onSuccess, editPropertyId }: AddProper
           </div>
         </div>
 
-        {/* Address & City */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-sm text-muted-foreground mb-2 block">العنوان *</label>
+            <label className="text-sm text-muted-foreground mb-2 block">{t.addPropertyPage.address}</label>
             <div className="glass-card flex items-center gap-3 px-4 py-3">
               <MapPin className="w-5 h-5 text-muted-foreground" />
               <input
                 type="text"
                 value={formData.address}
                 onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                placeholder="الشارع/الحي"
+                placeholder={t.addPropertyPage.addressPlaceholder}
                 className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground text-sm"
                 dir="auto"
               />
             </div>
           </div>
           <div>
-            <label className="text-sm text-muted-foreground mb-2 block">المدينة *</label>
+            <label className="text-sm text-muted-foreground mb-2 block">{t.addPropertyPage.city}</label>
             <div className="glass-card px-4 py-3">
               <input
                 type="text"
                 value={formData.city}
                 onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                placeholder="المدينة"
+                placeholder={t.addPropertyPage.cityPlaceholder}
                 className="w-full bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground text-sm"
                 dir="auto"
               />
@@ -274,9 +259,8 @@ export function AddPropertyPage({ onBack, onSuccess, editPropertyId }: AddProper
           </div>
         </div>
 
-        {/* Property Type */}
         <div>
-          <label className="text-sm text-muted-foreground mb-2 block">نوع العقار</label>
+          <label className="text-sm text-muted-foreground mb-2 block">{t.addPropertyPage.propertyType}</label>
           <div className="flex gap-2 overflow-x-auto pb-2">
             {propertyTypes.map(type => (
               <button
@@ -295,9 +279,8 @@ export function AddPropertyPage({ onBack, onSuccess, editPropertyId }: AddProper
           </div>
         </div>
 
-        {/* Price */}
         <div>
-          <label className="text-sm text-muted-foreground mb-2 block">السعر *</label>
+          <label className="text-sm text-muted-foreground mb-2 block">{t.addPropertyPage.priceLabel}</label>
           <div className="flex gap-2">
             <div className="flex-1 glass-card flex items-center gap-3 px-4 py-3">
               <DollarSign className="w-5 h-5 text-muted-foreground" />
@@ -305,7 +288,7 @@ export function AddPropertyPage({ onBack, onSuccess, editPropertyId }: AddProper
                 type="number"
                 value={formData.price}
                 onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
-                placeholder="السعر بالدينار"
+                placeholder={t.addPropertyPage.pricePlaceholder}
                 className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground"
                 dir="ltr"
               />
@@ -324,10 +307,9 @@ export function AddPropertyPage({ onBack, onSuccess, editPropertyId }: AddProper
           </div>
         </div>
 
-        {/* Rooms */}
         <div className="grid grid-cols-3 gap-3">
           <div>
-            <label className="text-sm text-muted-foreground mb-2 block">غرف النوم</label>
+            <label className="text-sm text-muted-foreground mb-2 block">{t.addPropertyPage.bedrooms}</label>
             <div className="glass-card flex items-center gap-2 px-4 py-3">
               <Bed className="w-4 h-4 text-muted-foreground" />
               <input
@@ -341,7 +323,7 @@ export function AddPropertyPage({ onBack, onSuccess, editPropertyId }: AddProper
             </div>
           </div>
           <div>
-            <label className="text-sm text-muted-foreground mb-2 block">الحمامات</label>
+            <label className="text-sm text-muted-foreground mb-2 block">{t.addPropertyPage.bathrooms}</label>
             <div className="glass-card flex items-center gap-2 px-4 py-3">
               <Bath className="w-4 h-4 text-muted-foreground" />
               <input
@@ -355,7 +337,7 @@ export function AddPropertyPage({ onBack, onSuccess, editPropertyId }: AddProper
             </div>
           </div>
           <div>
-            <label className="text-sm text-muted-foreground mb-2 block">المساحة م²</label>
+            <label className="text-sm text-muted-foreground mb-2 block">{t.addPropertyPage.areaSqm}</label>
             <div className="glass-card flex items-center gap-2 px-4 py-3">
               <Ruler className="w-4 h-4 text-muted-foreground" />
               <input
@@ -370,14 +352,12 @@ export function AddPropertyPage({ onBack, onSuccess, editPropertyId }: AddProper
           </div>
         </div>
 
-        {/* Location Picker */}
         <LocationPicker
           latitude={formData.latitude}
           longitude={formData.longitude}
           onLocationChange={(lat, lng) => setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }))}
         />
 
-        {/* Submit */}
         <Button
           type="submit"
           variant="gold"
@@ -388,7 +368,7 @@ export function AddPropertyPage({ onBack, onSuccess, editPropertyId }: AddProper
           {isLoading ? (
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
-            editPropertyId ? 'حفظ التعديلات' : 'نشر العقار'
+            editPropertyId ? t.addPropertyPage.saveChanges : t.addPropertyPage.publish
           )}
         </Button>
       </form>

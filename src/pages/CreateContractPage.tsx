@@ -54,12 +54,7 @@ export function CreateContractPage({
     end_date: '',
     monthly_amount: '',
     total_amount: '',
-    terms: `الشروط والأحكام:
-1. يلتزم المستأجر بدفع الإيجار في موعده المحدد
-2. يحافظ المستأجر على العقار في حالة جيدة
-3. لا يجوز تأجير العقار من الباطن دون موافقة المالك
-4. يتحمل المستأجر فواتير المياه والكهرباء
-5. يعاد العقار بنفس الحالة عند انتهاء العقد`
+    terms: ''
   });
 
   const BackArrow = dir === 'rtl' ? ArrowRight : ArrowLeft;
@@ -81,25 +76,20 @@ export function CreateContractPage({
 
   const searchTenantByEmail = async () => {
     if (!formData.tenant_email || formData.tenant_email.length < 5) {
-      toast({ title: t.error, description: 'يرجى إدخال بريد إلكتروني صحيح', variant: 'destructive' });
+      toast({ title: t.error, description: t.createContractPage.validEmail, variant: 'destructive' });
       return;
     }
     
     setTenantSearching(true);
-    // Search using Supabase auth admin would require edge function
-    // For now, search by looking up conversations or use the public_profiles view
-    // We'll search profiles by checking if there's a user with matching email via a simpler approach
     const { data, error } = await supabase
       .from('public_profiles')
       .select('user_id, full_name')
       .limit(50);
     
-    // Since we can't search by email directly from client, we'll let user input tenant_id
-    // Or we search historical contract partners
     setTenantSearching(false);
     
     if (!data || data.length === 0) {
-      toast({ title: t.error, description: 'لم يتم العثور على المستخدم', variant: 'destructive' });
+      toast({ title: t.error, description: t.createContractPage.userNotFound, variant: 'destructive' });
     }
   };
 
@@ -107,29 +97,28 @@ export function CreateContractPage({
     e.preventDefault();
     
     if (!user) {
-      toast({ title: t.error, description: 'يجب تسجيل الدخول أولاً', variant: 'destructive' });
+      toast({ title: t.error, description: t.loginRequired, variant: 'destructive' });
       return;
     }
 
     if (!formData.title || !formData.start_date) {
-      toast({ title: t.error, description: 'يرجى ملء جميع الحقول المطلوبة', variant: 'destructive' });
+      toast({ title: t.error, description: t.requiredFields, variant: 'destructive' });
       return;
     }
 
     if (!signatureData) {
-      toast({ title: t.error, description: 'يرجى التوقيع على العقد أولاً', variant: 'destructive' });
+      toast({ title: t.error, description: t.createContractPage.signFirst, variant: 'destructive' });
       return;
     }
 
-    // Determine tenant_id
     const tenantId = foundTenant?.user_id || preselectedTenantId;
     if (!tenantId) {
-      toast({ title: t.error, description: 'يرجى تحديد الطرف الآخر', variant: 'destructive' });
+      toast({ title: t.error, description: t.createContractPage.specifyOtherParty, variant: 'destructive' });
       return;
     }
 
     if (tenantId === user.id) {
-      toast({ title: t.error, description: 'لا يمكنك إنشاء عقد مع نفسك', variant: 'destructive' });
+      toast({ title: t.error, description: t.createContractPage.cannotSelfContract, variant: 'destructive' });
       return;
     }
 
@@ -160,16 +149,16 @@ export function CreateContractPage({
     setIsLoading(false);
 
     if (error) {
-      toast({ title: t.error, description: 'فشل في إنشاء العقد', variant: 'destructive' });
+      toast({ title: t.error, description: t.createContractPage.createFailed, variant: 'destructive' });
     } else {
-      toast({ title: t.success, description: 'تم إنشاء العقد بنجاح وإرساله للطرف الآخر' });
+      toast({ title: t.success, description: t.createContractPage.createSuccess });
       onSuccess();
     }
   };
 
   const handleSignature = (data: string) => {
     setSignatureData(data);
-    toast({ title: t.success, description: 'تم حفظ التوقيع' });
+    toast({ title: t.success, description: t.createContractPage.signatureSaved });
   };
 
   return (
@@ -182,13 +171,13 @@ export function CreateContractPage({
         <Button variant="glass" size="icon" onClick={onBack}>
           <BackArrow className="w-5 h-5" />
         </Button>
-        <h1 className="font-serif text-2xl font-bold text-foreground">إنشاء عقد جديد</h1>
+        <h1 className="font-serif text-2xl font-bold text-foreground">{t.createContractPage.title}</h1>
       </motion.header>
 
       <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-4 overflow-y-auto">
         {/* Contract Type */}
         <div>
-          <label className="text-sm text-muted-foreground mb-2 block">نوع العقد</label>
+          <label className="text-sm text-muted-foreground mb-2 block">{t.createContractPage.contractType}</label>
           <div className="flex gap-2">
             <button
               type="button"
@@ -199,7 +188,7 @@ export function CreateContractPage({
                   : 'glass-card text-muted-foreground'
               }`}
             >
-              عقد إيجار
+              {t.createContractPage.rentalContract}
             </button>
             <button
               type="button"
@@ -210,21 +199,21 @@ export function CreateContractPage({
                   : 'glass-card text-muted-foreground'
               }`}
             >
-              عقد خدمة
+              {t.createContractPage.serviceContract}
             </button>
           </div>
         </div>
 
         {/* Title */}
         <div>
-          <label className="text-sm text-muted-foreground mb-2 block">عنوان العقد *</label>
+          <label className="text-sm text-muted-foreground mb-2 block">{t.createContractPage.contractTitle}</label>
           <div className="glass-card flex items-center gap-3 px-4 py-3">
             <FileText className="w-5 h-5 text-muted-foreground" />
             <input
               type="text"
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              placeholder="مثال: عقد إيجار شقة حيدرة"
+              placeholder={t.createContractPage.contractTitlePlaceholder}
               className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground"
               dir="auto"
             />
@@ -234,7 +223,7 @@ export function CreateContractPage({
         {/* Property Selection */}
         {formData.contract_type === 'rental' && properties.length > 0 && (
           <div>
-            <label className="text-sm text-muted-foreground mb-2 block">العقار</label>
+            <label className="text-sm text-muted-foreground mb-2 block">{t.createContractPage.property}</label>
             <select
               value={formData.property_id}
               onChange={(e) => {
@@ -247,7 +236,7 @@ export function CreateContractPage({
               }}
               className="w-full glass-card px-4 py-3 bg-transparent text-foreground outline-none"
             >
-              <option value="" className="bg-background">اختر عقاراً</option>
+              <option value="" className="bg-background">{t.createContractPage.selectProperty}</option>
               {properties.map(property => (
                 <option key={property.id} value={property.id} className="bg-background">
                   {property.title}
@@ -260,7 +249,7 @@ export function CreateContractPage({
         {/* Tenant Email */}
         {!preselectedTenantId && (
           <div>
-            <label className="text-sm text-muted-foreground mb-2 block">بريد المستأجر/العميل *</label>
+            <label className="text-sm text-muted-foreground mb-2 block">{t.createContractPage.tenantEmail}</label>
             <div className="glass-card flex items-center gap-3 px-4 py-3">
               <User className="w-5 h-5 text-muted-foreground" />
               <input
@@ -274,7 +263,7 @@ export function CreateContractPage({
             </div>
             {foundTenant && (
               <p className="text-xs text-green-500 mt-1">
-                ✓ تم العثور على: {foundTenant.full_name || 'مستخدم'}
+                ✓ {t.createContractPage.foundUser} {foundTenant.full_name || t.createContractPage.user}
               </p>
             )}
           </div>
@@ -283,7 +272,7 @@ export function CreateContractPage({
         {/* Dates */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-sm text-muted-foreground mb-2 block">تاريخ البدء *</label>
+            <label className="text-sm text-muted-foreground mb-2 block">{t.createContractPage.startDate}</label>
             <div className="glass-card flex items-center gap-3 px-4 py-3">
               <Calendar className="w-5 h-5 text-muted-foreground" />
               <input
@@ -295,7 +284,7 @@ export function CreateContractPage({
             </div>
           </div>
           <div>
-            <label className="text-sm text-muted-foreground mb-2 block">تاريخ الانتهاء</label>
+            <label className="text-sm text-muted-foreground mb-2 block">{t.createContractPage.endDate}</label>
             <div className="glass-card flex items-center gap-3 px-4 py-3">
               <Calendar className="w-5 h-5 text-muted-foreground" />
               <input
@@ -311,28 +300,28 @@ export function CreateContractPage({
         {/* Amount */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-sm text-muted-foreground mb-2 block">المبلغ الشهري</label>
+            <label className="text-sm text-muted-foreground mb-2 block">{t.createContractPage.monthlyAmount}</label>
             <div className="glass-card flex items-center gap-3 px-4 py-3">
               <DollarSign className="w-5 h-5 text-muted-foreground" />
               <input
                 type="number"
                 value={formData.monthly_amount}
                 onChange={(e) => setFormData(prev => ({ ...prev, monthly_amount: e.target.value }))}
-                placeholder="بالدينار"
+                placeholder={t.createContractPage.inDZD}
                 className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground"
                 dir="ltr"
               />
             </div>
           </div>
           <div>
-            <label className="text-sm text-muted-foreground mb-2 block">المبلغ الإجمالي</label>
+            <label className="text-sm text-muted-foreground mb-2 block">{t.createContractPage.totalAmount}</label>
             <div className="glass-card flex items-center gap-3 px-4 py-3">
               <DollarSign className="w-5 h-5 text-muted-foreground" />
               <input
                 type="number"
                 value={formData.total_amount}
                 onChange={(e) => setFormData(prev => ({ ...prev, total_amount: e.target.value }))}
-                placeholder="بالدينار"
+                placeholder={t.createContractPage.inDZD}
                 className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground"
                 dir="ltr"
               />
@@ -342,12 +331,12 @@ export function CreateContractPage({
 
         {/* Description */}
         <div>
-          <label className="text-sm text-muted-foreground mb-2 block">وصف العقد</label>
+          <label className="text-sm text-muted-foreground mb-2 block">{t.createContractPage.description}</label>
           <div className="glass-card px-4 py-3">
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="وصف مختصر للعقد..."
+              placeholder={t.createContractPage.descriptionPlaceholder}
               rows={2}
               className="w-full bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground resize-none"
               dir="auto"
@@ -357,7 +346,7 @@ export function CreateContractPage({
 
         {/* Terms */}
         <div>
-          <label className="text-sm text-muted-foreground mb-2 block">الشروط والأحكام</label>
+          <label className="text-sm text-muted-foreground mb-2 block">{t.createContractPage.termsAndConditions}</label>
           <div className="glass-card px-4 py-3">
             <textarea
               value={formData.terms}
@@ -371,13 +360,13 @@ export function CreateContractPage({
 
         {/* Signature Section */}
         <div>
-          <label className="text-sm text-muted-foreground mb-2 block">توقيعك الإلكتروني *</label>
+          <label className="text-sm text-muted-foreground mb-2 block">{t.createContractPage.yourSignature}</label>
           {signatureData ? (
             <div className="glass-card p-4 text-center">
-              <img src={signatureData} alt="توقيعك" className="h-16 mx-auto object-contain mb-2" />
-              <p className="text-xs text-green-500 mb-2">✓ تم التوقيع</p>
+              <img src={signatureData} alt="signature" className="h-16 mx-auto object-contain mb-2" />
+              <p className="text-xs text-green-500 mb-2">{t.createContractPage.signed}</p>
               <Button type="button" variant="outline" size="sm" onClick={() => setSignatureOpen(true)}>
-                إعادة التوقيع
+                {t.createContractPage.resignButton}
               </Button>
             </div>
           ) : (
@@ -387,7 +376,7 @@ export function CreateContractPage({
               className="w-full py-8 border-dashed border-2 border-primary/30 text-muted-foreground hover:text-foreground"
               onClick={() => setSignatureOpen(true)}
             >
-              اضغط هنا للتوقيع
+              {t.createContractPage.clickToSign}
             </Button>
           )}
         </div>
@@ -403,12 +392,12 @@ export function CreateContractPage({
           {isLoading ? (
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
-            'إنشاء وإرسال العقد'
+            t.createContractPage.createAndSend
           )}
         </Button>
 
         <p className="text-xs text-muted-foreground text-center">
-          سيتم إرسال العقد للطرف الآخر للتوقيع
+          {t.createContractPage.willBeSent}
         </p>
       </form>
 
@@ -417,7 +406,7 @@ export function CreateContractPage({
         onOpenChange={setSignatureOpen}
         onSign={handleSignature}
         signerName={profile?.full_name || ''}
-        title="التوقيع على العقد"
+        title={t.createContractPage.signContractTitle}
       />
     </div>
   );
