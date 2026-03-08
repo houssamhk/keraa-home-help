@@ -358,7 +358,7 @@ export function FeaturedListingDialog({
           </div>
 
           {/* Payment Reference for CCP/BaridiMob */}
-          {paymentMethod !== 'wallet' && (
+          {(paymentMethod === 'ccp' || paymentMethod === 'baridimob') && (
             <div>
               <label className="text-sm font-medium mb-2 block">رقم التحويل</label>
               <input
@@ -370,7 +370,7 @@ export function FeaturedListingDialog({
                 dir="ltr"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                حساب CCP: 0012345678 مفتاح 90
+                حساب CCP: 00799999 0019940 31
               </p>
             </div>
           )}
