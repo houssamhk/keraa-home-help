@@ -108,7 +108,8 @@ export function SettingsPage({ onBack, onStartKYC }: SettingsPageProps) {
     });
   };
 
-  const settings = profile?.settings || { theme: 'dark', language: 'ar', notifications: true };
+  const currentTheme = profile?.settings?.theme || localStorage.getItem('sakani-theme') || 'dark';
+  const settings = profile?.settings || { theme: currentTheme as 'dark' | 'light', language: 'ar', notifications: true };
 
   return (
     <div className="min-h-screen bg-background safe-area-inset">
