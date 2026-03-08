@@ -10,6 +10,7 @@ import { MobileBottomNav } from "@/components/navigation/MobileBottomNav";
 import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { LanguageProvider } from "@/i18n/LanguageContext";
 import { useTheme } from "@/hooks/useTheme";
 import type { UserRole } from "@/types/user";
 
