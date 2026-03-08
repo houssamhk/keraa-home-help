@@ -1,13 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, ArrowLeft, Moon, Sun, Bell, Globe, LogOut, User, Shield, BellRing, Database, Trash2, Loader2, ShieldCheck, AlertCircle, Check } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Moon, Sun, Bell, Globe, LogOut, User, Shield, BellRing, Database, Trash2, Loader2, ShieldCheck, AlertCircle, Check, RefreshCw, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { seedDemoData, clearDemoData } from '@/utils/seedDemoData';
 import { useLanguage, type Language } from '@/i18n/LanguageContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SettingsPageProps {
   onBack: () => void;
@@ -25,7 +30,61 @@ export function SettingsPage({ onBack, onStartKYC }: SettingsPageProps) {
     () => profile?.settings?.theme || localStorage.getItem('sakani-theme') || 'dark'
   );
 
+  // Support request state
+  const [roleChangeOpen, setRoleChangeOpen] = useState(false);
+  const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
+  const [requestReason, setRequestReason] = useState('');
+  const [selectedRole, setSelectedRole] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+
   const BackArrow = dir === 'rtl' ? ArrowRight : ArrowLeft;
+
+  useEffect(() => {
+    if (user) fetchPendingRequests();
+  }, [user]);
+
+  const fetchPendingRequests = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('support_requests')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    if (data) setPendingRequests(data);
+  };
+
+  const hasPendingRequest = (type: string) => 
+    pendingRequests.some(r => r.request_type === type && r.status === 'pending');
+
+  const handleSubmitRequest = async (type: 'role_change' | 'account_deletion') => {
+    if (!user || !profile) return;
+    setSubmitting(true);
+
+    const { error } = await supabase.from('support_requests').insert({
+      user_id: user.id,
+      request_type: type,
+      from_role: profile.role_type,
+      to_role: type === 'role_change' ? selectedRole : null,
+      reason: requestReason,
+    });
+
+    setSubmitting(false);
+    if (error) {
+      if (error.code === '23505') {
+        toast({ title: t.settings.pendingRequest, description: t.settings.pendingRequestDesc, variant: 'destructive' });
+      } else {
+        toast({ title: t.error, description: error.message, variant: 'destructive' });
+      }
+    } else {
+      toast({ title: t.settings.requestSent, description: t.settings.requestSentDesc });
+      setRoleChangeOpen(false);
+      setDeleteAccountOpen(false);
+      setRequestReason('');
+      setSelectedRole('');
+      fetchPendingRequests();
+    }
+  };
 
   const handleThemeChange = async (isDark: boolean) => {
     const newTheme = isDark ? 'dark' : 'light';
@@ -52,7 +111,6 @@ export function SettingsPage({ onBack, onStartKYC }: SettingsPageProps) {
 
   const handleLanguageChange = (lang: Language) => {
     setLanguage(lang);
-    // Also persist in profile settings
     updateSettings({ language: lang });
     toast({ title: t.settings.languageChanged });
   };
@@ -115,8 +173,15 @@ export function SettingsPage({ onBack, onStartKYC }: SettingsPageProps) {
   const getRoleLabel = () => {
     if (profile?.role_type === 'tenant') return t.settings.tenant;
     if (profile?.role_type === 'provider') return t.settings.provider;
+    if (profile?.role_type === 'handyman') return t.settings.provider;
     return t.settings.owner;
   };
+
+  const roleOptions = [
+    { value: 'tenant', label: t.settings.tenant },
+    { value: 'owner', label: t.settings.owner },
+    { value: 'provider', label: t.settings.provider },
+  ].filter(r => r.value !== profile?.role_type);
 
   return (
     <div className="min-h-screen bg-background safe-area-inset">
@@ -290,6 +355,50 @@ export function SettingsPage({ onBack, onStartKYC }: SettingsPageProps) {
           )}
         </motion.div>
 
+        {/* Account Management */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="glass-card p-4 space-y-4"
+        >
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t.settings.accountManagement}</h3>
+          
+          <div className="flex flex-col gap-3">
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-3"
+              onClick={() => setRoleChangeOpen(true)}
+              disabled={hasPendingRequest('role_change')}
+            >
+              <RefreshCw className="w-5 h-5 text-primary" />
+              <div className="text-right flex-1">
+                <span className="block">{t.settings.changeRole}</span>
+                <span className="text-xs text-muted-foreground">{t.settings.changeRoleDesc}</span>
+              </div>
+              {hasPendingRequest('role_change') && (
+                <Badge variant="secondary" className="text-xs">{t.settings.pendingRequest}</Badge>
+              )}
+            </Button>
+            
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-3 text-destructive hover:text-destructive"
+              onClick={() => setDeleteAccountOpen(true)}
+              disabled={hasPendingRequest('account_deletion')}
+            >
+              <UserX className="w-5 h-5" />
+              <div className="text-right flex-1">
+                <span className="block">{t.settings.deleteAccount}</span>
+                <span className="text-xs text-muted-foreground">{t.settings.deleteAccountDesc}</span>
+              </div>
+              {hasPendingRequest('account_deletion') && (
+                <Badge variant="secondary" className="text-xs">{t.settings.pendingRequest}</Badge>
+              )}
+            </Button>
+          </div>
+        </motion.div>
+
         {/* Demo Data Section */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -338,6 +447,7 @@ export function SettingsPage({ onBack, onStartKYC }: SettingsPageProps) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
+          className="pb-8"
         >
           <Button
             variant="ghost"
@@ -349,6 +459,77 @@ export function SettingsPage({ onBack, onStartKYC }: SettingsPageProps) {
           </Button>
         </motion.div>
       </div>
+
+      {/* Role Change Dialog */}
+      <Dialog open={roleChangeOpen} onOpenChange={setRoleChangeOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t.settings.roleChangeRequest}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">{t.settings.selectNewRole}</label>
+              <Select value={selectedRole} onValueChange={setSelectedRole}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t.settings.selectNewRole} />
+                </SelectTrigger>
+                <SelectContent>
+                  {roleOptions.map(role => (
+                    <SelectItem key={role.value} value={role.value}>{role.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">{t.settings.requestReason}</label>
+              <Textarea
+                value={requestReason}
+                onChange={e => setRequestReason(e.target.value)}
+                placeholder={t.settings.requestReason}
+                rows={3}
+              />
+            </div>
+            <Button
+              className="w-full"
+              disabled={!selectedRole || !requestReason || submitting}
+              onClick={() => handleSubmitRequest('role_change')}
+            >
+              {submitting ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
+              {t.settings.sendRequest}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Account Dialog */}
+      <Dialog open={deleteAccountOpen} onOpenChange={setDeleteAccountOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-destructive">{t.settings.accountDeletionRequest}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">{t.settings.deleteAccountDesc}</p>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">{t.settings.requestReason}</label>
+              <Textarea
+                value={requestReason}
+                onChange={e => setRequestReason(e.target.value)}
+                placeholder={t.settings.requestReason}
+                rows={3}
+              />
+            </div>
+            <Button
+              variant="destructive"
+              className="w-full"
+              disabled={!requestReason || submitting}
+              onClick={() => handleSubmitRequest('account_deletion')}
+            >
+              {submitting ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
+              {t.settings.sendRequest}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
