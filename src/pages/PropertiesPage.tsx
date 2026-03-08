@@ -112,6 +112,18 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
     setFilters(newFilters);
   };
 
+  const toggleCompare = (property: Property) => {
+    setCompareList((prev) => {
+      const exists = prev.find((p) => p.id === property.id);
+      if (exists) return prev.filter((p) => p.id !== property.id);
+      if (prev.length >= 3) {
+        toast.info('يمكنك مقارنة 3 عقارات كحد أقصى');
+        return prev;
+      }
+      return [...prev, property];
+    });
+  };
+
   const displayProperties = properties;
 
   return (
