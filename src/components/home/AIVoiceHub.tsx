@@ -48,9 +48,11 @@ interface AIVoiceHubProps {
   userName?: string;
   onNavigate: (route: string) => void;
   needsKYC?: boolean;
+  userRole?: string;
+  isAdmin?: boolean;
 }
 
-export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoiceHubProps) {
+export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC, userRole, isAdmin }: AIVoiceHubProps) {
   const [textInput, setTextInput] = useState("");
   const [showHistory, setShowHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
