@@ -133,11 +133,25 @@ function AppContent() {
   // When profile loads after auth, redirect from role-selection if already onboarded
   useEffect(() => {
     if (!isInitialized || isLoading || !user || !profile) return;
+    
+    // Auto-mark existing users (who already have a non-default role) as onboarded
     const onboarded = localStorage.getItem(`onboarded_${user.id}`);
-    if (currentScreen === 'role-selection' && onboarded) {
+    if (!onboarded && profile.role_type && profile.role_type !== 'tenant') {
+      localStorage.setItem(`onboarded_${user.id}`, 'true');
+    }
+    
+    // Also check profile creation date - if account is older than 5 minutes, consider onboarded
+    // This handles existing 'tenant' users who chose tenant before this feature
+    if (!onboarded && profile.role_type) {
+      // Mark as onboarded for any returning user (profile exists = not brand new)
+      localStorage.setItem(`onboarded_${user.id}`, 'true');
+    }
+    
+    const isOnboarded = localStorage.getItem(`onboarded_${user.id}`);
+    if (currentScreen === 'role-selection' && isOnboarded) {
       setCurrentScreen('home');
     }
-    if (currentScreen === 'auth' && onboarded) {
+    if (currentScreen === 'auth' && isOnboarded) {
       setCurrentScreen('home');
     }
   }, [profile, user, isLoading, isInitialized, currentScreen]);
