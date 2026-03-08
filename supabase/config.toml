@@ -14,3 +14,12 @@ verify_jwt = false
 
 [functions.text-to-speech]
 verify_jwt = false
+
+[functions.satim-create-payment]
+verify_jwt = false
+
+[functions.satim-payment-callback]
+verify_jwt = false
+
+[functions.satim-check-status]
+verify_jwt = false
