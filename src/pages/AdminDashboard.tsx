@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAdminRole } from '@/hooks/useAdminRole';
 import { useKycDocuments } from '@/hooks/useKycDocuments';
 import { PaymentManagement } from '@/components/admin/PaymentManagement';
+import { SupportRequestsManagement } from '@/components/admin/SupportRequestsManagement';
 import { DemandHeatmap } from '@/components/admin/DemandHeatmap';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
