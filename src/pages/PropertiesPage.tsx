@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowRight, ArrowLeft } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, ArrowLeft, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { AISearchBar } from '@/components/search/AISearchBar';
 import { SearchAlertDialog } from '@/components/alerts/SearchAlertDialog';
 import { PropertyCardSkeleton } from '@/components/common/PropertyCardSkeleton';
 import { PropertyCard } from '@/components/property/PropertyCard';
+import { CompareProperties } from '@/components/property/CompareProperties';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { toast } from 'sonner';
 
 interface Property {
   id: string;
