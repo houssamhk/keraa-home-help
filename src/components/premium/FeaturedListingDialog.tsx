@@ -391,7 +391,7 @@ export function FeaturedListingDialog({
             size="lg"
             className="w-full"
             onClick={handleSubmit}
-            disabled={isLoading}
+            disabled={isLoading || isSatimProcessing}
           >
             {isLoading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
