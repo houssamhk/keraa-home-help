@@ -146,6 +146,14 @@ function AppContent() {
   const handleKYCSkip = () => setCurrentScreen('home');
 
   const handleNavigate = (route: string) => {
+    // Role-based route guards
+    const userRole = profile?.role_type;
+    if (route === '/owner-dashboard' && userRole !== 'owner') return;
+    if (route === '/add-property' && userRole !== 'owner') return;
+    if (route === '/handyman-dashboard' && userRole !== 'handyman') return;
+    if (route === '/admin' && !isAdmin) return;
+    if (route === '/agency-dashboard' && userRole !== 'owner') return;
+
     if (route.startsWith('/property/')) {
       const propertyId = route.replace('/property/', '');
       import('@/integrations/supabase/client').then(({ supabase }) => {
