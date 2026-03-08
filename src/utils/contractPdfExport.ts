@@ -44,7 +44,9 @@ const formatDateEn = (dateStr: string) => {
 export async function exportContractToPdf(
   contract: ContractData,
   landlordInfo: PartyInfo,
-  tenantInfo: PartyInfo
+  tenantInfo: PartyInfo,
+  landlordSignatureData?: string,
+  tenantSignatureData?: string
 ): Promise<void> {
   const doc = new jsPDF({
     orientation: 'portrait',
