@@ -143,9 +143,13 @@ function AppContent() {
   }, [profile, user, isLoading, isInitialized, currentScreen]);
 
   const handleAuthSuccess = () => {
-    if (profile?.role_type) {
+    // Profile may not be loaded yet - go to a loading state
+    // The useEffect above will handle redirecting once profile loads
+    if (profile?.role_type && profile.role_type !== 'tenant') {
       setCurrentScreen('home');
     } else {
+      // Wait for profile to load, temporarily show home
+      // The role-selection check will happen via useEffect when profile loads
       setCurrentScreen('role-selection');
     }
   };
