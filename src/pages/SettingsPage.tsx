@@ -22,16 +22,17 @@ export function SettingsPage({ onBack, onStartKYC }: SettingsPageProps) {
 
   const handleThemeChange = async (isDark: boolean) => {
     const newTheme = isDark ? 'dark' : 'light';
-    await updateSettings({ theme: newTheme });
     
-    // Apply theme to document immediately
+    // Apply immediately to DOM and localStorage
+    localStorage.setItem('sakani-theme', newTheme);
     if (isDark) {
       document.documentElement.classList.add('dark');
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#111827');
     } else {
       document.documentElement.classList.remove('dark');
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#0e7490');
     }
+    
+    // Persist to profile
+    await updateSettings({ theme: newTheme });
     
     toast({
       title: 'تم تغيير المظهر',
