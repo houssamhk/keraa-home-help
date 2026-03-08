@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Upload, CheckCircle, Clock, XCircle, AlertCircle, Camera, FileText, CreditCard, Building2, Loader2 } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Upload, CheckCircle, Clock, XCircle, AlertCircle, Camera, FileText, CreditCard, Building2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePaymentProofUrl } from '@/hooks/usePaymentProofUrl';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 interface ArrabonPageProps {
   onBack: () => void;
@@ -46,6 +47,7 @@ interface Contract {
 const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
+  const { t, dir, language } = useLanguage();
   const { getSignedProofUrl } = usePaymentProofUrl();
   const [arrabons, setArrabons] = useState<Arrabon[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
@@ -56,6 +58,8 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [signedProofUrls, setSignedProofUrls] = useState<Record<string, string | null>>({});
   
+  const BackArrow = dir === 'rtl' ? ArrowRight : ArrowLeft;
+
   const [formData, setFormData] = useState({
     contract_id: contractId || '',
     amount: '',
@@ -71,7 +75,6 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
     fetchData();
   }, [user]);
 
-  // Load signed URLs for payment proofs whenever arrabons change
   useEffect(() => {
     const loadSignedUrls = async () => {
       const urls: Record<string, string | null> = {};
@@ -91,7 +94,6 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
     if (!user) return;
     
     try {
-      // Fetch arrabons
       const { data: arrabonData, error: arrabonError } = await supabase
         .from('arrabons')
         .select('*')
@@ -100,7 +102,6 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
       if (arrabonError) throw arrabonError;
       setArrabons(arrabonData || []);
 
-      // Fetch contracts for the form
       const { data: contractData, error: contractError } = await supabase
         .from('contracts')
         .select('id, title, monthly_amount, landlord_id, tenant_id')
@@ -111,8 +112,8 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
-        title: 'خطأ',
-        description: 'فشل في تحميل البيانات',
+        title: t.error,
+        description: t.arrabonPage.loadFailed,
         variant: 'destructive'
       });
     } finally {
@@ -138,8 +139,6 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
       .upload(fileName, file);
 
     if (uploadError) throw uploadError;
-
-    // Store the file path only (not a public URL) since bucket is private
     return fileName;
   };
 
@@ -147,8 +146,8 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
     e.preventDefault();
     if (!user || !selectedFile) {
       toast({
-        title: 'خطأ',
-        description: 'يرجى رفع صورة إثبات الدفع',
+        title: t.error,
+        description: t.arrabonPage.uploadProofRequired,
         variant: 'destructive'
       });
       return;
@@ -156,14 +155,10 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
 
     setIsSubmitting(true);
     try {
-      // Upload payment proof
       const proofUrl = await uploadPaymentProof(selectedFile);
-
-      // Get contract details
       const contract = contracts.find(c => c.id === formData.contract_id);
-      if (!contract) throw new Error('العقد غير موجود');
+      if (!contract) throw new Error(t.arrabonPage.contractNotFound);
 
-      // Create arrabon record
       const { error } = await supabase
         .from('arrabons')
         .insert({
@@ -182,8 +177,8 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
       if (error) throw error;
 
       toast({
-        title: 'تم الإرسال',
-        description: 'تم إرسال إثبات العربون للمراجعة'
+        title: t.send,
+        description: t.arrabonPage.sentSuccess
       });
 
       setShowForm(false);
@@ -200,8 +195,8 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
     } catch (error) {
       console.error('Error submitting arrabon:', error);
       toast({
-        title: 'خطأ',
-        description: 'فشل في إرسال العربون',
+        title: t.error,
+        description: t.arrabonPage.sendFailed,
         variant: 'destructive'
       });
     } finally {
@@ -229,16 +224,16 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
       if (error) throw error;
 
       toast({
-        title: action === 'verify' ? 'تم التحقق' : 'تم الرفض',
-        description: action === 'verify' ? 'تم التحقق من العربون بنجاح' : 'تم رفض العربون'
+        title: action === 'verify' ? t.arrabonPage.verified : t.arrabonPage.rejected,
+        description: action === 'verify' ? t.arrabonPage.verifiedSuccess : t.arrabonPage.rejectedDesc
       });
 
       fetchData();
     } catch (error) {
       console.error('Error updating arrabon:', error);
       toast({
-        title: 'خطأ',
-        description: 'فشل في تحديث حالة العربون',
+        title: t.error,
+        description: t.arrabonPage.updateFailed,
         variant: 'destructive'
       });
     }
@@ -257,16 +252,16 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
       if (error) throw error;
 
       toast({
-        title: 'تم التسليم',
-        description: 'تم تأكيد تسليم المفاتيح وإطلاق العربون'
+        title: t.arrabonPage.delivered,
+        description: t.arrabonPage.deliveredDesc
       });
 
       fetchData();
     } catch (error) {
       console.error('Error releasing arrabon:', error);
       toast({
-        title: 'خطأ',
-        description: 'فشل في تحديث حالة العربون',
+        title: t.error,
+        description: t.arrabonPage.updateFailed,
         variant: 'destructive'
       });
     }
@@ -275,15 +270,15 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
   const getStatusConfig = (status: string) => {
     switch (status) {
       case 'pending':
-        return { icon: Clock, color: 'bg-yellow-500/20 text-yellow-400', label: 'في الانتظار' };
+        return { icon: Clock, color: 'bg-yellow-500/20 text-yellow-400', label: t.arrabonPage.statusPending };
       case 'submitted':
-        return { icon: AlertCircle, color: 'bg-blue-500/20 text-blue-400', label: 'قيد المراجعة' };
+        return { icon: AlertCircle, color: 'bg-blue-500/20 text-blue-400', label: t.arrabonPage.statusSubmitted };
       case 'verified':
-        return { icon: CheckCircle, color: 'bg-green-500/20 text-green-400', label: 'تم التحقق' };
+        return { icon: CheckCircle, color: 'bg-green-500/20 text-green-400', label: t.arrabonPage.statusVerified };
       case 'rejected':
-        return { icon: XCircle, color: 'bg-red-500/20 text-red-400', label: 'مرفوض' };
+        return { icon: XCircle, color: 'bg-red-500/20 text-red-400', label: t.arrabonPage.statusRejected };
       case 'released':
-        return { icon: CheckCircle, color: 'bg-emerald-500/20 text-emerald-400', label: 'تم التسليم' };
+        return { icon: CheckCircle, color: 'bg-emerald-500/20 text-emerald-400', label: t.arrabonPage.statusReleased };
       default:
         return { icon: Clock, color: 'bg-muted text-muted-foreground', label: status };
     }
@@ -291,11 +286,16 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
 
   const getPaymentMethodLabel = (method: string) => {
     switch (method) {
-      case 'baridimob': return 'بريدي موب';
-      case 'ccp': return 'CCP';
-      case 'cash': return 'نقدي';
+      case 'baridimob': return t.arrabonPage.baridimob;
+      case 'ccp': return t.arrabonPage.ccpTransfer;
+      case 'cash': return t.arrabonPage.cashPayment;
       default: return method;
     }
+  };
+
+  const formatDate = (dateStr: string) => {
+    const locale = language === 'ar' ? 'ar-DZ' : language === 'fr' ? 'fr-FR' : 'en-US';
+    return new Date(dateStr).toLocaleDateString(locale);
   };
 
   return (
@@ -308,9 +308,9 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
       >
         <div className="flex items-center justify-between">
           <Button variant="ghost" size="icon" onClick={onBack}>
-            <ArrowRight className="w-5 h-5" />
+            <BackArrow className="w-5 h-5" />
           </Button>
-          <h1 className="text-xl font-bold">نظام العربون</h1>
+          <h1 className="text-xl font-bold">{t.arrabonPage.title}</h1>
           <div className="w-10" />
         </div>
       </motion.div>
@@ -324,9 +324,9 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
                 <CreditCard className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h3 className="font-bold text-lg">نظام العربون الآمن</h3>
+                <h3 className="font-bold text-lg">{t.arrabonPage.secureSystem}</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  ارفع صورة التحويل عبر بريدي موب أو CCP وسيتم التحقق منها قبل تأكيد الحجز
+                  {t.arrabonPage.description}
                 </p>
               </div>
             </div>
@@ -340,7 +340,7 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
             className="w-full bg-primary hover:bg-primary/90"
           >
             <Upload className="w-4 h-4 ml-2" />
-            إرسال عربون جديد
+            {t.arrabonPage.sendNew}
           </Button>
         )}
 
@@ -354,20 +354,19 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="w-5 h-5" />
-                  إرسال إثبات الدفع
+                  {t.arrabonPage.submitProof}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmitArrabon} className="space-y-4">
-                  {/* Contract Selection */}
                   <div className="space-y-2">
-                    <Label>اختر العقد</Label>
+                    <Label>{t.arrabonPage.selectContract}</Label>
                     <Select
                       value={formData.contract_id}
                       onValueChange={(value) => setFormData(prev => ({ ...prev, contract_id: value }))}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="اختر العقد" />
+                        <SelectValue placeholder={t.arrabonPage.selectContract} />
                       </SelectTrigger>
                       <SelectContent>
                         {contracts.map(contract => (
@@ -379,21 +378,19 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
                     </Select>
                   </div>
 
-                  {/* Amount */}
                   <div className="space-y-2">
-                    <Label>مبلغ العربون (دج)</Label>
+                    <Label>{t.arrabonPage.arrabonAmount}</Label>
                     <Input
                       type="number"
                       value={formData.amount}
                       onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-                      placeholder="أدخل المبلغ"
+                      placeholder={t.arrabonPage.enterAmount}
                       required
                     />
                   </div>
 
-                  {/* Payment Method */}
                   <div className="space-y-2">
-                    <Label>طريقة الدفع</Label>
+                    <Label>{t.arrabonPage.paymentMethod}</Label>
                     <Select
                       value={formData.payment_method}
                       onValueChange={(value) => setFormData(prev => ({ ...prev, payment_method: value }))}
@@ -402,26 +399,24 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="baridimob">بريدي موب</SelectItem>
-                        <SelectItem value="ccp">CCP</SelectItem>
-                        <SelectItem value="cash">نقدي</SelectItem>
+                        <SelectItem value="baridimob">{t.arrabonPage.baridimob}</SelectItem>
+                        <SelectItem value="ccp">{t.arrabonPage.ccpTransfer}</SelectItem>
+                        <SelectItem value="cash">{t.arrabonPage.cashPayment}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
-                  {/* Transaction Reference */}
                   <div className="space-y-2">
-                    <Label>رقم العملية (اختياري)</Label>
+                    <Label>{t.arrabonPage.transactionRef}</Label>
                     <Input
                       value={formData.payment_reference}
                       onChange={(e) => setFormData(prev => ({ ...prev, payment_reference: e.target.value }))}
-                      placeholder="رقم التحويل أو العملية"
+                      placeholder={t.arrabonPage.transactionRefPlaceholder}
                     />
                   </div>
 
-                  {/* Payment Proof Upload */}
                   <div className="space-y-2">
-                    <Label>صورة إثبات الدفع *</Label>
+                    <Label>{t.arrabonPage.paymentProof}</Label>
                     <div className="border-2 border-dashed border-border rounded-xl p-6 text-center">
                       {previewUrl ? (
                         <div className="space-y-3">
@@ -439,14 +434,14 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
                               setPreviewUrl(null);
                             }}
                           >
-                            إزالة الصورة
+                            {t.arrabonPage.removeImage}
                           </Button>
                         </div>
                       ) : (
                         <label className="cursor-pointer block">
                           <Camera className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                          <p className="text-muted-foreground mb-2">اضغط لرفع صورة التحويل</p>
-                          <p className="text-xs text-muted-foreground">PNG, JPG حتى 5MB</p>
+                          <p className="text-muted-foreground mb-2">{t.arrabonPage.clickToUpload}</p>
+                          <p className="text-xs text-muted-foreground">{t.arrabonPage.fileTypes}</p>
                           <input
                             type="file"
                             accept="image/*"
@@ -458,18 +453,16 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
                     </div>
                   </div>
 
-                  {/* Notes */}
                   <div className="space-y-2">
-                    <Label>ملاحظات (اختياري)</Label>
+                    <Label>{t.notesOptional}</Label>
                     <Textarea
                       value={formData.notes}
                       onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                      placeholder="أي ملاحظات إضافية..."
+                      placeholder={t.anyAdditionalNotes}
                       rows={3}
                     />
                   </div>
 
-                  {/* Submit Buttons */}
                   <div className="flex gap-3">
                     <Button
                       type="button"
@@ -477,14 +470,14 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
                       onClick={() => setShowForm(false)}
                       className="flex-1"
                     >
-                      إلغاء
+                      {t.cancel}
                     </Button>
                     <Button
                       type="submit"
                       disabled={isSubmitting || !selectedFile}
                       className="flex-1 bg-primary"
                     >
-                      {isSubmitting ? 'جاري الإرسال...' : 'إرسال العربون'}
+                      {isSubmitting ? t.arrabonPage.sending : t.arrabonPage.sendArrabon}
                     </Button>
                   </div>
                 </form>
@@ -495,7 +488,7 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
 
         {/* Arrabons List */}
         <div className="space-y-4">
-          <h2 className="text-lg font-bold">سجل العربون</h2>
+          <h2 className="text-lg font-bold">{t.arrabonPage.record}</h2>
 
           {isLoading ? (
             <div className="text-center py-8">
@@ -505,7 +498,7 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
             <Card className="bg-muted/30">
               <CardContent className="p-8 text-center">
                 <Building2 className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                <p className="text-muted-foreground">لا توجد عربونات حتى الآن</p>
+                <p className="text-muted-foreground">{t.arrabonPage.noArrabons}</p>
               </CardContent>
             </Card>
           ) : (
@@ -525,7 +518,7 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-3">
                         <div>
-                          <h3 className="font-bold">{arrabon.amount.toLocaleString()} دج</h3>
+                          <h3 className="font-bold">{arrabon.amount.toLocaleString()} {t.currency}</h3>
                           <p className="text-sm text-muted-foreground">
                             {getPaymentMethodLabel(arrabon.payment_method)}
                           </p>
@@ -538,7 +531,7 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
 
                       {arrabon.payment_reference && (
                         <p className="text-sm text-muted-foreground mb-2">
-                          رقم العملية: {arrabon.payment_reference}
+                          {t.arrabonPage.transactionNumber}: {arrabon.payment_reference}
                         </p>
                       )}
 
@@ -549,23 +542,22 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
                             alt="Payment proof"
                             className="max-h-32 rounded-lg border border-border"
                           />
-                          <p className="text-xs text-muted-foreground mt-1">⚠️ رابط آمن ينتهي خلال 5 دقائق</p>
+                          <p className="text-xs text-muted-foreground mt-1">{t.arrabonPage.secureLink}</p>
                         </div>
                       )}
 
                       {arrabon.rejection_reason && (
                         <div className="p-3 bg-red-500/10 rounded-lg mb-3">
                           <p className="text-sm text-red-400">
-                            سبب الرفض: {arrabon.rejection_reason}
+                            {t.arrabonPage.rejectionReason} {arrabon.rejection_reason}
                           </p>
                         </div>
                       )}
 
                       <p className="text-xs text-muted-foreground">
-                        {new Date(arrabon.created_at).toLocaleDateString('ar-DZ')}
+                        {formatDate(arrabon.created_at)}
                       </p>
 
-                      {/* Owner Actions */}
                       {canVerify && (
                         <div className="flex gap-2 mt-4">
                           <Button
@@ -574,19 +566,19 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
                             onClick={() => handleVerifyArrabon(arrabon.id, 'verify')}
                           >
                             <CheckCircle className="w-4 h-4 ml-1" />
-                            تأكيد الاستلام
+                            {t.arrabonPage.confirmReceipt}
                           </Button>
                           <Button
                             size="sm"
                             variant="destructive"
                             className="flex-1"
                             onClick={() => {
-                              const reason = prompt('سبب الرفض:');
+                              const reason = prompt(t.arrabonPage.rejectionReason);
                               if (reason) handleVerifyArrabon(arrabon.id, 'reject', reason);
                             }}
                           >
                             <XCircle className="w-4 h-4 ml-1" />
-                            رفض
+                            {t.reject}
                           </Button>
                         </div>
                       )}
@@ -598,7 +590,7 @@ const ArrabonPage: React.FC<ArrabonPageProps> = ({ onBack, contractId }) => {
                           onClick={() => handleReleaseArrabon(arrabon.id)}
                         >
                           <CheckCircle className="w-4 h-4 ml-1" />
-                          تأكيد التسليم وإطلاق العربون
+                          {t.arrabonPage.confirmDelivery}
                         </Button>
                       )}
                     </CardContent>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, Trash2, ToggleLeft, ToggleRight, ArrowRight } from 'lucide-react';
+import { Bell, Trash2, ToggleLeft, ToggleRight, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,9 @@ import { toast } from 'sonner';
 import { SearchAlertDialog } from '@/components/alerts/SearchAlertDialog';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { fr } from 'date-fns/locale';
+import { enUS } from 'date-fns/locale';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 interface SearchAlert {
   id: string;
@@ -29,29 +32,33 @@ interface AlertsPageProps {
   onBack?: () => void;
 }
 
-const propertyTypeLabels: Record<string, string> = {
-  apartment: 'شقة',
-  villa: 'فيلا',
-  house: 'دار',
-  studio: 'ستوديو',
-};
-
-const amenityLabels: Record<string, string> = {
-  heating: 'تدفئة',
-  ac: 'تكييف',
-  pool: 'مسبح',
-  garage: 'كراج',
-  garden: 'حديقة',
-  balcony: 'شرفة',
-  elevator: 'مصعد',
-  wifi: 'إنترنت',
-  furnished: 'مفروشة',
-};
-
 export default function AlertsPage({ onBack }: AlertsPageProps) {
   const { user } = useAuth();
+  const { t, dir, language } = useLanguage();
   const [alerts, setAlerts] = useState<SearchAlert[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const BackArrow = dir === 'rtl' ? ArrowRight : ArrowLeft;
+  const dateLocale = language === 'ar' ? ar : language === 'fr' ? fr : enUS;
+
+  const propertyTypeLabels: Record<string, string> = {
+    apartment: t.alertsPage.apartment,
+    villa: t.alertsPage.villa,
+    house: t.alertsPage.house,
+    studio: t.alertsPage.studio,
+  };
+
+  const amenityLabels: Record<string, string> = {
+    heating: t.alertsPage.heating,
+    ac: t.alertsPage.airConditioning,
+    pool: t.alertsPage.pool,
+    garage: t.alertsPage.garage,
+    garden: t.alertsPage.garden,
+    balcony: t.alertsPage.balcony,
+    elevator: t.alertsPage.elevator,
+    wifi: t.alertsPage.wifi,
+    furnished: t.alertsPage.furnished,
+  };
 
   useEffect(() => {
     if (user) {
@@ -68,7 +75,7 @@ export default function AlertsPage({ onBack }: AlertsPageProps) {
 
     if (error) {
       console.error('Error fetching alerts:', error);
-      toast.error('حدث خطأ أثناء جلب التنبيهات');
+      toast.error(t.alertsPage.fetchError);
     } else {
       setAlerts(data || []);
     }
@@ -82,12 +89,12 @@ export default function AlertsPage({ onBack }: AlertsPageProps) {
       .eq('id', alertId);
 
     if (error) {
-      toast.error('حدث خطأ أثناء تحديث التنبيه');
+      toast.error(t.alertsPage.updateError);
     } else {
       setAlerts(prev => 
         prev.map(a => a.id === alertId ? { ...a, is_active: !currentStatus } : a)
       );
-      toast.success(currentStatus ? 'تم إيقاف التنبيه' : 'تم تفعيل التنبيه');
+      toast.success(currentStatus ? t.alertsPage.alertStopped : t.alertsPage.alertActivated);
     }
   };
 
@@ -98,17 +105,17 @@ export default function AlertsPage({ onBack }: AlertsPageProps) {
       .eq('id', alertId);
 
     if (error) {
-      toast.error('حدث خطأ أثناء حذف التنبيه');
+      toast.error(t.alertsPage.deleteError);
     } else {
       setAlerts(prev => prev.filter(a => a.id !== alertId));
-      toast.success('تم حذف التنبيه');
+      toast.success(t.alertsPage.alertDeleted);
     }
   };
 
   if (!user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">يجب تسجيل الدخول أولاً</p>
+        <p className="text-muted-foreground">{t.loginRequired}</p>
       </div>
     );
   }
@@ -119,10 +126,10 @@ export default function AlertsPage({ onBack }: AlertsPageProps) {
       <div className="flex items-center justify-between mb-6">
         {onBack && (
           <Button variant="ghost" size="icon" onClick={onBack}>
-            <ArrowRight className="h-5 w-5" />
+            <BackArrow className="h-5 w-5" />
           </Button>
         )}
-        <h1 className="text-xl font-bold">🔔 رادار البحث</h1>
+        <h1 className="text-xl font-bold">{t.alertsPage.title}</h1>
         <SearchAlertDialog />
       </div>
 
@@ -130,7 +137,7 @@ export default function AlertsPage({ onBack }: AlertsPageProps) {
       <Card className="mb-6 bg-primary/5 border-primary/20">
         <CardContent className="p-4">
           <p className="text-sm text-muted-foreground text-center">
-            أنشئ تنبيهات لتصلك إشعارات فورية عند إضافة عقارات تطابق معاييرك
+            {t.alertsPage.description}
           </p>
         </CardContent>
       </Card>
@@ -143,7 +150,7 @@ export default function AlertsPage({ onBack }: AlertsPageProps) {
       ) : alerts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
           <Bell className="h-16 w-16 mb-4 opacity-50" />
-          <p className="text-lg mb-4">لا توجد تنبيهات محفوظة</p>
+          <p className="text-lg mb-4">{t.alertsPage.noAlerts}</p>
           <SearchAlertDialog />
         </div>
       ) : (
@@ -192,19 +199,19 @@ export default function AlertsPage({ onBack }: AlertsPageProps) {
                   {(alert.min_bedrooms || alert.max_bedrooms) && (
                     <Badge variant="secondary">
                       {alert.min_bedrooms && alert.max_bedrooms
-                        ? `${alert.min_bedrooms}-${alert.max_bedrooms} غرف`
+                        ? `${alert.min_bedrooms}-${alert.max_bedrooms} ${t.alertsPage.rooms}`
                         : alert.min_bedrooms
-                        ? `${alert.min_bedrooms}+ غرف`
-                        : `حتى ${alert.max_bedrooms} غرف`}
+                        ? `${alert.min_bedrooms}+ ${t.alertsPage.rooms}`
+                        : `${t.alertsPage.upTo} ${alert.max_bedrooms} ${t.alertsPage.rooms}`}
                     </Badge>
                   )}
                   {(alert.min_price || alert.max_price) && (
                     <Badge variant="secondary">
                       {alert.min_price && alert.max_price
-                        ? `${alert.min_price.toLocaleString()}-${alert.max_price.toLocaleString()} دج`
+                        ? `${alert.min_price.toLocaleString()}-${alert.max_price.toLocaleString()} ${t.currency}`
                         : alert.min_price
-                        ? `من ${alert.min_price.toLocaleString()} دج`
-                        : `حتى ${alert.max_price?.toLocaleString()} دج`}
+                        ? `${t.alertsPage.from} ${alert.min_price.toLocaleString()} ${t.currency}`
+                        : `${t.alertsPage.upTo} ${alert.max_price?.toLocaleString()} ${t.currency}`}
                     </Badge>
                   )}
                   {alert.amenities?.map((amenity) => (
@@ -216,11 +223,11 @@ export default function AlertsPage({ onBack }: AlertsPageProps) {
                 
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>
-                    أنشئ {formatDistanceToNow(new Date(alert.created_at), { addSuffix: true, locale: ar })}
+                    {t.alertsPage.createdAgo} {formatDistanceToNow(new Date(alert.created_at), { addSuffix: true, locale: dateLocale })}
                   </span>
                   {alert.last_notified_at && (
                     <span>
-                      آخر إشعار {formatDistanceToNow(new Date(alert.last_notified_at), { addSuffix: true, locale: ar })}
+                      {t.alertsPage.lastNotification} {formatDistanceToNow(new Date(alert.last_notified_at), { addSuffix: true, locale: dateLocale })}
                     </span>
                   )}
                 </div>
