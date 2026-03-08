@@ -18,10 +18,11 @@ async function getAuthenticatedUser(req: Request) {
   });
 
   const token = authHeader.replace("Bearer ", "");
-  const { data, error } = await supabase.auth.getUser(token);
-  if (error || !data?.user) return null;
+  const { data, error } = await supabase.auth.getClaims(token);
+  if (error || !data?.claims) return null;
 
-  return { user: data.user, supabase };
+  const userId = data.claims.sub as string;
+  return { userId, supabase };
 }
 
 async function buildUserContext(supabase: any, userId: string) {
@@ -271,7 +272,7 @@ serve(async (req) => {
       );
     }
 
-    const { user, supabase } = auth;
+    const { userId, supabase } = auth;
     const { messages } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
@@ -282,7 +283,7 @@ serve(async (req) => {
 
     // Build context in parallel
     const [{ userName, userContext, profile }, searchContext] = await Promise.all([
-      buildUserContext(supabase, user.id),
+      buildUserContext(supabase, userId),
       buildSearchContext(supabase, lowerMsg),
     ]);
 
