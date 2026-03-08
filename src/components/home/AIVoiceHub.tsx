@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Mic, 
   Home, 
   Wrench, 
   Map, 
@@ -13,7 +12,6 @@ import {
   CreditCard,
   Calendar,
   Shield,
-  Volume2,
   Heart,
   Wallet
 } from "lucide-react";
@@ -21,8 +19,8 @@ import { Button } from "@/components/ui/button";
 import { useChat } from "@/hooks/useChat";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 import { useFavorites } from "@/hooks/useFavorites";
+import { useLanguage } from "@/i18n/LanguageContext";
 
-// Parse markdown-style links [text](url) and render as clickable buttons
 function renderMessageWithLinks(content: string, onNavigate: (route: string) => void) {
   const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
   const parts: React.ReactNode[] = [];
@@ -75,27 +73,23 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
   const [textInput, setTextInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { favorites } = useFavorites();
+  const { t } = useLanguage();
   
   const textChat = useChat();
   const { messages, isLoading, error } = textChat;
 
   const quickActions = [
-    { id: 'properties', icon: Home, label: 'العقارات', route: '/properties' },
-    { id: 'favorites', icon: Heart, label: 'المفضلة', route: '/favorites', badge: favorites.size > 0 ? favorites.size : undefined },
-    { id: 'handymen', icon: Wrench, label: 'الحرفيون', route: '/handymen' },
-    { id: 'map', icon: Map, label: 'الخريطة', route: '/map' },
-    { id: 'contracts', icon: MessageSquare, label: 'العقود', route: '/contracts' },
-    { id: 'wallet', icon: Wallet, label: 'المحفظة', route: '/wallet' },
-    { id: 'bills', icon: CreditCard, label: 'الفواتير', route: '/bills' },
-    { id: 'appointments', icon: Calendar, label: 'المواعيد', route: '/appointments' },
+    { id: 'properties', icon: Home, label: t.quickActions.properties, route: '/properties' },
+    { id: 'favorites', icon: Heart, label: t.quickActions.favorites, route: '/favorites', badge: favorites.size > 0 ? favorites.size : undefined },
+    { id: 'handymen', icon: Wrench, label: t.quickActions.handymen, route: '/handymen' },
+    { id: 'map', icon: Map, label: t.quickActions.map, route: '/map' },
+    { id: 'contracts', icon: MessageSquare, label: t.quickActions.contracts, route: '/contracts' },
+    { id: 'wallet', icon: Wallet, label: t.quickActions.wallet, route: '/wallet' },
+    { id: 'bills', icon: CreditCard, label: t.quickActions.bills, route: '/bills' },
+    { id: 'appointments', icon: Calendar, label: t.quickActions.appointments, route: '/appointments' },
   ];
 
-  const suggestions = [
-    "ابحث عن شقة في الجزائر العاصمة",
-    "أحتاج سباك بشكل عاجل",
-    "أظهر لي منازل أقل من 50,000 دج/شهر",
-    "ابحث عن F3 في وهران",
-  ];
+  const suggestions = t.home.suggestions;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -116,7 +110,7 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
 
   return (
     <div className="h-full flex flex-col bg-background safe-area-inset">
-      {/* Header - compact */}
+      {/* Header */}
       <motion.header 
         className="px-4 pt-4 pb-3 flex-shrink-0"
         initial={{ opacity: 0, y: -20 }}
@@ -134,7 +128,7 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
               <Settings className="w-5 h-5 text-primary-foreground absolute opacity-0 group-hover:opacity-100 transition-opacity" />
             </button>
             <div>
-              <p className="text-muted-foreground text-[11px] leading-tight">مرحباً 👋</p>
+              <p className="text-muted-foreground text-[11px] leading-tight">{t.home.greeting}</p>
               <h1 className="font-serif text-lg font-bold text-foreground leading-tight">{userName}</h1>
             </div>
           </div>
@@ -150,7 +144,7 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
             className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/20 text-sm"
           >
             <Shield className="w-4 h-4 text-primary flex-shrink-0" />
-            <span className="text-primary">أكمل التحقق من هويتك</span>
+            <span className="text-primary">{t.home.completeKYC}</span>
           </button>
         </div>
       )}
@@ -192,7 +186,6 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
           <div ref={messagesEndRef} />
         </div>
       ) : (
-        /* Welcome screen when no messages */
         <div className="flex-1 overflow-y-auto px-4 py-4">
           {/* AI Assistant Card */}
           <motion.div
@@ -203,8 +196,8 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-3">
               <Sparkles className="w-8 h-8 text-primary-foreground" />
             </div>
-            <h2 className="font-serif text-lg font-bold text-foreground mb-1">مساعد سكني الذكي</h2>
-            <p className="text-muted-foreground text-sm">اسألني عن العقارات، الحرفيين، أو أي شيء تحتاجه</p>
+            <h2 className="font-serif text-lg font-bold text-foreground mb-1">{t.home.aiAssistant}</h2>
+            <p className="text-muted-foreground text-sm">{t.home.aiDescription}</p>
           </motion.div>
 
           {/* Suggestions */}
@@ -229,7 +222,7 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-3 text-center">الوصول السريع</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-3 text-center">{t.home.quickAccess}</p>
             <div className="grid grid-cols-4 gap-3">
               {quickActions.map((action, i) => (
                 <motion.button
@@ -260,15 +253,15 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
             <div className="mt-4 flex justify-center gap-2 flex-wrap">
               <Button variant="glass" size="sm" onClick={() => onNavigate('/owner-dashboard')} className="gap-1.5 text-xs">
                 <Home className="w-3.5 h-3.5" />
-                لوحة المالك
+                {t.home.ownerPanel}
               </Button>
               <Button variant="glass" size="sm" onClick={() => onNavigate('/handyman-dashboard')} className="gap-1.5 text-xs">
                 <Wrench className="w-3.5 h-3.5" />
-                لوحة الحرفي
+                {t.home.handymanPanel}
               </Button>
               <Button variant="gold" size="sm" onClick={() => onNavigate('/admin')} className="gap-1.5 text-xs">
                 <Shield className="w-3.5 h-3.5" />
-                المشرفين
+                {t.home.admins}
               </Button>
             </div>
           </motion.div>
@@ -284,7 +277,7 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
         </div>
       )}
 
-      {/* Text Input - Always visible */}
+      {/* Text Input */}
       <motion.div 
         className="px-4 pb-4 flex-shrink-0"
         initial={{ opacity: 0, y: 20 }}
@@ -296,7 +289,7 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
             value={textInput}
             onChange={(e) => setTextInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSendText()}
-            placeholder="اسأل سكني... 🏠"
+            placeholder={t.home.askPlaceholder}
             className="flex-1 bg-transparent border-none outline-none px-3 py-2 text-foreground placeholder:text-muted-foreground text-sm"
             dir="auto"
           />

@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Home, Search, MessageCircle, User, Briefcase, FileText, Wrench } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/i18n/LanguageContext';
 import type { UserRole } from '@/types/user';
 
 interface MobileBottomNavProps {
@@ -17,26 +18,25 @@ interface NavItem {
 }
 
 export function MobileBottomNav({ currentScreen, onNavigate, userRole }: MobileBottomNavProps) {
-  // Define nav items based on user role
+  const { t } = useLanguage();
+
   const getNavItems = (): NavItem[] => {
     const baseItems: NavItem[] = [
-      { id: 'home', route: '/home', icon: Home, label: 'الرئيسية' },
-      { id: 'properties', route: '/properties', icon: Search, label: 'العقارات' },
+      { id: 'home', route: '/home', icon: Home, label: t.nav.home },
+      { id: 'properties', route: '/properties', icon: Search, label: t.nav.properties },
     ];
 
-    // Add role-specific items
     if (userRole === 'owner') {
-      baseItems.push({ id: 'owner-dashboard', route: '/owner-dashboard', icon: Briefcase, label: 'عقاراتي' });
+      baseItems.push({ id: 'owner-dashboard', route: '/owner-dashboard', icon: Briefcase, label: t.nav.myProperties });
     } else if (userRole === 'handyman') {
-      baseItems.push({ id: 'handyman-dashboard', route: '/handyman-dashboard', icon: Wrench, label: 'طلباتي' });
+      baseItems.push({ id: 'handyman-dashboard', route: '/handyman-dashboard', icon: Wrench, label: t.nav.myRequests });
     } else {
-      baseItems.push({ id: 'contracts', route: '/contracts', icon: FileText, label: 'عقودي' });
+      baseItems.push({ id: 'contracts', route: '/contracts', icon: FileText, label: t.nav.myContracts });
     }
 
-    // Common items
     baseItems.push(
-      { id: 'chat', route: '/chat', icon: MessageCircle, label: 'المحادثات' },
-      { id: 'profile', route: '/profile', icon: User, label: 'حسابي' }
+      { id: 'chat', route: '/chat', icon: MessageCircle, label: t.nav.chat },
+      { id: 'profile', route: '/profile', icon: User, label: t.nav.profile }
     );
 
     return baseItems;
@@ -75,7 +75,6 @@ export function MobileBottomNav({ currentScreen, onNavigate, userRole }: MobileB
                 active ? 'text-primary' : 'text-muted-foreground'
               )}
             >
-              {/* Active indicator */}
               {active && (
                 <motion.div
                   layoutId="activeTab"
