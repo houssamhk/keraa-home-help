@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  ArrowRight, MapPin, Bed, Bath, Ruler, Heart, MessageCircle, 
-  FileText, CreditCard, Share2, Calendar, Home,
+  ArrowRight, ArrowLeft, MapPin, Bed, Bath, Ruler, Heart, MessageCircle, 
+  FileText, CreditCard, Calendar, Home,
   Flame, Snowflake, Car, Trees, Waves, Wifi, Armchair, Flag, Shield
 } from 'lucide-react';
 import { PropertyMediaGallery } from '@/components/property/PropertyMediaGallery';
+import { SharePropertyButton } from '@/components/property/SharePropertyButton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,6 +16,7 @@ import { usePropertyViews } from '@/hooks/usePropertyViews';
 import { ReportDialog } from '@/components/common/ReportDialog';
 import { BookViewingDialog } from '@/components/property/BookViewingDialog';
 import { VerificationServiceDialog } from '@/components/premium/VerificationServiceDialog';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { toast } from 'sonner';
 
 interface MediaItem {
@@ -98,6 +100,8 @@ export function PropertyDetailPage({
   const { user } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { logView } = usePropertyViews();
+  const { dir } = useLanguage();
+  const BackArrow = dir === 'rtl' ? ArrowRight : ArrowLeft;
   const [reportOpen, setReportOpen] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
 
@@ -133,17 +137,7 @@ export function PropertyDetailPage({
     }[type] || type;
   };
 
-  const handleShare = async () => {
-    try {
-      await navigator.share({
-        title: property.title,
-        text: `${property.title} - ${formatPrice(property.price, property.price_period)}`,
-        url: window.location.href
-      });
-    } catch {
-      toast.success('تم نسخ الرابط');
-    }
-  };
+  // Share is now handled by SharePropertyButton component
 
   const handleContactOwner = () => {
     if (!user) {
@@ -203,17 +197,16 @@ export function PropertyDetailPage({
             onClick={onBack}
             className="bg-background/80 backdrop-blur-sm"
           >
-            <ArrowRight className="w-5 h-5" />
+            <BackArrow className="w-5 h-5" />
           </Button>
           <div className="flex gap-2">
-            <Button 
-              variant="glass" 
-              size="icon"
-              onClick={handleShare}
+            <SharePropertyButton
+              propertyId={property.id}
+              title={property.title}
+              price={property.price}
+              city={property.city}
               className="bg-background/80 backdrop-blur-sm"
-            >
-              <Share2 className="w-5 h-5" />
-            </Button>
+            />
             <Button 
               variant="glass" 
               size="icon"

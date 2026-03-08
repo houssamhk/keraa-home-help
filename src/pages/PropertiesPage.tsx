@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowRight, ArrowLeft } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, ArrowLeft, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { AISearchBar } from '@/components/search/AISearchBar';
 import { SearchAlertDialog } from '@/components/alerts/SearchAlertDialog';
 import { PropertyCardSkeleton } from '@/components/common/PropertyCardSkeleton';
 import { PropertyCard } from '@/components/property/PropertyCard';
+import { CompareProperties } from '@/components/property/CompareProperties';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { toast } from 'sonner';
 
 interface Property {
   id: string;
@@ -46,6 +48,8 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState<SearchFilters>({});
+  const [compareList, setCompareList] = useState<Property[]>([]);
+  const [showCompare, setShowCompare] = useState(false);
   const { t, dir } = useLanguage();
 
   const BackArrow = dir === 'rtl' ? ArrowRight : ArrowLeft;
@@ -108,6 +112,18 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
     setFilters(newFilters);
   };
 
+  const toggleCompare = (property: Property) => {
+    setCompareList((prev) => {
+      const exists = prev.find((p) => p.id === property.id);
+      if (exists) return prev.filter((p) => p.id !== property.id);
+      if (prev.length >= 3) {
+        toast.info('يمكنك مقارنة 3 عقارات كحد أقصى');
+        return prev;
+      }
+      return [...prev, property];
+    });
+  };
+
   const displayProperties = properties;
 
   return (
@@ -126,8 +142,14 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
 
         <AISearchBar onFiltersChange={handleFiltersChange} />
         
-        <div className="mt-3 flex justify-end">
+        <div className="mt-3 flex justify-between items-center">
           <SearchAlertDialog initialFilters={filters} />
+          {compareList.length > 0 && (
+            <Button variant="outline" size="sm" onClick={() => setShowCompare(true)} className="gap-2">
+              <Scale className="w-4 h-4" />
+              مقارنة ({compareList.length})
+            </Button>
+          )}
         </div>
       </motion.header>
 
@@ -146,15 +168,37 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
           </>
         ) : (
           displayProperties.map((property, index) => (
-            <PropertyCard
-              key={property.id}
-              property={property}
-              index={index}
-              onClick={() => onViewProperty(property)}
-            />
+            <div key={property.id} className="relative">
+              <PropertyCard
+                property={property}
+                index={index}
+                onClick={() => onViewProperty(property)}
+              />
+              <button
+                onClick={(e) => { e.stopPropagation(); toggleCompare(property); }}
+                className={`absolute bottom-4 left-4 w-8 h-8 rounded-full flex items-center justify-center transition-all z-10 ${
+                  compareList.find((p) => p.id === property.id) 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'bg-card/80 backdrop-blur-sm text-muted-foreground border border-border'
+                }`}
+              >
+                <Scale className="w-4 h-4" />
+              </button>
+            </div>
           ))
         )}
       </div>
+
+      {/* Compare overlay */}
+      <AnimatePresence>
+        {showCompare && compareList.length >= 2 && (
+          <CompareProperties
+            properties={compareList}
+            onRemove={(id) => setCompareList((prev) => prev.filter((p) => p.id !== id))}
+            onClose={() => setShowCompare(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { AnimatePresence } from "framer-motion";
 import { Capacitor } from "@capacitor/core";
 import { SplashScreen } from "@/components/onboarding/SplashScreen";
@@ -42,7 +43,15 @@ const ServiceRequestsPage = lazy(() => import("@/pages/ServiceRequestsPage").the
 const WalletPage = lazy(() => import("@/pages/WalletPage").then(m => ({ default: m.WalletPage })));
 const AgencyDashboard = lazy(() => import("@/pages/AgencyDashboard").then(m => ({ default: m.AgencyDashboard })));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      retry: 2,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 type AppScreen = 
   | 'splash' | 'auth' | 'role-selection' | 'kyc' | 'home' | 'map' 
@@ -300,19 +309,21 @@ function AppContent() {
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <LanguageProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <OfflineIndicator />
-          {!Capacitor.isNativePlatform() && <InstallPrompt />}
-          <AppContent />
-        </TooltipProvider>
-      </LanguageProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <LanguageProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <OfflineIndicator />
+            {!Capacitor.isNativePlatform() && <InstallPrompt />}
+            <AppContent />
+          </TooltipProvider>
+        </LanguageProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
