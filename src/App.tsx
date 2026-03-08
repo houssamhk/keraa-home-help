@@ -130,26 +130,23 @@ function AppContent() {
     }
   }, [user, isLoading, isInitialized, currentScreen]);
 
-  // When profile loads after auth, redirect from role-selection if role already set
+  // When profile loads after auth, redirect from role-selection if already onboarded
   useEffect(() => {
     if (!isInitialized || isLoading || !user || !profile) return;
-    if (currentScreen === 'role-selection' && profile.role_type && profile.role_type !== 'tenant') {
+    const onboarded = localStorage.getItem(`onboarded_${user.id}`);
+    if (currentScreen === 'role-selection' && onboarded) {
       setCurrentScreen('home');
     }
-    // Also handle post-auth: if stuck on auth but user+profile are ready
-    if (currentScreen === 'auth' && profile.role_type) {
+    if (currentScreen === 'auth' && onboarded) {
       setCurrentScreen('home');
     }
   }, [profile, user, isLoading, isInitialized, currentScreen]);
 
   const handleAuthSuccess = () => {
-    // Profile may not be loaded yet - go to a loading state
-    // The useEffect above will handle redirecting once profile loads
-    if (profile?.role_type && profile.role_type !== 'tenant') {
+    const onboarded = user ? localStorage.getItem(`onboarded_${user.id}`) : null;
+    if (onboarded) {
       setCurrentScreen('home');
     } else {
-      // Wait for profile to load, temporarily show home
-      // The role-selection check will happen via useEffect when profile loads
       setCurrentScreen('role-selection');
     }
   };
