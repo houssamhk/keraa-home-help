@@ -197,17 +197,16 @@ export function PropertyDetailPage({
             onClick={onBack}
             className="bg-background/80 backdrop-blur-sm"
           >
-            <ArrowRight className="w-5 h-5" />
+            <BackArrow className="w-5 h-5" />
           </Button>
           <div className="flex gap-2">
-            <Button 
-              variant="glass" 
-              size="icon"
-              onClick={handleShare}
+            <SharePropertyButton
+              propertyId={property.id}
+              title={property.title}
+              price={property.price}
+              city={property.city}
               className="bg-background/80 backdrop-blur-sm"
-            >
-              <Share2 className="w-5 h-5" />
-            </Button>
+            />
             <Button 
               variant="glass" 
               size="icon"
