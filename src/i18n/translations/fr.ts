@@ -175,6 +175,10 @@ export const fr = {
     ownerSigned: 'Signé',
     notSigned: 'Non signé',
     otherParty: "L'autre partie",
+    awaitingSignature: 'En attente de signature',
+    signHere: 'Signez ici avec votre doigt ou la souris',
+    clearSignature: 'Effacer',
+    confirmSignature: 'Confirmer la signature',
   },
 
   // Wallet Page

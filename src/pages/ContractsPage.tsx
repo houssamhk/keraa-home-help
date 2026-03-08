@@ -11,6 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { ReviewDialog } from '@/components/reviews/ReviewDialog';
 import { exportContractToPdf } from '@/utils/contractPdfExport';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { SignaturePad } from '@/components/contracts/SignaturePad';
+import { SignatureDisplay } from '@/components/contracts/SignatureDisplay';
 
 interface Contract {
   id: string;
@@ -26,6 +28,10 @@ interface Contract {
   tenant_signed: boolean;
   landlord_id: string;
   tenant_id: string;
+  landlord_signature_data: string | null;
+  tenant_signature_data: string | null;
+  landlord_signed_at: string | null;
+  tenant_signed_at: string | null;
   created_at: string;
 }
 
@@ -41,6 +47,9 @@ export function ContractsPage({ onBack, onCreateContract }: ContractsPageProps) 
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'active' | 'completed'>('all');
+  const [signatureOpen, setSignatureOpen] = useState(false);
+  const [signingContractId, setSigningContractId] = useState<string | null>(null);
+  const [signingAsLandlord, setSigningAsLandlord] = useState(false);
 
   const BackArrow = dir === 'rtl' ? ArrowRight : ArrowLeft;
 
@@ -61,35 +70,46 @@ export function ContractsPage({ onBack, onCreateContract }: ContractsPageProps) 
     setIsLoading(false);
   };
 
-  const signContract = async (contractId: string, isLandlord: boolean) => {
-    const updateField = isLandlord ? {
+  const openSignaturePad = (contractId: string, isLandlord: boolean) => {
+    setSigningContractId(contractId);
+    setSigningAsLandlord(isLandlord);
+    setSignatureOpen(true);
+  };
+
+  const handleSign = async (signatureData: string) => {
+    if (!signingContractId) return;
+
+    const updateField = signingAsLandlord ? {
       landlord_signed: true,
-      landlord_signed_at: new Date().toISOString()
+      landlord_signed_at: new Date().toISOString(),
+      landlord_signature_data: signatureData,
     } : {
       tenant_signed: true,
-      tenant_signed_at: new Date().toISOString()
+      tenant_signed_at: new Date().toISOString(),
+      tenant_signature_data: signatureData,
     };
 
     const { error } = await supabase
       .from('contracts')
       .update(updateField)
-      .eq('id', contractId);
+      .eq('id', signingContractId);
 
     if (!error) {
-      const contract = contracts.find(c => c.id === contractId);
+      const contract = contracts.find(c => c.id === signingContractId);
       if (contract) {
-        const bothSigned = isLandlord ? contract.tenant_signed : contract.landlord_signed;
+        const bothSigned = signingAsLandlord ? contract.tenant_signed : contract.landlord_signed;
         if (bothSigned) {
           await supabase
             .from('contracts')
             .update({ status: 'active' })
-            .eq('id', contractId);
+            .eq('id', signingContractId);
         }
       }
       
       fetchContracts();
       toast({ title: t.contractsPage.signed, description: t.contractsPage.signedSuccess });
     }
+    setSigningContractId(null);
   };
 
   const getStatusConfig = (status: Contract['status']) => {
@@ -225,18 +245,25 @@ export function ContractsPage({ onBack, onCreateContract }: ContractsPageProps) 
                     )}
                   </div>
 
-                  <div className="flex items-center gap-4 text-xs mb-3">
-                    <span className={contract.landlord_signed ? 'text-green-500' : 'text-muted-foreground'}>
-                      {t.contractsPage.owner}: {contract.landlord_signed ? `✓ ${t.contractsPage.ownerSigned}` : t.contractsPage.notSigned}
-                    </span>
-                    <span className={contract.tenant_signed ? 'text-green-500' : 'text-muted-foreground'}>
-                      {t.contractsPage.tenantLabel}: {contract.tenant_signed ? `✓ ${t.contractsPage.ownerSigned}` : t.contractsPage.notSigned}
-                    </span>
+                  {/* Signature Display Section */}
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <SignatureDisplay
+                      signatureData={contract.landlord_signature_data}
+                      signerName={t.contractsPage.owner}
+                      signedAt={contract.landlord_signed_at}
+                      label={t.contractsPage.owner}
+                    />
+                    <SignatureDisplay
+                      signatureData={contract.tenant_signature_data}
+                      signerName={t.contractsPage.tenantLabel}
+                      signedAt={contract.tenant_signed_at}
+                      label={t.contractsPage.tenantLabel}
+                    />
                   </div>
 
                   <div className="flex gap-2">
                     {canSign && (
-                      <Button variant="gold" size="sm" className="flex-1 gap-2" onClick={() => signContract(contract.id, isLandlord)}>
+                      <Button variant="gold" size="sm" className="flex-1 gap-2" onClick={() => openSignaturePad(contract.id, isLandlord)}>
                         <Pen className="w-4 h-4" />
                         <span>{t.contractsPage.signContract}</span>
                       </Button>
@@ -249,7 +276,9 @@ export function ContractsPage({ onBack, onCreateContract }: ContractsPageProps) 
                         exportContractToPdf(
                           contract as any,
                           { name: isLandlord ? (profile?.full_name || t.contractsPage.owner) : t.contractsPage.otherParty, role: 'landlord' },
-                          { name: !isLandlord ? (profile?.full_name || t.contractsPage.tenantLabel) : t.contractsPage.otherParty, role: 'tenant' }
+                          { name: !isLandlord ? (profile?.full_name || t.contractsPage.tenantLabel) : t.contractsPage.otherParty, role: 'tenant' },
+                          contract.landlord_signature_data || undefined,
+                          contract.tenant_signature_data || undefined
                         );
                         toast({ title: t.contractsPage.exported, description: t.contractsPage.exportedDesc });
                       }}
@@ -273,6 +302,15 @@ export function ContractsPage({ onBack, onCreateContract }: ContractsPageProps) 
           </div>
         )}
       </div>
+
+      {/* Signature Pad Dialog */}
+      <SignaturePad
+        open={signatureOpen}
+        onOpenChange={setSignatureOpen}
+        onSign={handleSign}
+        signerName={profile?.full_name || ''}
+        title={t.contractsPage.signContract}
+      />
     </div>
   );
 }

@@ -44,7 +44,9 @@ const formatDateEn = (dateStr: string) => {
 export async function exportContractToPdf(
   contract: ContractData,
   landlordInfo: PartyInfo,
-  tenantInfo: PartyInfo
+  tenantInfo: PartyInfo,
+  landlordSignatureData?: string,
+  tenantSignatureData?: string
 ): Promise<void> {
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -317,10 +319,15 @@ export async function exportContractToPdf(
     doc.setTextColor(34, 139, 34);
     doc.setFontSize(9);
     doc.text('✓ Digitally Signed', leftX + 5, yPos + 22);
+    if (landlordSignatureData) {
+      try {
+        doc.addImage(landlordSignatureData, 'PNG', leftX + 5, yPos + 24, sigBoxWidth - 15, 8);
+      } catch { /* ignore image errors */ }
+    }
     if (contract.landlord_signed_at) {
       doc.setFontSize(7);
       doc.setTextColor(100, 100, 100);
-      doc.text(formatDateEn(contract.landlord_signed_at), leftX + 5, yPos + 28);
+      doc.text(formatDateEn(contract.landlord_signed_at), leftX + 5, yPos + 33);
     }
   } else {
     doc.setTextColor(200, 50, 50);
@@ -345,10 +352,15 @@ export async function exportContractToPdf(
     doc.setTextColor(34, 139, 34);
     doc.setFontSize(9);
     doc.text('✓ Digitally Signed', sigTenantX + 5, yPos + 22);
+    if (tenantSignatureData) {
+      try {
+        doc.addImage(tenantSignatureData, 'PNG', sigTenantX + 5, yPos + 24, sigBoxWidth - 15, 8);
+      } catch { /* ignore image errors */ }
+    }
     if (contract.tenant_signed_at) {
       doc.setFontSize(7);
       doc.setTextColor(100, 100, 100);
-      doc.text(formatDateEn(contract.tenant_signed_at), sigTenantX + 5, yPos + 28);
+      doc.text(formatDateEn(contract.tenant_signed_at), sigTenantX + 5, yPos + 33);
     }
   } else {
     doc.setTextColor(200, 50, 50);

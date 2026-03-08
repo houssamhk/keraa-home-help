@@ -428,6 +428,7 @@ export type Database = {
           landlord_consented_at: string | null
           landlord_id: string
           landlord_phone_consent: boolean | null
+          landlord_signature_data: string | null
           landlord_signed: boolean | null
           landlord_signed_at: string | null
           monthly_amount: number | null
@@ -437,6 +438,7 @@ export type Database = {
           tenant_consented_at: string | null
           tenant_id: string
           tenant_phone_consent: boolean | null
+          tenant_signature_data: string | null
           tenant_signed: boolean | null
           tenant_signed_at: string | null
           terms: string | null
@@ -454,6 +456,7 @@ export type Database = {
           landlord_consented_at?: string | null
           landlord_id: string
           landlord_phone_consent?: boolean | null
+          landlord_signature_data?: string | null
           landlord_signed?: boolean | null
           landlord_signed_at?: string | null
           monthly_amount?: number | null
@@ -463,6 +466,7 @@ export type Database = {
           tenant_consented_at?: string | null
           tenant_id: string
           tenant_phone_consent?: boolean | null
+          tenant_signature_data?: string | null
           tenant_signed?: boolean | null
           tenant_signed_at?: string | null
           terms?: string | null
@@ -480,6 +484,7 @@ export type Database = {
           landlord_consented_at?: string | null
           landlord_id?: string
           landlord_phone_consent?: boolean | null
+          landlord_signature_data?: string | null
           landlord_signed?: boolean | null
           landlord_signed_at?: string | null
           monthly_amount?: number | null
@@ -489,6 +494,7 @@ export type Database = {
           tenant_consented_at?: string | null
           tenant_id?: string
           tenant_phone_consent?: boolean | null
+          tenant_signature_data?: string | null
           tenant_signed?: boolean | null
           tenant_signed_at?: string | null
           terms?: string | null

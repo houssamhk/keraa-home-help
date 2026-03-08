@@ -175,6 +175,10 @@ export const ar = {
     ownerSigned: 'موقّع',
     notSigned: 'لم يوقّع',
     otherParty: 'الطرف الآخر',
+    awaitingSignature: 'في انتظار التوقيع',
+    signHere: 'وقّع هنا بإصبعك أو بالماوس',
+    clearSignature: 'مسح',
+    confirmSignature: 'تأكيد التوقيع',
   },
 
   // Wallet Page
