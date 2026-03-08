@@ -142,8 +142,14 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
 
         <AISearchBar onFiltersChange={handleFiltersChange} />
         
-        <div className="mt-3 flex justify-end">
+        <div className="mt-3 flex justify-between items-center">
           <SearchAlertDialog initialFilters={filters} />
+          {compareList.length > 0 && (
+            <Button variant="outline" size="sm" onClick={() => setShowCompare(true)} className="gap-2">
+              <Scale className="w-4 h-4" />
+              مقارنة ({compareList.length})
+            </Button>
+          )}
         </div>
       </motion.header>
 
@@ -162,15 +168,37 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
           </>
         ) : (
           displayProperties.map((property, index) => (
-            <PropertyCard
-              key={property.id}
-              property={property}
-              index={index}
-              onClick={() => onViewProperty(property)}
-            />
+            <div key={property.id} className="relative">
+              <PropertyCard
+                property={property}
+                index={index}
+                onClick={() => onViewProperty(property)}
+              />
+              <button
+                onClick={(e) => { e.stopPropagation(); toggleCompare(property); }}
+                className={`absolute bottom-4 left-4 w-8 h-8 rounded-full flex items-center justify-center transition-all z-10 ${
+                  compareList.find((p) => p.id === property.id) 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'bg-card/80 backdrop-blur-sm text-muted-foreground border border-border'
+                }`}
+              >
+                <Scale className="w-4 h-4" />
+              </button>
+            </div>
           ))
         )}
       </div>
+
+      {/* Compare overlay */}
+      <AnimatePresence>
+        {showCompare && compareList.length >= 2 && (
+          <CompareProperties
+            properties={compareList}
+            onRemove={(id) => setCompareList((prev) => prev.filter((p) => p.id !== id))}
+            onClose={() => setShowCompare(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
