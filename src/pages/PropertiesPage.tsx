@@ -48,6 +48,8 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState<SearchFilters>({});
+  const [compareList, setCompareList] = useState<Property[]>([]);
+  const [showCompare, setShowCompare] = useState(false);
   const { t, dir } = useLanguage();
 
   const BackArrow = dir === 'rtl' ? ArrowRight : ArrowLeft;
