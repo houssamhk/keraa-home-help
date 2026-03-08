@@ -321,21 +321,29 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC, userRole,
               ))}
             </div>
             
-            {/* Role Dashboards */}
-            <div className="mt-4 flex justify-center gap-2 flex-wrap">
-              <Button variant="glass" size="sm" onClick={() => onNavigate('/owner-dashboard')} className="gap-1.5 text-xs">
-                <Home className="w-3.5 h-3.5" />
-                {t.home.ownerPanel}
-              </Button>
-              <Button variant="glass" size="sm" onClick={() => onNavigate('/handyman-dashboard')} className="gap-1.5 text-xs">
-                <Wrench className="w-3.5 h-3.5" />
-                {t.home.handymanPanel}
-              </Button>
-              <Button variant="gold" size="sm" onClick={() => onNavigate('/admin')} className="gap-1.5 text-xs">
-                <Shield className="w-3.5 h-3.5" />
-                {t.home.admins}
-              </Button>
-            </div>
+            {/* Role Dashboards - only shown to relevant roles */}
+            {(userRole === 'owner' || userRole === 'handyman' || isAdmin) && (
+              <div className="mt-4 flex justify-center gap-2 flex-wrap">
+                {userRole === 'owner' && (
+                  <Button variant="glass" size="sm" onClick={() => onNavigate('/owner-dashboard')} className="gap-1.5 text-xs">
+                    <Home className="w-3.5 h-3.5" />
+                    {t.home.ownerPanel}
+                  </Button>
+                )}
+                {userRole === 'handyman' && (
+                  <Button variant="glass" size="sm" onClick={() => onNavigate('/handyman-dashboard')} className="gap-1.5 text-xs">
+                    <Wrench className="w-3.5 h-3.5" />
+                    {t.home.handymanPanel}
+                  </Button>
+                )}
+                {isAdmin && (
+                  <Button variant="gold" size="sm" onClick={() => onNavigate('/admin')} className="gap-1.5 text-xs">
+                    <Shield className="w-3.5 h-3.5" />
+                    {t.home.admins}
+                  </Button>
+                )}
+              </div>
+            )}
           </motion.div>
         </div>
       )}

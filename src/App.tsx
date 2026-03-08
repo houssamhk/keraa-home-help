@@ -13,6 +13,7 @@ import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import { useTheme } from "@/hooks/useTheme";
+import { useAdminRole } from "@/hooks/useAdminRole";
 import type { UserRole } from "@/types/user";
 
 // Lazy load all pages
