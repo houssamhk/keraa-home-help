@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Search, Star, MapPin, Phone, MessageSquare, CalendarPlus } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Search, Star, Phone, MessageSquare, CalendarPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { BookHandymanDialog } from '@/components/handymen/BookHandymanDialog';
 import { HandymanCardSkeleton } from '@/components/common/HandymanCardSkeleton';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 interface Handyman {
   id: string;
@@ -34,14 +35,17 @@ export function HandymenPage({ onBack, onChat, onViewHandyman }: HandymenPagePro
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
   const [bookingHandyman, setBookingHandyman] = useState<Handyman | null>(null);
+  const { t, dir } = useLanguage();
+
+  const BackArrow = dir === 'rtl' ? ArrowRight : ArrowLeft;
 
   const specialties = [
-    { id: 'plumbing', label: 'سباكة', icon: '🔧' },
-    { id: 'electrical', label: 'كهرباء', icon: '⚡' },
-    { id: 'painting', label: 'دهان', icon: '🎨' },
-    { id: 'cleaning', label: 'تنظيف', icon: '🧹' },
-    { id: 'carpentry', label: 'نجارة', icon: '🪚' },
-    { id: 'ac', label: 'تكييف', icon: '❄️' }
+    { id: 'plumbing', label: t.handymenPage.plumbing, icon: '🔧' },
+    { id: 'electrical', label: t.handymenPage.electrical, icon: '⚡' },
+    { id: 'painting', label: t.handymenPage.painting, icon: '🎨' },
+    { id: 'cleaning', label: t.handymenPage.cleaning, icon: '🧹' },
+    { id: 'carpentry', label: t.handymenPage.carpentry, icon: '🪚' },
+    { id: 'ac', label: t.handymenPage.ac, icon: '❄️' }
   ];
 
   useEffect(() => {
@@ -74,56 +78,7 @@ export function HandymenPage({ onBack, onChat, onViewHandyman }: HandymenPagePro
     return found ? found.label : specialty;
   };
 
-  // Sample handymen for demo
-  const displayHandymen = handymen.length > 0 ? handymen : [
-    {
-      id: '1',
-      user_id: '1',
-      specialty: ['plumbing'],
-      description: 'سباك محترف مع خبرة 10 سنوات في جميع أعمال السباكة',
-      hourly_rate: 2000,
-      rating: 4.8,
-      total_reviews: 56,
-      is_available: true,
-      profiles: {
-        full_name: 'أحمد بن علي',
-        avatar_url: '',
-        phone: '+213 555 123 456'
-      }
-    },
-    {
-      id: '2',
-      user_id: '2',
-      specialty: ['electrical'],
-      description: 'كهربائي معتمد لجميع أعمال الكهرباء المنزلية والصناعية',
-      hourly_rate: 2500,
-      rating: 4.9,
-      total_reviews: 89,
-      is_available: true,
-      profiles: {
-        full_name: 'محمد الأمين',
-        avatar_url: '',
-        phone: '+213 555 789 012'
-      }
-    },
-    {
-      id: '3',
-      user_id: '3',
-      specialty: ['painting', 'carpentry'],
-      description: 'دهان ونجار متخصص في التشطيبات الداخلية والديكور',
-      hourly_rate: 1800,
-      rating: 4.7,
-      total_reviews: 34,
-      is_available: true,
-      profiles: {
-        full_name: 'كريم مسعود',
-        avatar_url: '',
-        phone: '+213 555 345 678'
-      }
-    }
-  ];
-
-  const filteredHandymen = displayHandymen.filter(h => {
+  const filteredHandymen = handymen.filter(h => {
     const matchesSearch = !searchQuery || 
       h.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       h.description?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -135,7 +90,6 @@ export function HandymenPage({ onBack, onChat, onViewHandyman }: HandymenPagePro
 
   return (
     <div className="min-h-screen bg-background safe-area-inset">
-      {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -143,25 +97,23 @@ export function HandymenPage({ onBack, onChat, onViewHandyman }: HandymenPagePro
       >
         <div className="flex items-center gap-4 mb-4">
           <Button variant="glass" size="icon" onClick={onBack}>
-            <ArrowRight className="w-5 h-5" />
+            <BackArrow className="w-5 h-5" />
           </Button>
-          <h1 className="font-serif text-2xl font-bold text-foreground">الحرفيون</h1>
+          <h1 className="font-serif text-2xl font-bold text-foreground">{t.handymenPage.title}</h1>
         </div>
 
-        {/* Search */}
         <div className="glass-card flex items-center gap-3 px-4 py-3 mb-4">
           <Search className="w-5 h-5 text-muted-foreground" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="ابحث عن حرفي..."
+            placeholder={t.handymenPage.searchPlaceholder}
             className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground"
             dir="auto"
           />
         </div>
 
-        {/* Specialties Filter */}
         <div className="flex gap-2 overflow-x-auto pb-2 -mx-6 px-6 scrollbar-hide">
           <button
             onClick={() => setSelectedSpecialty(null)}
@@ -171,7 +123,7 @@ export function HandymenPage({ onBack, onChat, onViewHandyman }: HandymenPagePro
                 : 'glass-card text-muted-foreground hover:text-foreground'
             }`}
           >
-            الكل
+            {t.all}
           </button>
           {specialties.map(s => (
             <button
@@ -190,7 +142,6 @@ export function HandymenPage({ onBack, onChat, onViewHandyman }: HandymenPagePro
         </div>
       </motion.header>
 
-      {/* Handymen List */}
       <div className="px-6 pb-6 space-y-4">
         {isLoading ? (
           <>
@@ -209,18 +160,16 @@ export function HandymenPage({ onBack, onChat, onViewHandyman }: HandymenPagePro
               onClick={() => onViewHandyman?.(handyman.id)}
             >
               <div className="flex gap-4">
-                {/* Avatar */}
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
                   <span className="text-primary-foreground text-xl font-bold">
                     {handyman.profiles?.full_name?.charAt(0) || '?'}
                   </span>
                 </div>
 
-                {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="font-semibold text-foreground truncate">
-                      {handyman.profiles?.full_name || 'حرفي'}
+                      {handyman.profiles?.full_name || t.handymenPage.handyman}
                     </h3>
                     <div className="flex items-center gap-1 text-sm">
                       <Star className="w-4 h-4 fill-primary text-primary" />
@@ -229,7 +178,6 @@ export function HandymenPage({ onBack, onChat, onViewHandyman }: HandymenPagePro
                     </div>
                   </div>
 
-                  {/* Specialties */}
                   <div className="flex flex-wrap gap-1 mt-2">
                     {handyman.specialty.map(s => (
                       <span key={s} className="px-2 py-0.5 bg-muted rounded-full text-xs text-muted-foreground">
@@ -242,33 +190,32 @@ export function HandymenPage({ onBack, onChat, onViewHandyman }: HandymenPagePro
                     {handyman.description}
                   </p>
 
-                  {/* Price & Actions */}
                   <div className="flex items-center justify-between mt-3">
                     <span className="text-primary font-medium">
-                      {handyman.hourly_rate?.toLocaleString('ar-DZ')} دج/ساعة
+                      {handyman.hourly_rate?.toLocaleString()} {t.perHour}
                     </span>
                     <div className="flex gap-2">
                       <Button variant="glass" size="sm" className="gap-1">
                         <Phone className="w-4 h-4" />
-                        <span>اتصال</span>
+                        <span>{t.handymenPage.call}</span>
                       </Button>
                       <Button 
                         variant="outline" 
                         size="sm" 
                         className="gap-1"
-                        onClick={() => onChat(handyman.user_id)}
+                        onClick={(e) => { e.stopPropagation(); onChat(handyman.user_id); }}
                       >
                         <MessageSquare className="w-4 h-4" />
-                        <span>محادثة</span>
+                        <span>{t.handymenPage.chat}</span>
                       </Button>
                       <Button 
                         variant="gold" 
                         size="sm" 
                         className="gap-1"
-                        onClick={() => setBookingHandyman(handyman)}
+                        onClick={(e) => { e.stopPropagation(); setBookingHandyman(handyman); }}
                       >
                         <CalendarPlus className="w-4 h-4" />
-                        <span>حجز</span>
+                        <span>{t.handymenPage.book}</span>
                       </Button>
                     </div>
                   </div>
@@ -279,7 +226,6 @@ export function HandymenPage({ onBack, onChat, onViewHandyman }: HandymenPagePro
         )}
       </div>
 
-      {/* Booking Dialog */}
       {bookingHandyman && (
         <BookHandymanDialog
           open={!!bookingHandyman}

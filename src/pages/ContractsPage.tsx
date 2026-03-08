@@ -1,19 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  ArrowRight, 
-  Plus, 
-  FileText, 
-  CheckCircle, 
-  Clock, 
-  XCircle,
-  AlertTriangle,
-  Calendar,
-  DollarSign,
-  Loader2,
-  Pen,
-  Star,
-  Download
+  ArrowRight, ArrowLeft, Plus, FileText, CheckCircle, Clock, XCircle,
+  AlertTriangle, Calendar, DollarSign, Loader2, Pen, Star, Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { ReviewDialog } from '@/components/reviews/ReviewDialog';
 import { exportContractToPdf } from '@/utils/contractPdfExport';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 interface Contract {
   id: string;
@@ -47,19 +37,19 @@ interface ContractsPageProps {
 export function ContractsPage({ onBack, onCreateContract }: ContractsPageProps) {
   const { user, profile } = useAuth();
   const { toast } = useToast();
+  const { t, dir, language } = useLanguage();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'active' | 'completed'>('all');
 
+  const BackArrow = dir === 'rtl' ? ArrowRight : ArrowLeft;
+
   useEffect(() => {
-    if (user) {
-      fetchContracts();
-    }
+    if (user) fetchContracts();
   }, [user]);
 
   const fetchContracts = async () => {
     if (!user) return;
-    
     setIsLoading(true);
     const { data, error } = await supabase
       .from('contracts')
@@ -67,9 +57,7 @@ export function ContractsPage({ onBack, onCreateContract }: ContractsPageProps) 
       .or(`landlord_id.eq.${user.id},tenant_id.eq.${user.id}`)
       .order('created_at', { ascending: false });
     
-    if (!error && data) {
-      setContracts(data as Contract[]);
-    }
+    if (!error && data) setContracts(data as Contract[]);
     setIsLoading(false);
   };
 
@@ -88,13 +76,9 @@ export function ContractsPage({ onBack, onCreateContract }: ContractsPageProps) 
       .eq('id', contractId);
 
     if (!error) {
-      // Check if both parties signed
       const contract = contracts.find(c => c.id === contractId);
       if (contract) {
-        const bothSigned = isLandlord 
-          ? contract.tenant_signed 
-          : contract.landlord_signed;
-        
+        const bothSigned = isLandlord ? contract.tenant_signed : contract.landlord_signed;
         if (bothSigned) {
           await supabase
             .from('contracts')
@@ -104,46 +88,38 @@ export function ContractsPage({ onBack, onCreateContract }: ContractsPageProps) 
       }
       
       fetchContracts();
-      toast({
-        title: 'تم التوقيع',
-        description: 'تم توقيع العقد بنجاح'
-      });
+      toast({ title: t.contractsPage.signed, description: t.contractsPage.signedSuccess });
     }
   };
 
   const getStatusConfig = (status: Contract['status']) => {
     switch (status) {
       case 'pending':
-        return { icon: Clock, color: 'text-yellow-500', bg: 'bg-yellow-500/20', label: 'في انتظار التوقيع' };
+        return { icon: Clock, color: 'text-yellow-500', bg: 'bg-yellow-500/20', label: t.contractsPage.pendingSignature };
       case 'active':
-        return { icon: CheckCircle, color: 'text-green-500', bg: 'bg-green-500/20', label: 'ساري المفعول' };
+        return { icon: CheckCircle, color: 'text-green-500', bg: 'bg-green-500/20', label: t.contractsPage.activeContract };
       case 'completed':
-        return { icon: CheckCircle, color: 'text-blue-500', bg: 'bg-blue-500/20', label: 'مكتمل' };
+        return { icon: CheckCircle, color: 'text-blue-500', bg: 'bg-blue-500/20', label: t.contractsPage.completedContract };
       case 'cancelled':
-        return { icon: XCircle, color: 'text-red-500', bg: 'bg-red-500/20', label: 'ملغي' };
+        return { icon: XCircle, color: 'text-red-500', bg: 'bg-red-500/20', label: t.contractsPage.cancelled };
       case 'disputed':
-        return { icon: AlertTriangle, color: 'text-orange-500', bg: 'bg-orange-500/20', label: 'متنازع عليه' };
+        return { icon: AlertTriangle, color: 'text-orange-500', bg: 'bg-orange-500/20', label: t.contractsPage.disputed };
       default:
         return { icon: Clock, color: 'text-muted-foreground', bg: 'bg-muted', label: status };
     }
   };
 
-  const filteredContracts = contracts.filter(c => {
-    if (filter === 'all') return true;
-    return c.status === filter;
-  });
+  const filteredContracts = contracts.filter(c => filter === 'all' || c.status === filter);
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('ar-DZ', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    const locale = language === 'ar' ? 'ar-DZ' : language === 'fr' ? 'fr-FR' : 'en-US';
+    return new Date(dateStr).toLocaleDateString(locale, {
+      year: 'numeric', month: 'short', day: 'numeric'
     });
   };
 
   return (
     <div className="min-h-screen bg-background safe-area-inset">
-      {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -152,23 +128,22 @@ export function ContractsPage({ onBack, onCreateContract }: ContractsPageProps) 
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <Button variant="glass" size="icon" onClick={onBack}>
-              <ArrowRight className="w-5 h-5" />
+              <BackArrow className="w-5 h-5" />
             </Button>
-            <h1 className="font-serif text-2xl font-bold text-foreground">العقود</h1>
+            <h1 className="font-serif text-2xl font-bold text-foreground">{t.contractsPage.title}</h1>
           </div>
           <Button variant="gold" size="sm" onClick={onCreateContract} className="gap-2">
             <Plus className="w-4 h-4" />
-            <span>إنشاء عقد</span>
+            <span>{t.contractsPage.createContract}</span>
           </Button>
         </div>
 
-        {/* Filter Tabs */}
         <div className="flex gap-2 overflow-x-auto pb-2">
           {[
-            { id: 'all', label: 'الكل' },
-            { id: 'pending', label: 'قيد الانتظار' },
-            { id: 'active', label: 'ساري' },
-            { id: 'completed', label: 'مكتمل' }
+            { id: 'all', label: t.all },
+            { id: 'pending', label: t.contractsPage.pending },
+            { id: 'active', label: t.contractsPage.active },
+            { id: 'completed', label: t.contractsPage.completed }
           ].map(tab => (
             <button
               key={tab.id}
@@ -185,29 +160,22 @@ export function ContractsPage({ onBack, onCreateContract }: ContractsPageProps) 
         </div>
       </motion.header>
 
-      {/* Contracts List */}
       <div className="px-6 pb-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : filteredContracts.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="glass-card p-8 text-center"
-          >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card p-8 text-center">
             <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-foreground font-medium mb-2">لا توجد عقود</p>
+            <p className="text-foreground font-medium mb-2">{t.contractsPage.noContracts}</p>
             <p className="text-sm text-muted-foreground mb-4">
-              {filter === 'all' 
-                ? 'أنشئ أول عقد لك الآن' 
-                : 'لا توجد عقود في هذه الحالة'}
+              {filter === 'all' ? t.contractsPage.createFirst : t.contractsPage.noContractsInStatus}
             </p>
             {filter === 'all' && (
               <Button variant="gold" onClick={onCreateContract} className="gap-2">
                 <Plus className="w-4 h-4" />
-                <span>إنشاء عقد</span>
+                <span>{t.contractsPage.createContract}</span>
               </Button>
             )}
           </motion.div>
@@ -240,7 +208,7 @@ export function ContractsPage({ onBack, onCreateContract }: ContractsPageProps) 
                       </span>
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      {contract.contract_type === 'rental' ? 'عقد إيجار' : 'عقد خدمة'}
+                      {contract.contract_type === 'rental' ? t.contractsPage.rentalContract : t.contractsPage.serviceContract}
                     </span>
                   </div>
 
@@ -252,32 +220,25 @@ export function ContractsPage({ onBack, onCreateContract }: ContractsPageProps) 
                     {contract.monthly_amount && (
                       <span className="flex items-center gap-1">
                         <DollarSign className="w-4 h-4" />
-                        {contract.monthly_amount.toLocaleString('ar-DZ')} دج/شهر
+                        {contract.monthly_amount.toLocaleString()} {t.perMonth}
                       </span>
                     )}
                   </div>
 
-                  {/* Signatures */}
                   <div className="flex items-center gap-4 text-xs mb-3">
                     <span className={contract.landlord_signed ? 'text-green-500' : 'text-muted-foreground'}>
-                      المالك: {contract.landlord_signed ? '✓ موقّع' : 'لم يوقّع'}
+                      {t.contractsPage.owner}: {contract.landlord_signed ? `✓ ${t.contractsPage.ownerSigned}` : t.contractsPage.notSigned}
                     </span>
                     <span className={contract.tenant_signed ? 'text-green-500' : 'text-muted-foreground'}>
-                      المستأجر: {contract.tenant_signed ? '✓ موقّع' : 'لم يوقّع'}
+                      {t.contractsPage.tenantLabel}: {contract.tenant_signed ? `✓ ${t.contractsPage.ownerSigned}` : t.contractsPage.notSigned}
                     </span>
                   </div>
 
-                  {/* Action */}
                   <div className="flex gap-2">
                     {canSign && (
-                      <Button
-                        variant="gold"
-                        size="sm"
-                        className="flex-1 gap-2"
-                        onClick={() => signContract(contract.id, isLandlord)}
-                      >
+                      <Button variant="gold" size="sm" className="flex-1 gap-2" onClick={() => signContract(contract.id, isLandlord)}>
                         <Pen className="w-4 h-4" />
-                        <span>توقيع العقد</span>
+                        <span>{t.contractsPage.signContract}</span>
                       </Button>
                     )}
                     <Button
@@ -287,23 +248,20 @@ export function ContractsPage({ onBack, onCreateContract }: ContractsPageProps) 
                       onClick={() => {
                         exportContractToPdf(
                           contract as any,
-                          { name: isLandlord ? (profile?.full_name || 'المالك') : 'الطرف الآخر', role: 'landlord' },
-                          { name: !isLandlord ? (profile?.full_name || 'المستأجر') : 'الطرف الآخر', role: 'tenant' }
+                          { name: isLandlord ? (profile?.full_name || t.contractsPage.owner) : t.contractsPage.otherParty, role: 'landlord' },
+                          { name: !isLandlord ? (profile?.full_name || t.contractsPage.tenantLabel) : t.contractsPage.otherParty, role: 'tenant' }
                         );
-                        toast({
-                          title: 'تم تصدير العقد',
-                          description: 'تم حفظ العقد كملف PDF'
-                        });
+                        toast({ title: t.contractsPage.exported, description: t.contractsPage.exportedDesc });
                       }}
                     >
                       <Download className="w-4 h-4" />
-                      <span>تصدير PDF</span>
+                      <span>{t.contractsPage.exportPdf}</span>
                     </Button>
                     {contract.status === 'completed' && (
                       <ReviewDialog
                         contractId={contract.id}
                         reviewedId={isLandlord ? contract.tenant_id : contract.landlord_id}
-                        reviewedName={isLandlord ? 'المستأجر' : 'المالك'}
+                        reviewedName={isLandlord ? t.contractsPage.tenantLabel : t.contractsPage.owner}
                         reviewerRole={isLandlord ? 'owner' : 'tenant'}
                         onSuccess={fetchContracts}
                       />
