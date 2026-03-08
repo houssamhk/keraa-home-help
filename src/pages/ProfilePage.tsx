@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, User, Star, Settings, Shield, MapPin, Phone, Mail, Calendar, Heart } from 'lucide-react';
+import { ArrowRight, ArrowLeft, User, Star, Settings, Shield, Phone, Calendar, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,7 @@ import { ReviewsList } from '@/components/reviews/ReviewsList';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFavorites } from '@/hooks/useFavorites';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 interface UserProfile {
   id: string;
@@ -26,7 +27,7 @@ interface UserProfile {
 }
 
 interface ProfilePageProps {
-  userId?: string; // If not provided, show current user's profile
+  userId?: string;
   onBack: () => void;
   onSettings?: () => void;
   onNavigate?: (route: string) => void;
@@ -35,11 +36,13 @@ interface ProfilePageProps {
 export function ProfilePage({ userId, onBack, onSettings, onNavigate }: ProfilePageProps) {
   const { user, profile: currentUserProfile } = useAuth();
   const { favorites } = useFavorites();
+  const { t, dir } = useLanguage();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [propertiesCount, setPropertiesCount] = useState(0);
   const [contractsCount, setContractsCount] = useState(0);
 
+  const BackArrow = dir === 'rtl' ? ArrowRight : ArrowLeft;
   const isOwnProfile = !userId || userId === user?.id;
   const targetUserId = userId || user?.id;
 
@@ -53,14 +56,11 @@ export function ProfilePage({ userId, onBack, onSettings, onNavigate }: ProfileP
   const fetchProfile = async () => {
     if (!targetUserId) return;
 
-    // Use the secure get_safe_profile function instead of direct table access
-    // This ensures phone is only visible to: owner, admins, or with mutual consent
     const { data, error } = await supabase
       .rpc('get_safe_profile', { target_user_id: targetUserId })
       .maybeSingle();
 
     if (!error && data) {
-      // Fetch created_at - use public_profiles for other users, profiles for own
       const { data: profileMeta } = isOwnProfile 
         ? await supabase
             .from('profiles')
@@ -71,7 +71,7 @@ export function ProfilePage({ userId, onBack, onSettings, onNavigate }: ProfileP
       
       setProfile({
         ...data,
-        id: data.user_id, // Map user_id to id for compatibility
+        id: data.user_id,
         created_at: profileMeta?.created_at || new Date().toISOString(),
       } as UserProfile);
     }
@@ -81,7 +81,6 @@ export function ProfilePage({ userId, onBack, onSettings, onNavigate }: ProfileP
   const fetchStats = async () => {
     if (!targetUserId) return;
 
-    // Fetch properties count
     const { count: propCount } = await supabase
       .from('properties')
       .select('*', { count: 'exact', head: true })
@@ -89,7 +88,6 @@ export function ProfilePage({ userId, onBack, onSettings, onNavigate }: ProfileP
 
     setPropertiesCount(propCount || 0);
 
-    // Fetch contracts count
     const { count: contractCount } = await supabase
       .from('contracts')
       .select('*', { count: 'exact', head: true })
@@ -100,10 +98,10 @@ export function ProfilePage({ userId, onBack, onSettings, onNavigate }: ProfileP
 
   const getRoleLabel = (role: string | null) => {
     switch (role) {
-      case 'owner': return 'مالك عقارات';
-      case 'tenant': return 'مستأجر';
-      case 'handyman': return 'حرفي';
-      default: return 'مستخدم';
+      case 'owner': return t.profile.owner;
+      case 'tenant': return t.profile.tenant;
+      case 'handyman': return t.profile.handyman;
+      default: return t.profile.user;
     }
   };
 
@@ -125,9 +123,9 @@ export function ProfilePage({ userId, onBack, onSettings, onNavigate }: ProfileP
       >
         <div className="flex items-center justify-between mb-6">
           <Button variant="ghost" size="icon" onClick={onBack}>
-            <ArrowRight className="w-5 h-5" />
+            <BackArrow className="w-5 h-5" />
           </Button>
-          <h1 className="text-xl font-bold">الملف الشخصي</h1>
+          <h1 className="text-xl font-bold">{t.profile.title}</h1>
           {isOwnProfile && onSettings && (
             <Button variant="ghost" size="icon" onClick={onSettings}>
               <Settings className="w-5 h-5" />
@@ -150,14 +148,14 @@ export function ProfilePage({ userId, onBack, onSettings, onNavigate }: ProfileP
             )}
           </div>
           
-          <h2 className="text-2xl font-bold mb-1">{profile?.full_name || 'مستخدم'}</h2>
+          <h2 className="text-2xl font-bold mb-1">{profile?.full_name || t.profile.user}</h2>
           
           <div className="flex items-center gap-2 mb-3">
             <Badge variant="secondary">{getRoleLabel(profile?.role_type)}</Badge>
             {profile?.kyc_verified && (
               <Badge variant="default" className="gap-1 bg-green-600">
                 <Shield className="w-3 h-3" />
-                موثق
+                {t.profile.verified}
               </Badge>
             )}
           </div>
@@ -166,20 +164,20 @@ export function ProfilePage({ userId, onBack, onSettings, onNavigate }: ProfileP
           <div className="flex gap-6 mt-4">
             <div className="text-center">
               <p className="text-2xl font-bold">{profile?.avg_rating?.toFixed(1) || '0'}</p>
-              <p className="text-xs text-muted-foreground">التقييم</p>
+              <p className="text-xs text-muted-foreground">{t.profile.rating}</p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-bold">{profile?.total_reviews || 0}</p>
-              <p className="text-xs text-muted-foreground">تقييم</p>
+              <p className="text-xs text-muted-foreground">{t.profile.reviews}</p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-bold">{contractsCount}</p>
-              <p className="text-xs text-muted-foreground">عقد</p>
+              <p className="text-xs text-muted-foreground">{t.profile.contracts}</p>
             </div>
             {profile?.role_type === 'owner' && (
               <div className="text-center">
                 <p className="text-2xl font-bold">{propertiesCount}</p>
-                <p className="text-xs text-muted-foreground">عقار</p>
+                <p className="text-xs text-muted-foreground">{t.profile.properties}</p>
               </div>
             )}
           </div>
@@ -190,9 +188,9 @@ export function ProfilePage({ userId, onBack, onSettings, onNavigate }: ProfileP
       <div className="px-4 -mt-4">
         <Tabs defaultValue="reputation" className="w-full">
           <TabsList className="w-full">
-            <TabsTrigger value="reputation" className="flex-1">السمعة</TabsTrigger>
-            <TabsTrigger value="reviews" className="flex-1">التقييمات</TabsTrigger>
-            <TabsTrigger value="info" className="flex-1">المعلومات</TabsTrigger>
+            <TabsTrigger value="reputation" className="flex-1">{t.profile.reputation}</TabsTrigger>
+            <TabsTrigger value="reviews" className="flex-1">{t.profile.reviewsTab}</TabsTrigger>
+            <TabsTrigger value="info" className="flex-1">{t.profile.info}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="reputation" className="mt-4">
@@ -200,7 +198,7 @@ export function ProfilePage({ userId, onBack, onSettings, onNavigate }: ProfileP
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Star className="w-5 h-5 text-yellow-400" />
-                  نقاط السمعة
+                  {t.profile.reputationPoints}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -216,7 +214,7 @@ export function ProfilePage({ userId, onBack, onSettings, onNavigate }: ProfileP
           <TabsContent value="reviews" className="mt-4">
             <Card>
               <CardHeader>
-                <CardTitle>التقييمات</CardTitle>
+                <CardTitle>{t.profile.reviewsTab}</CardTitle>
               </CardHeader>
               <CardContent>
                 {targetUserId && <ReviewsList userId={targetUserId} />}
@@ -225,7 +223,6 @@ export function ProfilePage({ userId, onBack, onSettings, onNavigate }: ProfileP
           </TabsContent>
 
           <TabsContent value="info" className="mt-4 space-y-4">
-            {/* Favorites Quick Link - Only for own profile */}
             {isOwnProfile && (
               <Card 
                 className="bg-primary/5 border-primary/20 cursor-pointer hover:bg-primary/10 transition-colors"
@@ -236,11 +233,11 @@ export function ProfilePage({ userId, onBack, onSettings, onNavigate }: ProfileP
                     <div className="flex items-center gap-3">
                       <Heart className="w-5 h-5 text-primary" />
                       <div>
-                        <p className="font-medium">المفضلة</p>
-                        <p className="text-xs text-muted-foreground">{favorites.size} عقار</p>
+                        <p className="font-medium">{t.profile.favorites}</p>
+                        <p className="text-xs text-muted-foreground">{favorites.size} {t.profile.favCount}</p>
                       </div>
                     </div>
-                    <ArrowRight className="w-5 h-5 text-muted-foreground rotate-180" />
+                    <BackArrow className="w-5 h-5 text-muted-foreground rotate-180" />
                   </div>
                 </CardContent>
               </Card>
@@ -256,7 +253,7 @@ export function ProfilePage({ userId, onBack, onSettings, onNavigate }: ProfileP
                 )}
                 <div className="flex items-center gap-3">
                   <Calendar className="w-5 h-5 text-muted-foreground" />
-                  <span>عضو منذ {new Date(profile?.created_at || '').toLocaleDateString('ar-DZ')}</span>
+                  <span>{t.profile.memberSince} {new Date(profile?.created_at || '').toLocaleDateString(dir === 'rtl' ? 'ar-DZ' : dir === 'ltr' ? 'fr-FR' : 'en-US')}</span>
                 </div>
               </CardContent>
             </Card>

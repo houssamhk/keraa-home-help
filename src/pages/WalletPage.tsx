@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowRight, 
+  ArrowLeft,
   Wallet, 
   ArrowUpCircle, 
   ArrowDownCircle, 
@@ -24,6 +25,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 interface WalletPageProps {
   onBack: () => void;
@@ -98,6 +100,8 @@ const QUICK_AMOUNTS = [1000, 2000, 5000, 10000, 20000, 50000];
 
 export function WalletPage({ onBack }: WalletPageProps) {
   const { user } = useAuth();
+  const { t, dir } = useLanguage();
+  const BackArrow = dir === 'rtl' ? ArrowRight : ArrowLeft;
   const [wallet, setWallet] = useState<WalletData | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -291,9 +295,9 @@ export function WalletPage({ onBack }: WalletPageProps) {
       >
         <div className="flex items-center gap-3 mb-4">
           <Button variant="glass" size="icon" onClick={onBack}>
-            <ArrowRight className="w-5 h-5" />
+            <BackArrow className="w-5 h-5" />
           </Button>
-          <h1 className="font-serif text-xl font-bold text-foreground">المحفظة</h1>
+          <h1 className="font-serif text-xl font-bold text-foreground">{t.walletPage.title}</h1>
         </div>
 
         {/* Balance Card */}
