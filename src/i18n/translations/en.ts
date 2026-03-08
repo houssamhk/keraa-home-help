@@ -262,6 +262,19 @@ export const en = {
     seeYouSoon: 'See you soon!',
   },
 
+  // Chat History
+  chat: {
+    history: 'Chat History',
+    noHistory: 'No previous conversations',
+    newChat: 'New Chat',
+    today: 'Today',
+    yesterday: 'Yesterday',
+    daysAgo: 'days ago',
+    autoDeleteNotice: 'Conversations are auto-deleted after 15 days',
+    expiringToday: 'Expiring today',
+    daysLeft: 'd',
+  },
+
   // Offline
   offline: {
     disconnected: 'You are offline - some features may not work',

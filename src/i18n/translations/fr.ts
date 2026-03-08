@@ -262,6 +262,19 @@ export const fr = {
     seeYouSoon: 'À bientôt !',
   },
 
+  // Chat History
+  chat: {
+    history: 'Historique des conversations',
+    noHistory: 'Aucune conversation précédente',
+    newChat: 'Nouvelle conversation',
+    today: "Aujourd'hui",
+    yesterday: 'Hier',
+    daysAgo: 'jours',
+    autoDeleteNotice: 'Les conversations sont supprimées après 15 jours',
+    expiringToday: "Expire aujourd'hui",
+    daysLeft: 'j',
+  },
+
   // Offline
   offline: {
     disconnected: 'Vous êtes hors ligne - certaines fonctionnalités peuvent ne pas fonctionner',

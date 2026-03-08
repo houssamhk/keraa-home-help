@@ -262,6 +262,19 @@ export const ar = {
     seeYouSoon: 'نراك قريباً!',
   },
 
+  // Chat History
+  chat: {
+    history: 'سجل المحادثات',
+    noHistory: 'لا توجد محادثات سابقة',
+    newChat: 'محادثة جديدة',
+    today: 'اليوم',
+    yesterday: 'أمس',
+    daysAgo: 'أيام',
+    autoDeleteNotice: 'تُحذف المحادثات تلقائياً بعد 15 يوماً',
+    expiringToday: 'تنتهي اليوم',
+    daysLeft: 'د',
+  },
+
   // Offline
   offline: {
     disconnected: 'أنت غير متصل بالإنترنت - بعض الميزات قد لا تعمل',
