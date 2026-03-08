@@ -172,8 +172,7 @@ export function SettingsPage({ onBack, onStartKYC }: SettingsPageProps) {
 
   const getRoleLabel = () => {
     if (profile?.role_type === 'tenant') return t.settings.tenant;
-    if (profile?.role_type === 'handyman') return t.settings.handyman;
-    if (profile?.role_type === 'owner') return t.settings.owner;
+    if (profile?.role_type === 'handyman') return t.settings.handymanile?.role_type === 'owner') return t.settings.owner;
     if (profile?.role_type === 'provider') return t.settings.provider;
     return t.settings.tenant;
   };
@@ -181,8 +180,7 @@ export function SettingsPage({ onBack, onStartKYC }: SettingsPageProps) {
   const roleOptions = [
     { value: 'tenant', label: t.settings.tenant },
     { value: 'owner', label: t.settings.owner },
-    { value: 'handyman', label: t.settings.handyman || 'حرفي' },
-  ].filter(r => r.value !== profile?.role_type);
+    { value: 'handyman', label: t.settings.handyman || 'حرفي' r => r.value !== profile?.role_type);
 
   return (
     <div className="min-h-screen bg-background safe-area-inset">
