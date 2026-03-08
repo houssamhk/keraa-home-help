@@ -227,6 +227,7 @@ export const ar = {
     tenant: 'مستأجر',
     provider: 'مقدم خدمة',
     owner: 'مالك',
+    handyman: 'حرفي',
     verified: 'تم التحقق',
     kycTitle: 'التحقق من الهوية',
     kycNotVerified: 'لم يتم التحقق من هويتك بعد',
