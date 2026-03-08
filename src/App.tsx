@@ -3,6 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { AnimatePresence } from "framer-motion";
 import { Capacitor } from "@capacitor/core";
 import { SplashScreen } from "@/components/onboarding/SplashScreen";
