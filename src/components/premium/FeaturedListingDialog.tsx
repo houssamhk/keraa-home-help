@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Star, Clock, Wallet, CreditCard, Loader2, Check, Sparkles } from 'lucide-react';
+import { Star, Clock, Wallet, CreditCard, Loader2, Check, Sparkles, Globe, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -11,6 +11,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { createSatimPayment } from '@/services/paymentService';
 
 interface FeaturedPricing {
   id: string;
@@ -39,7 +40,8 @@ export function FeaturedListingDialog({
   const [pricing, setPricing] = useState<FeaturedPricing[]>([]);
   const [walletBalance, setWalletBalance] = useState(0);
   const [selectedDuration, setSelectedDuration] = useState<number>(7);
-  const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'ccp' | 'baridimob'>('wallet');
+  const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'satim' | 'ccp' | 'baridimob'>('wallet');
+  const [isSatimProcessing, setIsSatimProcessing] = useState(false);
   const [paymentReference, setPaymentReference] = useState('');
 
   useEffect(() => {
@@ -98,6 +100,53 @@ export function FeaturedListingDialog({
         });
         return;
       }
+    } else if (paymentMethod === 'satim') {
+      // Handle SATIM online payment
+      setIsSatimProcessing(true);
+      try {
+        // First create a pending featured listing
+        const { data: listing, error: listingError } = await supabase
+          .from('featured_listings')
+          .insert({
+            property_id: propertyId,
+            user_id: user.id,
+            feature_type: 'top_results',
+            duration_days: selectedDuration,
+            price_paid: price,
+            status: 'pending',
+            payment_method: 'satim_cib',
+          })
+          .select('id')
+          .single();
+
+        if (listingError) throw listingError;
+
+        const result = await createSatimPayment({
+          amount: price,
+          payment_type: 'featured_listing',
+          reference_id: listing.id,
+          description: `تمييز عقار: ${propertyTitle}`,
+        });
+
+        if (result.redirect_url) {
+          window.location.href = result.redirect_url;
+          return;
+        } else {
+          toast({
+            title: 'بوابة الدفع غير مفعلة',
+            description: 'استخدم المحفظة أو التحويل اليدوي حالياً',
+          });
+        }
+      } catch (error: any) {
+        toast({
+          title: 'خطأ',
+          description: error.message || 'فشل في إنشاء عملية الدفع',
+          variant: 'destructive'
+        });
+      } finally {
+        setIsSatimProcessing(false);
+      }
+      return;
     } else if (!paymentReference) {
       toast({
         title: 'خطأ',
@@ -111,7 +160,6 @@ export function FeaturedListingDialog({
 
     try {
       if (paymentMethod === 'wallet') {
-        // Use the database function to pay from wallet
         const { data, error } = await supabase.rpc('pay_for_featured_listing', {
           p_property_id: propertyId,
           p_duration_days: selectedDuration,
@@ -125,7 +173,6 @@ export function FeaturedListingDialog({
           description: `تم تمييز عقارك لمدة ${getDurationLabel(selectedDuration)}`
         });
       } else {
-        // Create pending featured listing for manual payment
         const { error } = await supabase
           .from('featured_listings')
           .insert({
@@ -159,6 +206,7 @@ export function FeaturedListingDialog({
       setIsLoading(false);
     }
   };
+
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -219,6 +267,32 @@ export function FeaturedListingDialog({
           <div>
             <label className="text-sm font-medium mb-3 block">طريقة الدفع</label>
             <div className="space-y-2">
+              {/* SATIM Online Payment */}
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('satim')}
+                className={`w-full p-3 rounded-lg border-2 flex items-center justify-between transition-all ${
+                  paymentMethod === 'satim'
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Globe className="w-5 h-5 text-blue-400" />
+                  <div className="text-right">
+                    <div className="font-medium flex items-center gap-2">
+                      دفع إلكتروني
+                      <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">فوري</span>
+                    </div>
+                    <div className="text-sm text-muted-foreground">CIB / البطاقة الذهبية</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Shield className="w-3 h-3 text-green-400" />
+                  {paymentMethod === 'satim' && <Check className="w-5 h-5 text-primary" />}
+                </div>
+              </button>
+
               {/* Wallet */}
               <button
                 type="button"
@@ -284,7 +358,7 @@ export function FeaturedListingDialog({
           </div>
 
           {/* Payment Reference for CCP/BaridiMob */}
-          {paymentMethod !== 'wallet' && (
+          {(paymentMethod === 'ccp' || paymentMethod === 'baridimob') && (
             <div>
               <label className="text-sm font-medium mb-2 block">رقم التحويل</label>
               <input
@@ -296,7 +370,7 @@ export function FeaturedListingDialog({
                 dir="ltr"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                حساب CCP: 0012345678 مفتاح 90
+                حساب CCP: 00799999 0019940 31
               </p>
             </div>
           )}
@@ -317,7 +391,7 @@ export function FeaturedListingDialog({
             size="lg"
             className="w-full"
             onClick={handleSubmit}
-            disabled={isLoading}
+            disabled={isLoading || isSatimProcessing}
           >
             {isLoading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
