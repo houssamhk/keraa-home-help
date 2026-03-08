@@ -201,7 +201,7 @@ export function SettingsPage({ onBack, onStartKYC }: SettingsPageProps) {
           
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {settings.theme === 'dark' ? (
+              {localTheme === 'dark' ? (
                 <Moon className="w-5 h-5 text-primary" />
               ) : (
                 <Sun className="w-5 h-5 text-primary" />
@@ -209,7 +209,7 @@ export function SettingsPage({ onBack, onStartKYC }: SettingsPageProps) {
               <span className="text-foreground">الوضع الداكن</span>
             </div>
             <Switch
-              checked={settings.theme === 'dark'}
+              checked={localTheme === 'dark'}
               onCheckedChange={(checked) => handleThemeChange(checked)}
             />
           </div>
