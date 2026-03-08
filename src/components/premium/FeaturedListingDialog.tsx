@@ -42,6 +42,7 @@ export function FeaturedListingDialog({
   const [selectedDuration, setSelectedDuration] = useState<number>(7);
   const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'satim' | 'ccp' | 'baridimob'>('wallet');
   const [isSatimProcessing, setIsSatimProcessing] = useState(false);
+  const [paymentReference, setPaymentReference] = useState('');
 
   useEffect(() => {
     if (isOpen) {
