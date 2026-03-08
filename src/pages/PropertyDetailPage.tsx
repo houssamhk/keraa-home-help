@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  ArrowRight, MapPin, Bed, Bath, Ruler, Heart, MessageCircle, 
-  FileText, CreditCard, Share2, Calendar, Home,
+  ArrowRight, ArrowLeft, MapPin, Bed, Bath, Ruler, Heart, MessageCircle, 
+  FileText, CreditCard, Calendar, Home,
   Flame, Snowflake, Car, Trees, Waves, Wifi, Armchair, Flag, Shield
 } from 'lucide-react';
 import { PropertyMediaGallery } from '@/components/property/PropertyMediaGallery';
+import { SharePropertyButton } from '@/components/property/SharePropertyButton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,6 +16,7 @@ import { usePropertyViews } from '@/hooks/usePropertyViews';
 import { ReportDialog } from '@/components/common/ReportDialog';
 import { BookViewingDialog } from '@/components/property/BookViewingDialog';
 import { VerificationServiceDialog } from '@/components/premium/VerificationServiceDialog';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { toast } from 'sonner';
 
 interface MediaItem {
