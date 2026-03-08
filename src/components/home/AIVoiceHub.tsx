@@ -123,21 +123,22 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC }: AIVoice
         animate={{ opacity: 1, y: 0 }}
       >
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-muted-foreground text-xs">مرحباً،</p>
-            <h1 className="font-serif text-xl font-bold text-foreground">{userName}</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <NotificationCenter onNavigate={onNavigate} />
-            <Button variant="glass" size="icon" onClick={() => onNavigate('/settings')}>
-              <Settings className="w-5 h-5" />
-            </Button>
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <span className="text-primary-foreground font-semibold text-sm">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => onNavigate('/settings')}
+              className="relative w-11 h-11 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center group transition-transform active:scale-95"
+            >
+              <span className="text-primary-foreground font-bold text-base group-hover:opacity-0 transition-opacity">
                 {userName.charAt(0).toUpperCase()}
               </span>
+              <Settings className="w-5 h-5 text-primary-foreground absolute opacity-0 group-hover:opacity-100 transition-opacity" />
+            </button>
+            <div>
+              <p className="text-muted-foreground text-[11px] leading-tight">مرحباً 👋</p>
+              <h1 className="font-serif text-lg font-bold text-foreground leading-tight">{userName}</h1>
             </div>
           </div>
+          <NotificationCenter onNavigate={onNavigate} />
         </div>
       </motion.header>
 
