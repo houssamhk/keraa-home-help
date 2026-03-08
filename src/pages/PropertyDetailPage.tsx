@@ -137,17 +137,7 @@ export function PropertyDetailPage({
     }[type] || type;
   };
 
-  const handleShare = async () => {
-    try {
-      await navigator.share({
-        title: property.title,
-        text: `${property.title} - ${formatPrice(property.price, property.price_period)}`,
-        url: window.location.href
-      });
-    } catch {
-      toast.success('تم نسخ الرابط');
-    }
-  };
+  // Share is now handled by SharePropertyButton component
 
   const handleContactOwner = () => {
     if (!user) {
