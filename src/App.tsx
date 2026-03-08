@@ -10,6 +10,7 @@ import { MobileBottomNav } from "@/components/navigation/MobileBottomNav";
 import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { LanguageProvider } from "@/i18n/LanguageContext";
 import { useTheme } from "@/hooks/useTheme";
 import type { UserRole } from "@/types/user";
 
@@ -301,13 +302,15 @@ function AppContent() {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <OfflineIndicator />
-        {!Capacitor.isNativePlatform() && <InstallPrompt />}
-        <AppContent />
-      </TooltipProvider>
+      <LanguageProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <OfflineIndicator />
+          {!Capacitor.isNativePlatform() && <InstallPrompt />}
+          <AppContent />
+        </TooltipProvider>
+      </LanguageProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

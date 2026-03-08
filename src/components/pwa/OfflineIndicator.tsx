@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WifiOff, Wifi } from 'lucide-react';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 export function OfflineIndicator() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [showReconnected, setShowReconnected] = useState(false);
+  const { t } = useLanguage();
 
   useEffect(() => {
     const handleOnline = () => {
@@ -38,7 +40,7 @@ export function OfflineIndicator() {
         >
           <div className="flex items-center justify-center gap-2 text-sm">
             <WifiOff className="h-4 w-4" />
-            <span>أنت غير متصل بالإنترنت - بعض الميزات قد لا تعمل</span>
+            <span>{t.offline.disconnected}</span>
           </div>
         </motion.div>
       )}
@@ -52,7 +54,7 @@ export function OfflineIndicator() {
         >
           <div className="flex items-center justify-center gap-2 text-sm">
             <Wifi className="h-4 w-4" />
-            <span>تم استعادة الاتصال بالإنترنت</span>
+            <span>{t.offline.reconnected}</span>
           </div>
         </motion.div>
       )}

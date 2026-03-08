@@ -4,18 +4,8 @@ import { Mail, Lock, User, Eye, EyeOff, Loader2, ArrowRight, Phone, Calendar } f
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { z } from 'zod';
-
-const emailSchema = z.string().trim().email('بريد إلكتروني غير صالح');
-const passwordSchema = z.string().min(6, 'كلمة المرور يجب أن تكون 6 أحرف على الأقل');
-const nameSchema = z.string().trim().min(2, 'الاسم يجب أن يكون حرفين على الأقل').max(100, 'الاسم طويل جداً');
-const phoneSchema = z.string().regex(/^(0|\+213)[5-7][0-9]{8}$/, 'رقم الهاتف غير صالح (مثال: 0551234567)');
-const birthDateSchema = z.string().refine((date) => {
-  const birthDate = new Date(date);
-  const today = new Date();
-  const age = today.getFullYear() - birthDate.getFullYear();
-  return age >= 18 && age <= 100;
-}, 'يجب أن يكون عمرك 18 سنة على الأقل');
 
 interface AuthPageProps {
   onSuccess: () => void;
@@ -45,54 +35,39 @@ export function AuthPage({ onSuccess }: AuthPageProps) {
   
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
+
+  const emailSchema = z.string().trim().email(t.auth.invalidEmail);
+  const passwordSchema = z.string().min(6, t.auth.passwordMin);
+  const nameSchema = z.string().trim().min(2, t.auth.nameMin).max(100, t.auth.nameTooLong);
+  const phoneSchema = z.string().regex(/^(0|\+213)[5-7][0-9]{8}$/, t.auth.invalidPhone);
+  const birthDateSchema = z.string().refine((date) => {
+    const bd = new Date(date);
+    const today = new Date();
+    const age = today.getFullYear() - bd.getFullYear();
+    return age >= 18 && age <= 100;
+  }, t.auth.ageRequired);
 
   const validateForm = () => {
     const newErrors: FormErrors = {};
     
-    try {
-      emailSchema.parse(email);
-    } catch (e) {
-      if (e instanceof z.ZodError) {
-        newErrors.email = e.errors[0].message;
-      }
+    try { emailSchema.parse(email); } catch (e) {
+      if (e instanceof z.ZodError) newErrors.email = e.errors[0].message;
     }
-    
-    try {
-      passwordSchema.parse(password);
-    } catch (e) {
-      if (e instanceof z.ZodError) {
-        newErrors.password = e.errors[0].message;
-      }
+    try { passwordSchema.parse(password); } catch (e) {
+      if (e instanceof z.ZodError) newErrors.password = e.errors[0].message;
     }
     
     if (!isLogin) {
-      // Confirm password validation
-      if (password !== confirmPassword) {
-        newErrors.confirmPassword = 'كلمات المرور غير متطابقة';
+      if (password !== confirmPassword) newErrors.confirmPassword = t.auth.passwordMismatch;
+      try { nameSchema.parse(fullName); } catch (e) {
+        if (e instanceof z.ZodError) newErrors.name = e.errors[0].message;
       }
-      
-      try {
-        nameSchema.parse(fullName);
-      } catch (e) {
-        if (e instanceof z.ZodError) {
-          newErrors.name = e.errors[0].message;
-        }
+      try { phoneSchema.parse(phone); } catch (e) {
+        if (e instanceof z.ZodError) newErrors.phone = e.errors[0].message;
       }
-      
-      try {
-        phoneSchema.parse(phone);
-      } catch (e) {
-        if (e instanceof z.ZodError) {
-          newErrors.phone = e.errors[0].message;
-        }
-      }
-      
-      try {
-        birthDateSchema.parse(birthDate);
-      } catch (e) {
-        if (e instanceof z.ZodError) {
-          newErrors.birthDate = e.errors[0].message;
-        }
+      try { birthDateSchema.parse(birthDate); } catch (e) {
+        if (e instanceof z.ZodError) newErrors.birthDate = e.errors[0].message;
       }
     }
     
@@ -102,9 +77,7 @@ export function AuthPage({ onSuccess }: AuthPageProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!validateForm()) return;
-    
     setIsLoading(true);
     
     try {
@@ -112,46 +85,24 @@ export function AuthPage({ onSuccess }: AuthPageProps) {
         const { error } = await signIn(email, password);
         if (error) {
           if (error.message.includes('Invalid login credentials')) {
-            toast({
-              title: 'خطأ في تسجيل الدخول',
-              description: 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
-              variant: 'destructive'
-            });
+            toast({ title: t.auth.loginError, description: t.auth.invalidCredentials, variant: 'destructive' });
           } else {
-            toast({
-              title: 'خطأ',
-              description: error.message,
-              variant: 'destructive'
-            });
+            toast({ title: t.error, description: error.message, variant: 'destructive' });
           }
         } else {
-          toast({
-            title: 'مرحباً!',
-            description: 'تم تسجيل الدخول بنجاح'
-          });
+          toast({ title: t.auth.welcome, description: t.auth.loginSuccess });
           onSuccess();
         }
       } else {
         const { error } = await signUp(email, password, fullName, phone, birthDate);
         if (error) {
           if (error.message.includes('User already registered')) {
-            toast({
-              title: 'الحساب موجود',
-              description: 'هذا البريد الإلكتروني مسجل بالفعل. جرب تسجيل الدخول',
-              variant: 'destructive'
-            });
+            toast({ title: t.auth.accountExists, description: t.auth.accountExistsDesc, variant: 'destructive' });
           } else {
-            toast({
-              title: 'خطأ',
-              description: error.message,
-              variant: 'destructive'
-            });
+            toast({ title: t.error, description: error.message, variant: 'destructive' });
           }
         } else {
-          toast({
-            title: 'تم التسجيل!',
-            description: 'تم إنشاء حسابك بنجاح'
-          });
+          toast({ title: t.auth.registered, description: t.auth.registeredDesc });
           onSuccess();
         }
       }
@@ -176,9 +127,9 @@ export function AuthPage({ onSuccess }: AuthPageProps) {
       >
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="font-serif text-4xl font-bold gold-text mb-2">دارك</h1>
+          <h1 className="font-serif text-4xl font-bold gold-text mb-2">{t.auth.title}</h1>
           <p className="text-muted-foreground">
-            {isLogin ? 'مرحباً بعودتك' : 'أنشئ حسابك الآن'}
+            {isLogin ? t.auth.loginWelcome : t.auth.signupWelcome}
           </p>
         </div>
 
@@ -186,158 +137,92 @@ export function AuthPage({ onSuccess }: AuthPageProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
             <>
-              {/* Full Name */}
               <div>
                 <div className="glass-card flex items-center gap-3 px-4 py-3">
                   <User className="w-5 h-5 text-muted-foreground shrink-0" />
-                  <input
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="الاسم الكامل *"
-                    className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground"
-                    dir="auto"
-                  />
+                  <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)}
+                    placeholder={t.auth.fullName}
+                    className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground" dir="auto" />
                 </div>
-                {errors.name && (
-                  <p className="text-destructive text-sm mt-1">{errors.name}</p>
-                )}
+                {errors.name && <p className="text-destructive text-sm mt-1">{errors.name}</p>}
               </div>
 
-              {/* Phone */}
               <div>
                 <div className="glass-card flex items-center gap-3 px-4 py-3">
                   <Phone className="w-5 h-5 text-muted-foreground shrink-0" />
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="رقم الهاتف * (مثال: 0551234567)"
-                    className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground"
-                    dir="ltr"
-                  />
+                  <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
+                    placeholder={t.auth.phone}
+                    className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground" dir="ltr" />
                 </div>
-                {errors.phone && (
-                  <p className="text-destructive text-sm mt-1">{errors.phone}</p>
-                )}
+                {errors.phone && <p className="text-destructive text-sm mt-1">{errors.phone}</p>}
               </div>
 
-              {/* Birth Date */}
               <div>
-                <label className="text-sm text-muted-foreground mb-1 block">تاريخ الميلاد *</label>
+                <label className="text-sm text-muted-foreground mb-1 block">{t.auth.birthDate}</label>
                 <div className="glass-card flex items-center gap-3 px-4 py-3">
                   <Calendar className="w-5 h-5 text-muted-foreground shrink-0" />
-                  <input
-                    type="date"
-                    value={birthDate}
-                    onChange={(e) => setBirthDate(e.target.value)}
+                  <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)}
                     max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
-                    className="flex-1 bg-transparent border-none outline-none text-foreground"
-                  />
+                    className="flex-1 bg-transparent border-none outline-none text-foreground" />
                 </div>
-                {errors.birthDate && (
-                  <p className="text-destructive text-sm mt-1">{errors.birthDate}</p>
-                )}
+                {errors.birthDate && <p className="text-destructive text-sm mt-1">{errors.birthDate}</p>}
               </div>
             </>
           )}
 
-          {/* Email */}
           <div>
             <div className="glass-card flex items-center gap-3 px-4 py-3">
               <Mail className="w-5 h-5 text-muted-foreground shrink-0" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="البريد الإلكتروني *"
-                className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground"
-                dir="ltr"
-              />
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                placeholder={t.auth.email}
+                className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground" dir="ltr" />
             </div>
-            {errors.email && (
-              <p className="text-destructive text-sm mt-1">{errors.email}</p>
-            )}
+            {errors.email && <p className="text-destructive text-sm mt-1">{errors.email}</p>}
           </div>
 
-          {/* Password */}
           <div>
             <div className="glass-card flex items-center gap-3 px-4 py-3">
               <Lock className="w-5 h-5 text-muted-foreground shrink-0" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="كلمة المرور *"
-                className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground"
-                dir="ltr"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="text-muted-foreground hover:text-foreground shrink-0"
-              >
+              <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)}
+                placeholder={t.auth.password}
+                className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground" dir="ltr" />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-muted-foreground hover:text-foreground shrink-0">
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
-            {errors.password && (
-              <p className="text-destructive text-sm mt-1">{errors.password}</p>
-            )}
+            {errors.password && <p className="text-destructive text-sm mt-1">{errors.password}</p>}
           </div>
 
-          {/* Confirm Password */}
           {!isLogin && (
             <div>
               <div className="glass-card flex items-center gap-3 px-4 py-3">
                 <Lock className="w-5 h-5 text-muted-foreground shrink-0" />
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="تأكيد كلمة المرور *"
-                  className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground"
-                  dir="ltr"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="text-muted-foreground hover:text-foreground shrink-0"
-                >
+                <input type={showConfirmPassword ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder={t.auth.confirmPassword}
+                  className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground" dir="ltr" />
+                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="text-muted-foreground hover:text-foreground shrink-0">
                   {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              {errors.confirmPassword && (
-                <p className="text-destructive text-sm mt-1">{errors.confirmPassword}</p>
-              )}
+              {errors.confirmPassword && <p className="text-destructive text-sm mt-1">{errors.confirmPassword}</p>}
             </div>
           )}
 
-          <Button 
-            type="submit" 
-            variant="gold" 
-            size="lg" 
-            className="w-full"
-            disabled={isLoading}
-          >
+          <Button type="submit" variant="gold" size="lg" className="w-full" disabled={isLoading}>
             {isLoading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
               <>
-                {isLogin ? 'تسجيل الدخول' : 'إنشاء حساب'}
-                <ArrowRight className="w-5 h-5 mr-2" />
+                {isLogin ? t.auth.login : t.auth.signup}
+                <ArrowRight className="w-5 h-5 ms-2" />
               </>
             )}
           </Button>
         </form>
 
-        {/* Toggle */}
         <div className="mt-6 text-center">
-          <button
-            type="button"
-            onClick={resetForm}
-            className="text-muted-foreground hover:text-primary transition-colors"
-          >
-            {isLogin ? 'ليس لديك حساب؟ سجل الآن' : 'لديك حساب بالفعل؟ سجل دخولك'}
+          <button type="button" onClick={resetForm} className="text-muted-foreground hover:text-primary transition-colors">
+            {isLogin ? t.auth.noAccount : t.auth.hasAccount}
           </button>
         </div>
       </motion.div>
