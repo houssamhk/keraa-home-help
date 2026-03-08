@@ -95,7 +95,8 @@ function PageLoader() {
 
 function AppContent() {
   const { user, profile, isLoading } = useAuth();
-  useTheme(); // Apply theme from user settings
+  const { isAdmin } = useAdminRole();
+  useTheme();
   
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('splash');
   const [chatUserId, setChatUserId] = useState<string | undefined>();
