@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Send, Check, CheckCheck } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Send, Check, CheckCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 interface Message {
   id: string;
@@ -32,6 +33,8 @@ interface ChatPageProps {
 
 export function ChatPage({ onBack, conversationId: initialConversationId, otherUserId }: ChatPageProps) {
   const { user } = useAuth();
+  const { t, dir } = useLanguage();
+  const BackArrow = dir === 'rtl' ? ArrowRight : ArrowLeft;
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversation, setActiveConversation] = useState<string | null>(initialConversationId || null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -40,9 +43,7 @@ export function ChatPage({ onBack, conversationId: initialConversationId, otherU
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (user) {
-      fetchConversations();
-    }
+    if (user) fetchConversations();
   }, [user]);
 
   useEffect(() => {
@@ -67,8 +68,7 @@ export function ChatPage({ onBack, conversationId: initialConversationId, otherU
       .order('last_message_at', { ascending: false });
     
     if (!error && data) {
-      // Fetch other user profiles
-      const enrichedConversations = await Promise.all(
+      const enriched = await Promise.all(
         data.map(async (conv) => {
           const otherUserId = conv.participant_1 === user.id ? conv.participant_2 : conv.participant_1;
           const { data: profile } = await supabase
@@ -83,7 +83,7 @@ export function ChatPage({ onBack, conversationId: initialConversationId, otherU
           };
         })
       );
-      setConversations(enrichedConversations);
+      setConversations(enriched);
     }
     setIsLoading(false);
   };
@@ -190,7 +190,7 @@ export function ChatPage({ onBack, conversationId: initialConversationId, otherU
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString(dir === 'rtl' ? 'ar-DZ' : 'en-US', { hour: '2-digit', minute: '2-digit' });
   };
 
   // Conversation List View
@@ -203,9 +203,9 @@ export function ChatPage({ onBack, conversationId: initialConversationId, otherU
           className="px-6 pt-6 pb-4 flex items-center gap-4"
         >
           <Button variant="glass" size="icon" onClick={onBack}>
-            <ArrowRight className="w-5 h-5" />
+            <BackArrow className="w-5 h-5" />
           </Button>
-          <h1 className="font-serif text-2xl font-bold text-foreground">المحادثات</h1>
+          <h1 className="font-serif text-2xl font-bold text-foreground">{t.chat.title}</h1>
         </motion.header>
 
         <div className="px-6">
@@ -215,9 +215,9 @@ export function ChatPage({ onBack, conversationId: initialConversationId, otherU
             </div>
           ) : conversations.length === 0 ? (
             <div className="text-center py-20">
-              <p className="text-muted-foreground">لا توجد محادثات بعد</p>
+              <p className="text-muted-foreground">{t.chat.noConversations}</p>
               <p className="text-sm text-muted-foreground mt-2">
-                ابدأ محادثة مع مالك عقار أو حرفي
+                {t.chat.startConversation}
               </p>
             </div>
           ) : (
@@ -229,7 +229,7 @@ export function ChatPage({ onBack, conversationId: initialConversationId, otherU
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                   onClick={() => setActiveConversation(conv.id)}
-                  className="w-full glass-card p-4 flex items-center gap-4 text-right"
+                  className="w-full glass-card p-4 flex items-center gap-4 text-start"
                 >
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
                     <span className="text-primary-foreground font-bold">
@@ -238,7 +238,7 @@ export function ChatPage({ onBack, conversationId: initialConversationId, otherU
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-medium text-foreground truncate">
-                      {conv.other_user?.full_name || 'مستخدم'}
+                      {conv.other_user?.full_name || t.chat.user}
                     </h3>
                     <p className="text-sm text-muted-foreground">
                       {formatTime(conv.last_message_at)}
@@ -255,8 +255,8 @@ export function ChatPage({ onBack, conversationId: initialConversationId, otherU
 
   // Get current conversation's other user info
   const currentConversation = conversations.find(c => c.id === activeConversation);
-  const otherUserName = currentConversation?.other_user?.full_name || 'مستخدم';
-  const otherUserInitial = otherUserName.charAt(0) || 'م';
+  const otherUserName = currentConversation?.other_user?.full_name || t.chat.user;
+  const otherUserInitial = otherUserName.charAt(0) || '?';
 
   // Chat View
   return (
@@ -268,14 +268,14 @@ export function ChatPage({ onBack, conversationId: initialConversationId, otherU
         className="px-6 pt-6 pb-4 flex items-center gap-4 border-b border-border"
       >
         <Button variant="glass" size="icon" onClick={() => setActiveConversation(null)}>
-          <ArrowRight className="w-5 h-5" />
+          <BackArrow className="w-5 h-5" />
         </Button>
         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
           <span className="text-primary-foreground font-bold">{otherUserInitial}</span>
         </div>
         <div>
           <h2 className="font-medium text-foreground">{otherUserName}</h2>
-          <p className="text-xs text-muted-foreground">متصل الآن</p>
+          <p className="text-xs text-muted-foreground">{t.chat.onlineNow}</p>
         </div>
       </motion.header>
 
@@ -322,7 +322,7 @@ export function ChatPage({ onBack, conversationId: initialConversationId, otherU
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-            placeholder="اكتب رسالتك..."
+            placeholder={t.chat.typeMessage}
             className="flex-1 bg-transparent border-none outline-none px-3 py-2 text-foreground placeholder:text-muted-foreground"
             dir="auto"
           />
