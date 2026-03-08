@@ -1639,6 +1639,24 @@ export type Database = {
           total_reviews: number | null
           user_id: string | null
         }
+        Insert: {
+          avatar_url?: string | null
+          avg_rating?: number | null
+          full_name?: string | null
+          kyc_verified?: boolean | null
+          role_type?: string | null
+          total_reviews?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          avg_rating?: number | null
+          full_name?: string | null
+          kyc_verified?: boolean | null
+          role_type?: string | null
+          total_reviews?: number | null
+          user_id?: string | null
+        }
         Relationships: []
       }
       public_handymen: {
