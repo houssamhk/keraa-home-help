@@ -109,14 +109,20 @@ serve(async (req) => {
 
     const { query } = await req.json();
     
-    if (!query || typeof query !== 'string') {
+    if (!query || typeof query !== 'string' || query.trim().length === 0) {
       return new Response(
         JSON.stringify({ error: 'Query is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Processing search query:', query);
+    // Input length limit to prevent abuse
+    if (query.length > 500) {
+      return new Response(
+        JSON.stringify({ error: 'Query too long' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {

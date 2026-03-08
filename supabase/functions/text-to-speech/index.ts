@@ -39,11 +39,14 @@ serve(async (req) => {
 
     const { text, voice = "shimmer" } = await req.json();
 
-    if (!text || text.trim() === "") {
+    if (!text || typeof text !== 'string' || text.trim() === "") {
       throw new Error("Text is required");
     }
 
-    console.log("TTS request for text:", text.substring(0, 100));
+    // Input length limit to prevent abuse
+    if (text.length > 5000) {
+      throw new Error("Text too long (max 5000 characters)");
+    }
 
     // Since Lovable AI doesn't support TTS directly, we return a fallback flag
     // The frontend will use enhanced browser TTS with optimal settings
