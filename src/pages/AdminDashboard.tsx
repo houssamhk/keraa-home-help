@@ -338,16 +338,24 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="users" className="w-full">
-          <TabsList className="grid w-full grid-cols-7 mb-4">
-            <TabsTrigger value="users" className="text-xs">{t.adminPage.users}</TabsTrigger>
-            <TabsTrigger value="properties" className="text-xs">{t.adminPage.properties}</TabsTrigger>
-            <TabsTrigger value="appointments" className="text-xs">{t.adminPage.appointments}</TabsTrigger>
-            <TabsTrigger value="kyc" className="text-xs">{t.adminPage.verification}</TabsTrigger>
-            <TabsTrigger value="payments" className="text-xs">{t.adminPage.payments}</TabsTrigger>
-            <TabsTrigger value="support" className="text-xs">{t.adminPage.requests}</TabsTrigger>
-            <TabsTrigger value="heatmap" className="text-xs">{t.adminPage.heatmap}</TabsTrigger>
-          </TabsList>
+        <Tabs defaultValue="overview" className="w-full">
+          <div className="overflow-x-auto -mx-4 px-4">
+            <TabsList className="inline-flex w-auto min-w-full mb-4">
+              <TabsTrigger value="overview" className="text-xs"><BarChart3 className="w-3 h-3 ml-1" />نظرة عامة</TabsTrigger>
+              <TabsTrigger value="user-mgmt" className="text-xs"><Users className="w-3 h-3 ml-1" />المستخدمون</TabsTrigger>
+              <TabsTrigger value="properties" className="text-xs">{t.adminPage.properties}</TabsTrigger>
+              <TabsTrigger value="contracts-mgmt" className="text-xs"><FileText className="w-3 h-3 ml-1" />العقود</TabsTrigger>
+              <TabsTrigger value="reports" className="text-xs"><Flag className="w-3 h-3 ml-1" />البلاغات</TabsTrigger>
+              <TabsTrigger value="kyc" className="text-xs">{t.adminPage.verification}</TabsTrigger>
+              <TabsTrigger value="payments" className="text-xs">{t.adminPage.payments}</TabsTrigger>
+              <TabsTrigger value="support" className="text-xs">{t.adminPage.requests}</TabsTrigger>
+              <TabsTrigger value="appointments" className="text-xs">{t.adminPage.appointments}</TabsTrigger>
+              <TabsTrigger value="heatmap" className="text-xs">{t.adminPage.heatmap}</TabsTrigger>
+            </TabsList>
+          </div>
+
+          {/* Overview Tab */}
+          <TabsContent value="overview"><PlatformStats /></TabsContent>
 
           {/* Users Tab */}
           <TabsContent value="users">
