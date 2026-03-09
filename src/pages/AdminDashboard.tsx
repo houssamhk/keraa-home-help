@@ -493,6 +493,12 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
             </Card>
           </TabsContent>
 
+          {/* Contracts Management */}
+          <TabsContent value="contracts-mgmt"><ContractsManagement /></TabsContent>
+
+          {/* Reports Management */}
+          <TabsContent value="reports"><ReportsManagement /></TabsContent>
+
           <TabsContent value="payments"><PaymentManagement /></TabsContent>
           <TabsContent value="support"><SupportRequestsManagement /></TabsContent>
           <TabsContent value="heatmap"><DemandHeatmap /></TabsContent>
