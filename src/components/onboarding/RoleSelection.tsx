@@ -136,9 +136,12 @@ export function RoleSelection({ onSelectRole }: RoleSelectionProps) {
                   {/* Features */}
                   <ul className="mt-3 space-y-1.5">
                     {role.features.map((feature, i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground justify-end">
+                      <li key={i} className={`flex items-center gap-2 text-sm text-muted-foreground ${
+                        dir === 'rtl' ? 'justify-end' : 'justify-start'
+                      }`}>
+                        {dir === 'ltr' && <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />}
                         {feature}
-                        <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
+                        {dir === 'rtl' && <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />}
                       </li>
                     ))}
                   </ul>
