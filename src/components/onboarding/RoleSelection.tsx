@@ -165,10 +165,7 @@ export function RoleSelection({ onSelectRole }: RoleSelectionProps) {
         transition={{ delay: 0.6 }}
       >
         <p className="text-center text-xs text-muted-foreground">
-          بالمتابعة، أنت توافق على{" "}
-          <button className="text-primary hover:underline">شروط الخدمة</button>
-          {" "}و{" "}
-          <button className="text-primary hover:underline">سياسة الخصوصية</button>
+          {t.roleSelection.termsAndPrivacy}
         </p>
       </motion.div>
     </div>

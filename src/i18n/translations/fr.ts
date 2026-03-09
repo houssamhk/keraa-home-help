@@ -75,6 +75,50 @@ export const fr = {
     tagline: 'Votre maison. Vos services. Simplifié.',
   },
 
+  // Language Picker
+  languagePicker: {
+    title: 'Choisissez votre langue',
+    subtitle: 'Vous pouvez modifier ce paramètre plus tard dans les préférences',
+    continue: 'Continuer',
+    skip: 'Ignorer - Utiliser l\'arabe',
+  },
+
+  // Role Selection
+  roleSelection: {
+    title: 'Bienvenue à Keraa & Mounawil',
+    subtitle: 'Comment souhaitez-vous utiliser l\'application?',
+    tenant: {
+      title: 'Je cherche un logement',
+      subtitle: 'Louer des propriétés et trouver des artisans',
+      features: [
+        'Parcourir les propriétés disponibles',
+        'Communiquer avec les propriétaires',
+        'Réserver des artisans de confiance'
+      ]
+    },
+    owner: {
+      title: 'Je suis propriétaire',
+      subtitle: 'Mettre vos biens en location',
+      features: [
+        'Publier vos biens en location',
+        'Gérer les contrats avec les locataires',
+        'Suivre les demandes'
+      ]
+    },
+    provider: {
+      title: 'Je suis artisan',
+      subtitle: 'Offrir vos services aux clients',
+      features: [
+        'Présenter vos services',
+        'Gérer les demandes de travail',
+        'Construire votre réputation professionnelle'
+      ]
+    },
+    termsAndPrivacy: 'En continuant, vous acceptez les Conditions d\'utilisation et la Politique de confidentialité',
+    rolesSaved: 'Type de compte sauvegardé',
+    rolesSavedDesc: 'Vous pouvez maintenant continuer la configuration de votre compte',
+  },
+
   // Home / AI Voice Hub
   home: {
     greeting: 'Bonjour 👋',

@@ -270,6 +270,8 @@ function AppContent() {
     switch (currentScreen) {
       case 'splash': 
         return <SplashScreen onComplete={handleSplashComplete} />;
+      case 'language-picker':
+        return <LanguagePicker onComplete={handleLanguagePickerComplete} />;
       case 'auth': 
         return <AuthPage onSuccess={handleAuthSuccess} />;
       case 'role-selection': 
