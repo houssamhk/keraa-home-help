@@ -20,6 +20,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { usePropertyViews } from '@/hooks/usePropertyViews';
 import { OwnerAnalytics } from '@/components/dashboard/OwnerAnalytics';
+import { SmartInsights } from '@/components/dashboard/SmartInsights';
 import { FeaturedListingDialog } from '@/components/premium/FeaturedListingDialog';
 import { AgencySubscriptionDialog } from '@/components/premium/AgencySubscriptionDialog';
 import { FeaturedBadge } from '@/components/premium/FeaturedBadge';
