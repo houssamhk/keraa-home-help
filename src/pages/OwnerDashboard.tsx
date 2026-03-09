@@ -313,7 +313,8 @@ export function OwnerDashboard({ onBack, onAddProperty, onEditProperty }: OwnerD
           </TabsContent>
 
           {/* Analytics Tab */}
-          <TabsContent value="analytics">
+          <TabsContent value="analytics" className="space-y-6">
+            <SmartInsights />
             <OwnerAnalytics />
           </TabsContent>
 
