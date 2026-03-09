@@ -547,6 +547,39 @@ export type Database = {
           },
         ]
       }
+      encrypted_data_vault: {
+        Row: {
+          created_at: string | null
+          data_hash: string
+          data_type: string
+          encrypted_data: string
+          encryption_version: number | null
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          data_hash: string
+          data_type: string
+          encrypted_data: string
+          encryption_version?: number | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          data_hash?: string
+          data_type?: string
+          encrypted_data?: string
+          encryption_version?: number | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string
@@ -1244,6 +1277,51 @@ export type Database = {
         }
         Relationships: []
       }
+      security_audit_log: {
+        Row: {
+          action_type: string
+          additional_data: Json | null
+          created_at: string | null
+          id: string
+          ip_address: unknown
+          is_suspicious: boolean | null
+          location_data: Json | null
+          resource_id: string | null
+          resource_type: string | null
+          risk_score: number | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          additional_data?: Json | null
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown
+          is_suspicious?: boolean | null
+          location_data?: Json | null
+          resource_id?: string | null
+          resource_type?: string | null
+          risk_score?: number | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          additional_data?: Json | null
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown
+          is_suspicious?: boolean | null
+          location_data?: Json | null
+          resource_id?: string | null
+          resource_type?: string | null
+          risk_score?: number | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       service_requests: {
         Row: {
           address: string | null
@@ -1364,6 +1442,81 @@ export type Database = {
         }
         Relationships: []
       }
+      threat_detection: {
+        Row: {
+          action_taken: string | null
+          created_at: string | null
+          details: Json
+          id: string
+          ip_address: unknown
+          is_resolved: boolean | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string | null
+          threat_type: string
+          user_id: string | null
+        }
+        Insert: {
+          action_taken?: string | null
+          created_at?: string | null
+          details: Json
+          id?: string
+          ip_address?: unknown
+          is_resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string | null
+          threat_type: string
+          user_id?: string | null
+        }
+        Update: {
+          action_taken?: string | null
+          created_at?: string | null
+          details?: Json
+          id?: string
+          ip_address?: unknown
+          is_resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string | null
+          threat_type?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      two_factor_auth: {
+        Row: {
+          backup_codes: string[] | null
+          created_at: string | null
+          id: string
+          is_enabled: boolean | null
+          last_used_at: string | null
+          secret_key: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          backup_codes?: string[] | null
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          last_used_at?: string | null
+          secret_key: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          backup_codes?: string[] | null
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          last_used_at?: string | null
+          secret_key?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -1378,6 +1531,51 @@ export type Database = {
         Update: {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_sessions_enhanced: {
+        Row: {
+          created_at: string | null
+          device_fingerprint: string | null
+          device_info: Json | null
+          expires_at: string | null
+          id: string
+          ip_address: unknown
+          is_active: boolean | null
+          last_activity: string | null
+          location_data: Json | null
+          session_token: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          device_fingerprint?: string | null
+          device_info?: Json | null
+          expires_at?: string | null
+          id?: string
+          ip_address?: unknown
+          is_active?: boolean | null
+          last_activity?: string | null
+          location_data?: Json | null
+          session_token: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          device_fingerprint?: string | null
+          device_info?: Json | null
+          expires_at?: string | null
+          id?: string
+          ip_address?: unknown
+          is_active?: boolean | null
+          last_activity?: string | null
+          location_data?: Json | null
+          session_token?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -1877,6 +2075,7 @@ export type Database = {
       assign_admin_role: { Args: { target_email: string }; Returns: boolean }
       cleanup_old_ai_conversations: { Args: never; Returns: undefined }
       ensure_user_wallet: { Args: never; Returns: string }
+      generate_2fa_secret: { Args: never; Returns: string }
       get_handyman_details: {
         Args: { handyman_user_id: string }
         Returns: {
@@ -1934,6 +2133,30 @@ export type Database = {
       is_property_featured: {
         Args: { property_uuid: string }
         Returns: boolean
+      }
+      log_security_event: {
+        Args: {
+          p_action_type: string
+          p_additional_data?: Json
+          p_ip_address?: unknown
+          p_resource_id?: string
+          p_resource_type?: string
+          p_user_agent?: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      log_security_event_secure: {
+        Args: {
+          p_action_type: string
+          p_additional_data?: Json
+          p_ip_address?: unknown
+          p_resource_id?: string
+          p_resource_type?: string
+          p_user_agent?: string
+          p_user_id: string
+        }
+        Returns: string
       }
       pay_for_featured_listing: {
         Args: {
