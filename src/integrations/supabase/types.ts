@@ -1788,6 +1788,71 @@ export type Database = {
         }
         Relationships: []
       }
+      safe_featured_listings: {
+        Row: {
+          created_at: string | null
+          duration_days: number | null
+          expires_at: string | null
+          feature_type: string | null
+          id: string | null
+          payment_method: string | null
+          payment_proof_url: string | null
+          payment_reference: string | null
+          price_paid: number | null
+          property_id: string | null
+          starts_at: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          duration_days?: number | null
+          expires_at?: string | null
+          feature_type?: string | null
+          id?: string | null
+          payment_method?: never
+          payment_proof_url?: never
+          payment_reference?: never
+          price_paid?: never
+          property_id?: string | null
+          starts_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          duration_days?: number | null
+          expires_at?: string | null
+          feature_type?: string | null
+          id?: string | null
+          payment_method?: never
+          payment_proof_url?: never
+          payment_reference?: never
+          price_paid?: never
+          property_id?: string | null
+          starts_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "featured_listings_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       admin_get_kyc_verification: {
