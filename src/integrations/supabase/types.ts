@@ -1809,6 +1809,7 @@ export type Database = {
         Args: { new_status: string; reason?: string; target_user_id: string }
         Returns: boolean
       }
+      assign_admin_role: { Args: { target_email: string }; Returns: boolean }
       cleanup_old_ai_conversations: { Args: never; Returns: undefined }
       ensure_user_wallet: { Args: never; Returns: string }
       get_handyman_details: {
@@ -1844,6 +1845,7 @@ export type Database = {
       }
       give_phone_consent: { Args: { contract_id: string }; Returns: boolean }
       has_agency_subscription: { Args: { user_uuid: string }; Returns: boolean }
+      has_any_admin: { Args: never; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
