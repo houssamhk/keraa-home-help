@@ -547,6 +547,48 @@ export type Database = {
           },
         ]
       }
+      demand_analytics: {
+        Row: {
+          avg_price: number | null
+          city: string
+          created_at: string | null
+          id: string
+          inquiry_count: number | null
+          latitude: number | null
+          longitude: number | null
+          period_date: string
+          property_type: string | null
+          search_count: number | null
+          view_count: number | null
+        }
+        Insert: {
+          avg_price?: number | null
+          city: string
+          created_at?: string | null
+          id?: string
+          inquiry_count?: number | null
+          latitude?: number | null
+          longitude?: number | null
+          period_date: string
+          property_type?: string | null
+          search_count?: number | null
+          view_count?: number | null
+        }
+        Update: {
+          avg_price?: number | null
+          city?: string
+          created_at?: string | null
+          id?: string
+          inquiry_count?: number | null
+          latitude?: number | null
+          longitude?: number | null
+          period_date?: string
+          property_type?: string | null
+          search_count?: number | null
+          view_count?: number | null
+        }
+        Relationships: []
+      }
       encrypted_data_vault: {
         Row: {
           created_at: string | null
@@ -1134,6 +1176,45 @@ export type Database = {
         }
         Relationships: []
       }
+      rating_analytics: {
+        Row: {
+          avg_rating: number | null
+          badges_earned: string[] | null
+          computed_at: string | null
+          id: string
+          negative_reviews: number | null
+          period_start: string
+          period_type: string
+          positive_reviews: number | null
+          total_reviews: number | null
+          user_id: string
+        }
+        Insert: {
+          avg_rating?: number | null
+          badges_earned?: string[] | null
+          computed_at?: string | null
+          id?: string
+          negative_reviews?: number | null
+          period_start: string
+          period_type: string
+          positive_reviews?: number | null
+          total_reviews?: number | null
+          user_id: string
+        }
+        Update: {
+          avg_rating?: number | null
+          badges_earned?: string[] | null
+          computed_at?: string | null
+          id?: string
+          negative_reviews?: number | null
+          period_start?: string
+          period_type?: string
+          positive_reviews?: number | null
+          total_reviews?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       reports: {
         Row: {
           admin_notes: string | null
@@ -1176,6 +1257,54 @@ export type Database = {
           resolved_by?: string | null
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      reputation_badges_config: {
+        Row: {
+          badge_id: string
+          category: string
+          color: string | null
+          created_at: string | null
+          description_ar: string | null
+          description_en: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          min_rating: number | null
+          min_reviews: number | null
+          name_ar: string
+          name_en: string
+        }
+        Insert: {
+          badge_id: string
+          category: string
+          color?: string | null
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          min_rating?: number | null
+          min_reviews?: number | null
+          name_ar: string
+          name_en: string
+        }
+        Update: {
+          badge_id?: string
+          category?: string
+          color?: string | null
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          min_rating?: number | null
+          min_reviews?: number | null
+          name_ar?: string
+          name_en?: string
         }
         Relationships: []
       }
@@ -2073,6 +2202,10 @@ export type Database = {
         Returns: boolean
       }
       assign_admin_role: { Args: { target_email: string }; Returns: boolean }
+      calculate_weighted_rating: {
+        Args: { p_user_id: string }
+        Returns: number
+      }
       cleanup_old_ai_conversations: { Args: never; Returns: undefined }
       ensure_user_wallet: { Args: never; Returns: string }
       generate_2fa_secret: { Args: never; Returns: string }
