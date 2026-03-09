@@ -72,20 +72,27 @@ export function RoleSelection({ onSelectRole }: RoleSelectionProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col safe-area-inset">
+    <div className="min-h-screen bg-background flex flex-col safe-area-inset" dir={dir}>
       {/* Header */}
       <motion.div 
-        className="px-6 pt-12 pb-6"
+        className={`px-6 pt-12 pb-6 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <h1 className="font-serif text-3xl font-bold text-foreground text-right">
-          مرحباً بك في{" "}
-          <span className="gold-text">كراء و مناول</span>
+        <h1 className="font-serif text-3xl font-bold text-foreground">
+          {t.roleSelection.title.split('كراء و مناول').length > 1 ? (
+            <>
+              {t.roleSelection.title.split('كراء و مناول')[0]}
+              <span className="gold-text">كراء و مناول</span>
+              {t.roleSelection.title.split('كراء و مناول')[1]}
+            </>
+          ) : (
+            <span>{t.roleSelection.title}</span>
+          )}
         </h1>
-        <p className="text-muted-foreground mt-2 text-right">
-          كيف تريد استخدام التطبيق؟
+        <p className="text-muted-foreground mt-2">
+          {t.roleSelection.subtitle}
         </p>
       </motion.div>
 
