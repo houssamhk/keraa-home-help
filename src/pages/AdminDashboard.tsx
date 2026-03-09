@@ -3,7 +3,8 @@ import { motion } from 'framer-motion';
 import { 
   ArrowRight, ArrowLeft, Users, Home, Calendar, Shield, Search, 
   CheckCircle, XCircle, Clock, Eye, Trash2, UserCheck,
-  Building, FileText, Bell, Image, Loader2, CreditCard
+  Building, FileText, Bell, Image, Loader2, CreditCard,
+  AlertTriangle, BarChart3, Flag
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +19,10 @@ import { useKycDocuments } from '@/hooks/useKycDocuments';
 import { PaymentManagement } from '@/components/admin/PaymentManagement';
 import { SupportRequestsManagement } from '@/components/admin/SupportRequestsManagement';
 import { DemandHeatmap } from '@/components/admin/DemandHeatmap';
+import { ReportsManagement } from '@/components/admin/ReportsManagement';
+import { UserManagement } from '@/components/admin/UserManagement';
+import { ContractsManagement } from '@/components/admin/ContractsManagement';
+import { PlatformStats } from '@/components/admin/PlatformStats';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -333,54 +338,27 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="users" className="w-full">
-          <TabsList className="grid w-full grid-cols-7 mb-4">
-            <TabsTrigger value="users" className="text-xs">{t.adminPage.users}</TabsTrigger>
-            <TabsTrigger value="properties" className="text-xs">{t.adminPage.properties}</TabsTrigger>
-            <TabsTrigger value="appointments" className="text-xs">{t.adminPage.appointments}</TabsTrigger>
-            <TabsTrigger value="kyc" className="text-xs">{t.adminPage.verification}</TabsTrigger>
-            <TabsTrigger value="payments" className="text-xs">{t.adminPage.payments}</TabsTrigger>
-            <TabsTrigger value="support" className="text-xs">{t.adminPage.requests}</TabsTrigger>
-            <TabsTrigger value="heatmap" className="text-xs">{t.adminPage.heatmap}</TabsTrigger>
-          </TabsList>
+        <Tabs defaultValue="overview" className="w-full">
+          <div className="overflow-x-auto -mx-4 px-4">
+            <TabsList className="inline-flex w-auto min-w-full mb-4">
+              <TabsTrigger value="overview" className="text-xs"><BarChart3 className="w-3 h-3 ml-1" />نظرة عامة</TabsTrigger>
+              <TabsTrigger value="user-mgmt" className="text-xs"><Users className="w-3 h-3 ml-1" />المستخدمون</TabsTrigger>
+              <TabsTrigger value="properties" className="text-xs">{t.adminPage.properties}</TabsTrigger>
+              <TabsTrigger value="contracts-mgmt" className="text-xs"><FileText className="w-3 h-3 ml-1" />العقود</TabsTrigger>
+              <TabsTrigger value="reports" className="text-xs"><Flag className="w-3 h-3 ml-1" />البلاغات</TabsTrigger>
+              <TabsTrigger value="kyc" className="text-xs">{t.adminPage.verification}</TabsTrigger>
+              <TabsTrigger value="payments" className="text-xs">{t.adminPage.payments}</TabsTrigger>
+              <TabsTrigger value="support" className="text-xs">{t.adminPage.requests}</TabsTrigger>
+              <TabsTrigger value="appointments" className="text-xs">{t.adminPage.appointments}</TabsTrigger>
+              <TabsTrigger value="heatmap" className="text-xs">{t.adminPage.heatmap}</TabsTrigger>
+            </TabsList>
+          </div>
 
-          {/* Users Tab */}
-          <TabsContent value="users">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  {t.adminPage.users} ({filteredUsers.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t.adminPage.name}</TableHead>
-                        <TableHead>{t.adminPage.phoneCol}</TableHead>
-                        <TableHead>{t.adminPage.role}</TableHead>
-                        <TableHead>{t.adminPage.verificationCol}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredUsers.map((user) => (
-                        <TableRow key={user.id}>
-                          <TableCell className="font-medium">{user.full_name || t.notSpecified}</TableCell>
-                          <TableCell>{user.phone || '-'}</TableCell>
-                          <TableCell><Badge variant="outline">{getRoleLabel(user.role_type)}</Badge></TableCell>
-                          <TableCell>
-                            {user.kyc_verified ? <CheckCircle className="w-5 h-5 text-green-500" /> : <XCircle className="w-5 h-5 text-red-500" />}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+          {/* Overview Tab */}
+          <TabsContent value="overview"><PlatformStats /></TabsContent>
+
+          {/* User Management Tab */}
+          <TabsContent value="user-mgmt"><UserManagement /></TabsContent>
 
           {/* Properties Tab */}
           <TabsContent value="properties">
@@ -514,6 +492,12 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Contracts Management */}
+          <TabsContent value="contracts-mgmt"><ContractsManagement /></TabsContent>
+
+          {/* Reports Management */}
+          <TabsContent value="reports"><ReportsManagement /></TabsContent>
 
           <TabsContent value="payments"><PaymentManagement /></TabsContent>
           <TabsContent value="support"><SupportRequestsManagement /></TabsContent>
