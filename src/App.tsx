@@ -19,6 +19,7 @@ import type { UserRole } from "@/types/user";
 
 // Lazy load all pages
 const RoleSelection = lazy(() => import("@/components/onboarding/RoleSelection").then(m => ({ default: m.RoleSelection })));
+const LanguagePicker = lazy(() => import("@/components/onboarding/LanguagePicker").then(m => ({ default: m.LanguagePicker })));
 const KYCFlow = lazy(() => import("@/components/onboarding/KYCFlow").then(m => ({ default: m.KYCFlow })));
 const AIVoiceHub = lazy(() => import("@/components/home/AIVoiceHub").then(m => ({ default: m.AIVoiceHub })));
 const LeafletMap = lazy(() => import("@/components/map/LeafletMap").then(m => ({ default: m.LeafletMap })));
