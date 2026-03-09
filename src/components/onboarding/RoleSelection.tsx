@@ -103,8 +103,8 @@ export function RoleSelection({ onSelectRole }: RoleSelectionProps) {
             key={role.id}
             onClick={() => handleRoleSelect(role.id)}
             disabled={isLoading}
-            className="w-full text-right group disabled:opacity-50"
-            initial={{ opacity: 0, x: 20 }}
+            className={`w-full group disabled:opacity-50 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}
+            initial={{ opacity: 0, x: dir === 'rtl' ? 20 : -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 + index * 0.1, duration: 0.5 }}
             whileTap={{ scale: 0.98 }}
@@ -112,13 +112,15 @@ export function RoleSelection({ onSelectRole }: RoleSelectionProps) {
             <div className={`elevated-card p-5 transition-all duration-300 group-hover:border-primary/50 group-hover:shadow-gold/20 ${
               selectedRole === role.id ? 'border-primary bg-primary/5' : ''
             }`}>
-              <div className="flex items-start gap-4">
+              <div className={`flex items-start gap-4 ${dir === 'rtl' ? '' : 'flex-row-reverse'}`}>
                 {/* Arrow or Loader */}
                 <div className="shrink-0 mt-2">
                   {isLoading && selectedRole === role.id ? (
                     <Loader2 className="w-5 h-5 text-primary animate-spin" />
                   ) : (
-                    <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:-translate-x-1 transition-all rotate-180" />
+                    <ArrowRight className={`w-5 h-5 text-muted-foreground group-hover:text-primary transition-all ${
+                      dir === 'rtl' ? 'group-hover:-translate-x-1 rotate-180' : 'group-hover:translate-x-1'
+                    }`} />
                   )}
                 </div>
 
