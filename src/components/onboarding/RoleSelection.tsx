@@ -3,47 +3,12 @@ import { motion } from "framer-motion";
 import { Home, Wrench, Search, ArrowRight, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/i18n/LanguageContext";
 import type { UserRole } from "@/types/user";
 
 interface RoleSelectionProps {
   onSelectRole: (role: UserRole) => void;
 }
-
-const roles = [
-  {
-    id: "tenant" as UserRole,
-    title: "أبحث عن سكن",
-    subtitle: "استئجار عقارات والبحث عن حرفيين",
-    icon: Search,
-    features: [
-      "تصفح العقارات المتاحة",
-      "التواصل مع الملاك",
-      "حجز حرفيين موثوقين"
-    ],
-  },
-  {
-    id: "owner" as UserRole,
-    title: "أنا مالك عقار",
-    subtitle: "عرض عقاراتك للإيجار",
-    icon: Home,
-    features: [
-      "نشر عقاراتك للإيجار",
-      "إدارة العقود مع المستأجرين",
-      "متابعة الاستفسارات"
-    ],
-  },
-  {
-    id: "provider" as UserRole,
-    title: "أنا حرفي",
-    subtitle: "تقديم خدماتك للعملاء",
-    icon: Wrench,
-    features: [
-      "عرض خدماتك للعملاء",
-      "إدارة طلبات العمل",
-      "بناء سمعتك المهنية"
-    ],
-  },
-];
 
 export function RoleSelection({ onSelectRole }: RoleSelectionProps) {
   const { updateProfile } = useAuth();
