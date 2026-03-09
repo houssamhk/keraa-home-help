@@ -56,7 +56,7 @@ const queryClient = new QueryClient({
 });
 
 type AppScreen = 
-  | 'splash' | 'auth' | 'role-selection' | 'kyc' | 'home' | 'map' 
+  | 'splash' | 'language-picker' | 'auth' | 'role-selection' | 'kyc' | 'home' | 'map' 
   | 'settings' | 'properties' | 'property-detail' | 'handymen' | 'handyman-detail' | 'chat'
   | 'owner-dashboard' | 'add-property' | 'handyman-dashboard'
   | 'contracts' | 'create-contract' | 'arrabon' | 'alerts' | 'bills'
