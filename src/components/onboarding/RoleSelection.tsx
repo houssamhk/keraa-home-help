@@ -13,8 +13,33 @@ interface RoleSelectionProps {
 export function RoleSelection({ onSelectRole }: RoleSelectionProps) {
   const { updateProfile } = useAuth();
   const { toast } = useToast();
+  const { t, dir } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+
+  const roles = [
+    {
+      id: "tenant" as UserRole,
+      title: t.roleSelection.tenant.title,
+      subtitle: t.roleSelection.tenant.subtitle,
+      icon: Search,
+      features: t.roleSelection.tenant.features,
+    },
+    {
+      id: "owner" as UserRole,
+      title: t.roleSelection.owner.title,
+      subtitle: t.roleSelection.owner.subtitle,
+      icon: Home,
+      features: t.roleSelection.owner.features,
+    },
+    {
+      id: "provider" as UserRole,
+      title: t.roleSelection.provider.title,
+      subtitle: t.roleSelection.provider.subtitle,
+      icon: Wrench,
+      features: t.roleSelection.provider.features,
+    },
+  ];
 
   const handleRoleSelect = async (role: UserRole) => {
     setSelectedRole(role);
@@ -29,14 +54,14 @@ export function RoleSelection({ onSelectRole }: RoleSelectionProps) {
       }
 
       toast({
-        title: "تم حفظ نوع الحساب",
-        description: "يمكنك الآن متابعة إعداد حسابك"
+        title: t.roleSelection.rolesSaved,
+        description: t.roleSelection.rolesSavedDesc
       });
 
       onSelectRole(role);
     } catch (error: any) {
       toast({
-        title: "خطأ",
+        title: t.error,
         description: error.message || "حدث خطأ أثناء حفظ نوع الحساب",
         variant: "destructive"
       });
