@@ -3,7 +3,8 @@ import { motion } from 'framer-motion';
 import { 
   ArrowRight, ArrowLeft, Users, Home, Calendar, Shield, Search, 
   CheckCircle, XCircle, Clock, Eye, Trash2, UserCheck,
-  Building, FileText, Bell, Image, Loader2, CreditCard
+  Building, FileText, Bell, Image, Loader2, CreditCard,
+  AlertTriangle, BarChart3, Flag
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +19,10 @@ import { useKycDocuments } from '@/hooks/useKycDocuments';
 import { PaymentManagement } from '@/components/admin/PaymentManagement';
 import { SupportRequestsManagement } from '@/components/admin/SupportRequestsManagement';
 import { DemandHeatmap } from '@/components/admin/DemandHeatmap';
+import { ReportsManagement } from '@/components/admin/ReportsManagement';
+import { UserManagement } from '@/components/admin/UserManagement';
+import { ContractsManagement } from '@/components/admin/ContractsManagement';
+import { PlatformStats } from '@/components/admin/PlatformStats';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';

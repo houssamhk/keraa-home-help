@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { 
-  BarChart3, Users, Home, FileText, CreditCard, AlertTriangle, 
-  TrendingUp, Activity, Loader2, Shield
+  Users, Home, FileText, CreditCard, AlertTriangle, 
+  Activity, Loader2, Shield
 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 
