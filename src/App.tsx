@@ -110,6 +110,18 @@ function AppContent() {
   const [isNative] = useState(() => typeof window !== 'undefined' && Capacitor.isNativePlatform());
 
   const handleSplashComplete = () => {
+    // Check if user has seen language picker
+    const hasSeenLanguagePicker = localStorage.getItem('hasSeenLanguagePicker');
+    if (!hasSeenLanguagePicker) {
+      setCurrentScreen('language-picker');
+    } else {
+      setIsInitialized(true);
+      determineInitialScreen();
+    }
+  };
+
+  const handleLanguagePickerComplete = () => {
+    localStorage.setItem('hasSeenLanguagePicker', 'true');
     setIsInitialized(true);
     determineInitialScreen();
   };
