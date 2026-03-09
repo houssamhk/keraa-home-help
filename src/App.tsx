@@ -19,6 +19,7 @@ import type { UserRole } from "@/types/user";
 
 // Lazy load all pages
 const RoleSelection = lazy(() => import("@/components/onboarding/RoleSelection").then(m => ({ default: m.RoleSelection })));
+const LanguagePicker = lazy(() => import("@/components/onboarding/LanguagePicker").then(m => ({ default: m.LanguagePicker })));
 const KYCFlow = lazy(() => import("@/components/onboarding/KYCFlow").then(m => ({ default: m.KYCFlow })));
 const AIVoiceHub = lazy(() => import("@/components/home/AIVoiceHub").then(m => ({ default: m.AIVoiceHub })));
 const LeafletMap = lazy(() => import("@/components/map/LeafletMap").then(m => ({ default: m.LeafletMap })));
@@ -56,7 +57,7 @@ const queryClient = new QueryClient({
 });
 
 type AppScreen = 
-  | 'splash' | 'auth' | 'role-selection' | 'kyc' | 'home' | 'map' 
+  | 'splash' | 'language-picker' | 'auth' | 'role-selection' | 'kyc' | 'home' | 'map' 
   | 'settings' | 'properties' | 'property-detail' | 'handymen' | 'handyman-detail' | 'chat'
   | 'owner-dashboard' | 'add-property' | 'handyman-dashboard'
   | 'contracts' | 'create-contract' | 'arrabon' | 'alerts' | 'bills'
@@ -109,6 +110,18 @@ function AppContent() {
   const [isNative] = useState(() => typeof window !== 'undefined' && Capacitor.isNativePlatform());
 
   const handleSplashComplete = () => {
+    // Check if user has seen language picker
+    const hasSeenLanguagePicker = localStorage.getItem('hasSeenLanguagePicker');
+    if (!hasSeenLanguagePicker) {
+      setCurrentScreen('language-picker');
+    } else {
+      setIsInitialized(true);
+      determineInitialScreen();
+    }
+  };
+
+  const handleLanguagePickerComplete = () => {
+    localStorage.setItem('hasSeenLanguagePicker', 'true');
     setIsInitialized(true);
     determineInitialScreen();
   };
@@ -257,6 +270,8 @@ function AppContent() {
     switch (currentScreen) {
       case 'splash': 
         return <SplashScreen onComplete={handleSplashComplete} />;
+      case 'language-picker':
+        return <LanguagePicker onComplete={handleLanguagePickerComplete} />;
       case 'auth': 
         return <AuthPage onSuccess={handleAuthSuccess} />;
       case 'role-selection': 

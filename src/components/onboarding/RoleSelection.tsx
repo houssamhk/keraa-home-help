@@ -3,53 +3,43 @@ import { motion } from "framer-motion";
 import { Home, Wrench, Search, ArrowRight, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/i18n/LanguageContext";
 import type { UserRole } from "@/types/user";
 
 interface RoleSelectionProps {
   onSelectRole: (role: UserRole) => void;
 }
 
-const roles = [
-  {
-    id: "tenant" as UserRole,
-    title: "أبحث عن سكن",
-    subtitle: "استئجار عقارات والبحث عن حرفيين",
-    icon: Search,
-    features: [
-      "تصفح العقارات المتاحة",
-      "التواصل مع الملاك",
-      "حجز حرفيين موثوقين"
-    ],
-  },
-  {
-    id: "owner" as UserRole,
-    title: "أنا مالك عقار",
-    subtitle: "عرض عقاراتك للإيجار",
-    icon: Home,
-    features: [
-      "نشر عقاراتك للإيجار",
-      "إدارة العقود مع المستأجرين",
-      "متابعة الاستفسارات"
-    ],
-  },
-  {
-    id: "provider" as UserRole,
-    title: "أنا حرفي",
-    subtitle: "تقديم خدماتك للعملاء",
-    icon: Wrench,
-    features: [
-      "عرض خدماتك للعملاء",
-      "إدارة طلبات العمل",
-      "بناء سمعتك المهنية"
-    ],
-  },
-];
-
 export function RoleSelection({ onSelectRole }: RoleSelectionProps) {
   const { updateProfile } = useAuth();
   const { toast } = useToast();
+  const { t, dir } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+
+  const roles = [
+    {
+      id: "tenant" as UserRole,
+      title: t.roleSelection.tenant.title,
+      subtitle: t.roleSelection.tenant.subtitle,
+      icon: Search,
+      features: t.roleSelection.tenant.features,
+    },
+    {
+      id: "owner" as UserRole,
+      title: t.roleSelection.owner.title,
+      subtitle: t.roleSelection.owner.subtitle,
+      icon: Home,
+      features: t.roleSelection.owner.features,
+    },
+    {
+      id: "provider" as UserRole,
+      title: t.roleSelection.provider.title,
+      subtitle: t.roleSelection.provider.subtitle,
+      icon: Wrench,
+      features: t.roleSelection.provider.features,
+    },
+  ];
 
   const handleRoleSelect = async (role: UserRole) => {
     setSelectedRole(role);
@@ -64,14 +54,14 @@ export function RoleSelection({ onSelectRole }: RoleSelectionProps) {
       }
 
       toast({
-        title: "تم حفظ نوع الحساب",
-        description: "يمكنك الآن متابعة إعداد حسابك"
+        title: t.roleSelection.rolesSaved,
+        description: t.roleSelection.rolesSavedDesc
       });
 
       onSelectRole(role);
     } catch (error: any) {
       toast({
-        title: "خطأ",
+        title: t.error,
         description: error.message || "حدث خطأ أثناء حفظ نوع الحساب",
         variant: "destructive"
       });
@@ -82,20 +72,27 @@ export function RoleSelection({ onSelectRole }: RoleSelectionProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col safe-area-inset">
+    <div className="min-h-screen bg-background flex flex-col safe-area-inset" dir={dir}>
       {/* Header */}
       <motion.div 
-        className="px-6 pt-12 pb-6"
+        className={`px-6 pt-12 pb-6 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <h1 className="font-serif text-3xl font-bold text-foreground text-right">
-          مرحباً بك في{" "}
-          <span className="gold-text">كراء و مناول</span>
+        <h1 className="font-serif text-3xl font-bold text-foreground">
+          {t.roleSelection.title.split('كراء و مناول').length > 1 ? (
+            <>
+              {t.roleSelection.title.split('كراء و مناول')[0]}
+              <span className="gold-text">كراء و مناول</span>
+              {t.roleSelection.title.split('كراء و مناول')[1]}
+            </>
+          ) : (
+            <span>{t.roleSelection.title}</span>
+          )}
         </h1>
-        <p className="text-muted-foreground mt-2 text-right">
-          كيف تريد استخدام التطبيق؟
+        <p className="text-muted-foreground mt-2">
+          {t.roleSelection.subtitle}
         </p>
       </motion.div>
 
@@ -106,8 +103,8 @@ export function RoleSelection({ onSelectRole }: RoleSelectionProps) {
             key={role.id}
             onClick={() => handleRoleSelect(role.id)}
             disabled={isLoading}
-            className="w-full text-right group disabled:opacity-50"
-            initial={{ opacity: 0, x: 20 }}
+            className={`w-full group disabled:opacity-50 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}
+            initial={{ opacity: 0, x: dir === 'rtl' ? 20 : -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 + index * 0.1, duration: 0.5 }}
             whileTap={{ scale: 0.98 }}
@@ -115,13 +112,15 @@ export function RoleSelection({ onSelectRole }: RoleSelectionProps) {
             <div className={`elevated-card p-5 transition-all duration-300 group-hover:border-primary/50 group-hover:shadow-gold/20 ${
               selectedRole === role.id ? 'border-primary bg-primary/5' : ''
             }`}>
-              <div className="flex items-start gap-4">
+              <div className={`flex items-start gap-4 ${dir === 'rtl' ? '' : 'flex-row-reverse'}`}>
                 {/* Arrow or Loader */}
                 <div className="shrink-0 mt-2">
                   {isLoading && selectedRole === role.id ? (
                     <Loader2 className="w-5 h-5 text-primary animate-spin" />
                   ) : (
-                    <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:-translate-x-1 transition-all rotate-180" />
+                    <ArrowRight className={`w-5 h-5 text-muted-foreground group-hover:text-primary transition-all ${
+                      dir === 'rtl' ? 'group-hover:-translate-x-1 rotate-180' : 'group-hover:translate-x-1'
+                    }`} />
                   )}
                 </div>
 
@@ -137,9 +136,12 @@ export function RoleSelection({ onSelectRole }: RoleSelectionProps) {
                   {/* Features */}
                   <ul className="mt-3 space-y-1.5">
                     {role.features.map((feature, i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground justify-end">
+                      <li key={i} className={`flex items-center gap-2 text-sm text-muted-foreground ${
+                        dir === 'rtl' ? 'justify-end' : 'justify-start'
+                      }`}>
+                        {dir === 'ltr' && <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />}
                         {feature}
-                        <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
+                        {dir === 'rtl' && <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />}
                       </li>
                     ))}
                   </ul>
@@ -163,10 +165,7 @@ export function RoleSelection({ onSelectRole }: RoleSelectionProps) {
         transition={{ delay: 0.6 }}
       >
         <p className="text-center text-xs text-muted-foreground">
-          بالمتابعة، أنت توافق على{" "}
-          <button className="text-primary hover:underline">شروط الخدمة</button>
-          {" "}و{" "}
-          <button className="text-primary hover:underline">سياسة الخصوصية</button>
+          {t.roleSelection.termsAndPrivacy}
         </p>
       </motion.div>
     </div>
