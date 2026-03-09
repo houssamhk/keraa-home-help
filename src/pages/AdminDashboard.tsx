@@ -357,43 +357,8 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
           {/* Overview Tab */}
           <TabsContent value="overview"><PlatformStats /></TabsContent>
 
-          {/* Users Tab */}
-          <TabsContent value="users">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  {t.adminPage.users} ({filteredUsers.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t.adminPage.name}</TableHead>
-                        <TableHead>{t.adminPage.phoneCol}</TableHead>
-                        <TableHead>{t.adminPage.role}</TableHead>
-                        <TableHead>{t.adminPage.verificationCol}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredUsers.map((user) => (
-                        <TableRow key={user.id}>
-                          <TableCell className="font-medium">{user.full_name || t.notSpecified}</TableCell>
-                          <TableCell>{user.phone || '-'}</TableCell>
-                          <TableCell><Badge variant="outline">{getRoleLabel(user.role_type)}</Badge></TableCell>
-                          <TableCell>
-                            {user.kyc_verified ? <CheckCircle className="w-5 h-5 text-green-500" /> : <XCircle className="w-5 h-5 text-red-500" />}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+          {/* User Management Tab */}
+          <TabsContent value="user-mgmt"><UserManagement /></TabsContent>
 
           {/* Properties Tab */}
           <TabsContent value="properties">
