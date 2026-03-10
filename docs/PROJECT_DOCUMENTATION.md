@@ -1143,9 +1143,14 @@ sakani/
 │   └── pwa-*.png                      # أيقونات PWA (192x192, 512x512)
 ├── 📁 src/
 │   ├── 📁 components/
-│   │   ├── 📁 admin/                  # مكونات لوحة المشرف
-│   │   │   ├── DemandHeatmap.tsx       #   خريطة الطلب الحرارية
-│   │   │   └── PaymentManagement.tsx   #   إدارة المدفوعات
+│   │   ├── 📁 admin/                  # مكونات لوحة المشرف (7 مكونات)
+│   │   │   ├── PlatformStats.tsx       #   إحصائيات المنصة الشاملة
+│   │   │   ├── UserManagement.tsx      #   إدارة المستخدمين والأدوار
+│   │   │   ├── ContractsManagement.tsx #   إدارة العقود (تفعيل/إلغاء)
+│   │   │   ├── ReportsManagement.tsx   #   إدارة البلاغات والشكاوى
+│   │   │   ├── PaymentManagement.tsx   #   إدارة المدفوعات
+│   │   │   ├── SupportRequestsManagement.tsx # طلبات الدعم وتغيير الأدوار
+│   │   │   └── DemandHeatmap.tsx       #   خريطة الطلب الحرارية
 │   │   ├── 📁 alerts/                 # تنبيهات البحث
 │   │   │   └── SearchAlertDialog.tsx   #   حوار إنشاء تنبيه
 │   │   ├── 📁 common/                 # مكونات مشتركة
