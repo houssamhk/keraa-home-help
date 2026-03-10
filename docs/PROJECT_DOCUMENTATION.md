@@ -1518,9 +1518,30 @@ sakani/
 CREATE POLICY "Users can view own profile" ON profiles
 FOR SELECT USING (auth.uid() = user_id);
 
--- المشرف يرى كل الملفات
+-- المشرف يرى كل الملفات (عبر جدول user_roles مستقل)
 CREATE POLICY "Admins can view all profiles" ON profiles
 FOR ALL USING (public.has_role(auth.uid(), 'admin'));
+
+-- منع المستخدم من تعديل الحقول الحساسة ذاتياً
+CREATE POLICY "Users update own profile safely" ON profiles
+FOR UPDATE USING (auth.uid() = user_id)
+WITH CHECK (
+  kyc_verified IS NOT DISTINCT FROM (SELECT kyc_verified FROM profiles WHERE user_id = auth.uid())
+  AND avg_rating IS NOT DISTINCT FROM (SELECT avg_rating FROM profiles WHERE user_id = auth.uid())
+  AND total_reviews IS NOT DISTINCT FROM (SELECT total_reviews FROM profiles WHERE user_id = auth.uid())
+);
+
+-- حماية تعيين الأدمن من التصعيد غير المصرح
+CREATE FUNCTION public.assign_admin_role(target_email text)
+RETURNS void AS $$
+BEGIN
+  -- فحص: هل المستدعي أدمن؟ (استثناء: أول أدمن في النظام)
+  IF public.has_any_admin() AND NOT public.has_role(auth.uid(), 'admin') THEN
+    RAISE EXCEPTION 'Unauthorized: Admin access required';
+  END IF;
+  -- تعيين الدور...
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- جدول properties: الكل يرى العقارات المتاحة
 CREATE POLICY "Anyone can view available properties" ON properties
