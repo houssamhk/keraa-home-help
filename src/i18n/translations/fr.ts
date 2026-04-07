@@ -149,6 +149,7 @@ export const fr = {
     bills: 'Factures',
     appointments: 'Rendez-vous',
     ownerDashboard: 'Tableau de bord propriétaire',
+    addProperty: 'Publier un bien',
     handymanDashboard: 'Tableau de bord artisan',
     admin: 'Panneau d\'administration',
   },
