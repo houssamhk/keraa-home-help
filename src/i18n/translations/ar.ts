@@ -149,6 +149,7 @@ export const ar = {
     bills: 'الفواتير',
     appointments: 'المواعيد',
     ownerDashboard: 'لوحة المالك',
+    addProperty: 'نشر عقار',
     handymanDashboard: 'لوحة الحرفي',
     admin: 'لوحة الإدارة',
   },

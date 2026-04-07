@@ -149,6 +149,7 @@ export const en = {
     bills: 'Bills',
     appointments: 'Appointments',
     ownerDashboard: 'Owner Dashboard',
+    addProperty: 'Add Property',
     handymanDashboard: 'Handyman Dashboard',
     admin: 'Admin Panel',
   },

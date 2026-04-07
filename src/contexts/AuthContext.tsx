@@ -27,6 +27,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
   updateSettings: (settings: Partial<Profile['settings']>) => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -62,6 +63,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(profileData);
     }
   };
+
+  // Refetch profile when window regains focus (catches DB changes)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (user) fetchProfile(user.id);
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [user]);
 
   useEffect(() => {
     supabase.auth.onAuthStateChange((event, session) => {
@@ -162,6 +172,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(prev => prev ? { ...prev, settings: newSettings } : null);
   };
 
+  const refreshProfile = async () => {
+    if (user) await fetchProfile(user.id);
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -172,7 +186,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signIn,
       signOut,
       updateProfile,
-      updateSettings
+      updateSettings,
+      refreshProfile
     }}>
       {children}
     </AuthContext.Provider>
