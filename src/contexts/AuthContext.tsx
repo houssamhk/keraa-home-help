@@ -172,6 +172,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(prev => prev ? { ...prev, settings: newSettings } : null);
   };
 
+  const refreshProfile = async () => {
+    if (user) await fetchProfile(user.id);
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -182,7 +186,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signIn,
       signOut,
       updateProfile,
-      updateSettings
+      updateSettings,
+      refreshProfile
     }}>
       {children}
     </AuthContext.Provider>
