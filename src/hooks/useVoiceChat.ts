@@ -48,7 +48,7 @@ export function useVoiceChat() {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const shouldContinueListeningRef = useRef(false);
   const isSpeakingRef = useRef(false);
-  const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const silenceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const voicesLoadedRef = useRef(false);
   const arabicVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
