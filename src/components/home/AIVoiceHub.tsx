@@ -69,7 +69,7 @@ export function AIVoiceHub({ userName = "Guest", onNavigate, needsKYC, userRole,
     { id: 'map', icon: Map, label: t.quickActions.map, route: '/map' },
     ...(userRole === 'owner' ? [
       { id: 'owner-dashboard', icon: Home, label: t.quickActions.ownerDashboard, route: '/owner-dashboard' },
-      { id: 'add-property', icon: Plus, label: t.quickActions.addProperty || 'نشر عقار', route: '/add-property' },
+      { id: 'add-property', icon: Plus, label: t.quickActions.addProperty, route: '/add-property' },
     ] : []),
     ...(userRole === 'handyman' ? [{ id: 'handyman-dashboard', icon: Wrench, label: t.quickActions.handymanDashboard, route: '/handyman-dashboard' }] : []),
     { id: 'contracts', icon: MessageSquare, label: t.quickActions.contracts, route: '/contracts' },
