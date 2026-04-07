@@ -63,6 +63,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Refetch profile when window regains focus (catches DB changes)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (user) fetchProfile(user.id);
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [user]);
+
   useEffect(() => {
     supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
