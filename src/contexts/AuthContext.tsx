@@ -10,10 +10,12 @@ interface Profile {
   avatar_url: string | null;
   role_type: 'tenant' | 'provider' | 'owner' | 'handyman';
   kyc_verified: boolean;
+  created_at?: string | null;
   settings: {
     theme: 'dark' | 'light';
     language: string;
     notifications: boolean;
+    onboarding_completed?: boolean;
   };
 }
 
@@ -44,66 +46,92 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select('*')
       .eq('user_id', userId)
       .maybeSingle();
-    
-    if (!error && data) {
-      const profileData: Profile = {
-        id: data.id,
-        user_id: data.user_id,
-        full_name: data.full_name,
-        phone: data.phone,
-        avatar_url: data.avatar_url,
-        role_type: (data.role_type as 'tenant' | 'provider' | 'owner' | 'handyman') || 'tenant',
-        kyc_verified: data.kyc_verified || false,
-        settings: {
-          theme: (data.settings as { theme?: string })?.theme === 'light' ? 'light' : 'dark',
-          language: (data.settings as { language?: string })?.language || 'ar',
-          notifications: (data.settings as { notifications?: boolean })?.notifications ?? true
-        }
-      };
-      setProfile(profileData);
+
+    if (error || !data) {
+      setProfile(null);
+      return null;
     }
+
+    const settings = (data.settings as {
+      theme?: string;
+      language?: string;
+      notifications?: boolean;
+      onboarding_completed?: boolean;
+    } | null) ?? null;
+
+    const profileData: Profile = {
+      id: data.id,
+      user_id: data.user_id,
+      full_name: data.full_name,
+      phone: data.phone,
+      avatar_url: data.avatar_url,
+      role_type: (data.role_type as 'tenant' | 'provider' | 'owner' | 'handyman') || 'tenant',
+      kyc_verified: data.kyc_verified || false,
+      created_at: data.created_at ?? null,
+      settings: {
+        theme: settings?.theme === 'light' ? 'light' : 'dark',
+        language: settings?.language || 'ar',
+        notifications: settings?.notifications ?? true,
+        onboarding_completed: settings?.onboarding_completed ?? false,
+      }
+    };
+
+    setProfile(profileData);
+    return profileData;
   };
 
-  // Refetch profile when window regains focus (catches DB changes)
   useEffect(() => {
     const handleFocus = () => {
-      if (user) fetchProfile(user.id);
+      if (user) {
+        void fetchProfile(user.id);
+      }
     };
+
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
   }, [user]);
 
   useEffect(() => {
-    supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+
+      if (nextSession?.user) {
+        setIsLoading(true);
         setTimeout(() => {
-          fetchProfile(session.user.id);
+          void fetchProfile(nextSession.user.id).finally(() => setIsLoading(false));
         }, 0);
       } else {
         setProfile(null);
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      }
-      
-      setIsLoading(false);
-    });
+    setIsLoading(true);
+    void supabase.auth
+      .getSession()
+      .then(async ({ data: { session: currentSession } }) => {
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+
+        if (currentSession?.user) {
+          await fetchProfile(currentSession.user.id);
+        } else {
+          setProfile(null);
+        }
+      })
+      .finally(() => setIsLoading(false));
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string, phone?: string, birthDate?: string) => {
     const redirectUrl = `${window.location.origin}/`;
-    
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -117,7 +145,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    // Update profile with phone if signup successful
     if (!error && data.user) {
       setTimeout(async () => {
         await supabase
@@ -126,7 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .eq('user_id', data.user!.id);
       }, 500);
     }
-    
+
     return { error: error as Error | null };
   };
 
@@ -135,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password
     });
-    
+
     return { error: error as Error | null };
   };
 
@@ -146,29 +173,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!user) return { error: new Error('Not authenticated') };
-    
+
+    const mergedSettings = updates.settings
+      ? {
+          ...(profile?.settings || { theme: 'dark' as const, language: 'ar', notifications: true }),
+          ...updates.settings,
+        }
+      : undefined;
+
+    const normalizedUpdates = mergedSettings
+      ? { ...updates, settings: mergedSettings }
+      : updates;
+
     const { error } = await supabase
       .from('profiles')
-      .update(updates)
+      .update(normalizedUpdates)
       .eq('user_id', user.id);
-    
+
     if (!error) {
-      setProfile(prev => prev ? { ...prev, ...updates } : null);
+      setProfile(prev => prev ? {
+        ...prev,
+        ...normalizedUpdates,
+        settings: mergedSettings ? { ...prev.settings, ...mergedSettings } : prev.settings,
+      } : null);
     }
-    
+
     return { error: error as Error | null };
   };
 
   const updateSettings = async (settings: Partial<Profile['settings']>) => {
     if (!user || !profile) return;
-    
+
     const newSettings = { ...profile.settings, ...settings };
-    
+
     await supabase
       .from('profiles')
       .update({ settings: newSettings })
       .eq('user_id', user.id);
-    
+
     setProfile(prev => prev ? { ...prev, settings: newSettings } : null);
   };
 

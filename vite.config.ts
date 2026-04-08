@@ -14,6 +14,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
+      injectRegister: "auto",
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "robots.txt"],
       manifest: {
@@ -49,11 +50,11 @@ export default defineConfig(({ mode }) => ({
         categories: ["real-estate", "lifestyle", "business"],
       },
     workbox: {
-      // Cache only static assets - NO API or sensitive data
+      cleanupOutdatedCaches: true,
+      clientsClaim: true,
+      skipWaiting: true,
       globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
-      // Increase max file size to cache (3 MB) to handle larger bundles
       maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
-        // Don't cache any API calls or Supabase data
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/api/, /^\/auth/],
         runtimeCaching: [
