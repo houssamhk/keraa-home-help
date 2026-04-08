@@ -109,8 +109,20 @@ function AppContent() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isNative] = useState(() => typeof window !== 'undefined' && Capacitor.isNativePlatform());
 
+  const hasCompletedOnboarding = (profileData?: {
+    role_type?: string | null;
+    created_at?: string | null;
+    settings?: { onboarding_completed?: boolean } | null;
+  } | null) => {
+    if (!profileData) return false;
+    if (profileData.settings?.onboarding_completed) return true;
+    if (!profileData.role_type || !profileData.created_at) return false;
+
+    const profileAgeMs = Date.now() - new Date(profileData.created_at).getTime();
+    return profileAgeMs > 5 * 60 * 1000;
+  };
+
   const handleSplashComplete = () => {
-    // Check if user has seen language picker
     const hasSeenLanguagePicker = localStorage.getItem('hasSeenLanguagePicker');
     if (!hasSeenLanguagePicker) {
       setCurrentScreen('language-picker');
@@ -128,13 +140,18 @@ function AppContent() {
 
   const determineInitialScreen = () => {
     if (isLoading) return;
+
     if (!user) {
       setCurrentScreen('auth');
-    } else {
-      // Always go to home - profile will load async
-      // Role selection is only shown for new signups via handleAuthSuccess
-      setCurrentScreen('home');
+      return;
     }
+
+    if (profile && !hasCompletedOnboarding(profile)) {
+      setCurrentScreen('role-selection');
+      return;
+    }
+
+    setCurrentScreen('home');
   };
 
   useEffect(() => {
@@ -144,55 +161,56 @@ function AppContent() {
     }
   }, [user, isLoading, isInitialized, currentScreen]);
 
-  // When profile loads after auth, redirect from role-selection if already onboarded
   useEffect(() => {
     if (!isInitialized || isLoading || !user || !profile) return;
-    
-    // Auto-mark existing users (who already have a non-default role) as onboarded
-    const onboarded = localStorage.getItem(`onboarded_${user.id}`);
-    if (!onboarded && profile.role_type && profile.role_type !== 'tenant') {
+
+    const localOnboarded = !!localStorage.getItem(`onboarded_${user.id}`);
+    const profileOnboarded = hasCompletedOnboarding(profile);
+    const isOnboarded = localOnboarded || profileOnboarded;
+
+    if (profileOnboarded && !localOnboarded) {
       localStorage.setItem(`onboarded_${user.id}`, 'true');
     }
-    
-    // Also check profile creation date - if account is older than 5 minutes, consider onboarded
-    // This handles existing 'tenant' users who chose tenant before this feature
-    if (!onboarded && profile.role_type) {
-      // Mark as onboarded for any returning user (profile exists = not brand new)
-      localStorage.setItem(`onboarded_${user.id}`, 'true');
-    }
-    
-    const isOnboarded = localStorage.getItem(`onboarded_${user.id}`);
+
     if (currentScreen === 'role-selection' && isOnboarded) {
       setCurrentScreen('home');
     }
+
     if (currentScreen === 'auth' && isOnboarded) {
       setCurrentScreen('home');
+    }
+
+    if (currentScreen === 'home' && !isOnboarded) {
+      setCurrentScreen('role-selection');
     }
   }, [profile, user, isLoading, isInitialized, currentScreen]);
 
   const handleAuthSuccess = () => {
-    // user state might not be updated yet due to async onAuthStateChange
-    // Use supabase to get current session directly
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       const currentUserId = session?.user?.id || user?.id;
       if (!currentUserId) {
-        // Fallback: go to home, the useEffect watchers will handle redirect
         setCurrentScreen('home');
         return;
       }
-      const onboarded = localStorage.getItem(`onboarded_${currentUserId}`);
-      if (onboarded) {
+
+      const localOnboarded = !!localStorage.getItem(`onboarded_${currentUserId}`);
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('role_type, settings, created_at')
+        .eq('user_id', currentUserId)
+        .maybeSingle();
+
+      const isOnboarded = localOnboarded || hasCompletedOnboarding(profileData ? {
+        role_type: profileData.role_type,
+        created_at: profileData.created_at,
+        settings: (profileData.settings as { onboarding_completed?: boolean } | null) ?? null,
+      } : null);
+
+      if (isOnboarded) {
+        localStorage.setItem(`onboarded_${currentUserId}`, 'true');
         setCurrentScreen('home');
       } else {
-        // Check if profile already exists in DB (returning user)
-        supabase.from('profiles').select('role_type').eq('user_id', currentUserId).maybeSingle().then(({ data: profileData }) => {
-          if (profileData && profileData.role_type) {
-            localStorage.setItem(`onboarded_${currentUserId}`, 'true');
-            setCurrentScreen('home');
-          } else {
-            setCurrentScreen('role-selection');
-          }
-        });
+        setCurrentScreen('role-selection');
       }
     });
   };
@@ -263,8 +281,8 @@ function AppContent() {
     setCurrentScreen('create-contract');
   };
 
-  const needsKYC = user && profile && !profile.kyc_verified;
-  const showBottomNav = user && SCREENS_WITH_NAV.includes(currentScreen);
+  const needsKYC = !!user && !!profile && !profile.kyc_verified;
+  const showBottomNav = !!user && !isLoading && SCREENS_WITH_NAV.includes(currentScreen);
 
   const renderScreen = () => {
     switch (currentScreen) {
