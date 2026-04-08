@@ -64,19 +64,24 @@ export function HandymanDetailPage({ handymanId, onBack, onChat }: HandymanDetai
     setIsLoading(true);
     const { data, error } = await supabase
       .from('handymen')
-      .select(`
-        *,
-        profiles!handymen_user_id_fkey (
-          full_name,
-          avatar_url,
-          phone
-        )
-      `)
+      .select('*')
       .eq('id', handymanId)
       .single();
 
     if (!error && data) {
-      setHandyman(data as unknown as Handyman);
+      // Fetch profile separately since there's no FK relationship
+      const { data: profileData } = await supabase
+        .rpc('get_safe_profile', { target_user_id: data.user_id })
+        .maybeSingle();
+      
+      setHandyman({
+        ...data,
+        profiles: profileData ? {
+          full_name: profileData.full_name || '',
+          avatar_url: profileData.avatar_url || '',
+          phone: profileData.phone || ''
+        } : undefined
+      } as unknown as Handyman);
     }
     setIsLoading(false);
   };
