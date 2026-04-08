@@ -56,19 +56,28 @@ export function HandymenPage({ onBack, onChat, onViewHandyman }: HandymenPagePro
     setIsLoading(true);
     const { data, error } = await supabase
       .from('handymen')
-      .select(`
-        *,
-        profiles!handymen_user_id_fkey (
-          full_name,
-          avatar_url,
-          phone
-        )
-      `)
+      .select('*')
       .eq('is_available', true)
       .order('rating', { ascending: false });
     
     if (!error && data) {
-      setHandymen(data as unknown as Handyman[]);
+      // Fetch profiles separately since there's no FK relationship
+      const enriched = await Promise.all(
+        data.map(async (h) => {
+          const { data: profileData } = await supabase
+            .rpc('get_safe_profile', { target_user_id: h.user_id })
+            .maybeSingle();
+          return {
+            ...h,
+            profiles: profileData ? {
+              full_name: profileData.full_name || '',
+              avatar_url: profileData.avatar_url || '',
+              phone: profileData.phone || ''
+            } : undefined
+          };
+        })
+      );
+      setHandymen(enriched as Handyman[]);
     }
     setIsLoading(false);
   };
