@@ -55,6 +55,38 @@ export function ServiceRequestsPage({ onBack, onChat }: ServiceRequestsPageProps
     }
   }, [user, isHandyman]);
 
+  // Realtime subscription for service request updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('service-requests-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'service_requests',
+          filter: isHandyman && handymanId
+            ? `handyman_id=eq.${handymanId}`
+            : `client_id=eq.${user.id}`,
+        },
+        () => {
+          // Refetch on any change
+          if (isHandyman && handymanId) {
+            fetchRequests(handymanId);
+          } else if (!isHandyman) {
+            fetchRequests();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, isHandyman, handymanId]);
+
   const fetchHandymanId = async () => {
     if (!user) return;
     
