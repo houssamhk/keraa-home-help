@@ -55,6 +55,38 @@ export function ServiceRequestsPage({ onBack, onChat }: ServiceRequestsPageProps
     }
   }, [user, isHandyman]);
 
+  // Realtime subscription for service request updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('service-requests-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'service_requests',
+          filter: isHandyman && handymanId
+            ? `handyman_id=eq.${handymanId}`
+            : `client_id=eq.${user.id}`,
+        },
+        () => {
+          // Refetch on any change
+          if (isHandyman && handymanId) {
+            fetchRequests(handymanId);
+          } else if (!isHandyman) {
+            fetchRequests();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, isHandyman, handymanId]);
+
   const fetchHandymanId = async () => {
     if (!user) return;
     
@@ -179,17 +211,17 @@ export function ServiceRequestsPage({ onBack, onChat }: ServiceRequestsPageProps
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
           <div className="glass-card p-3 text-center">
-            <Clock className="w-5 h-5 text-yellow-400 mx-auto mb-1" />
+            <Clock className="w-5 h-5 text-primary mx-auto mb-1" />
             <p className="text-xl font-bold text-foreground">{stats.pending}</p>
             <p className="text-xs text-muted-foreground">قيد الانتظار</p>
           </div>
           <div className="glass-card p-3 text-center">
-            <Wrench className="w-5 h-5 text-blue-400 mx-auto mb-1" />
+            <Wrench className="w-5 h-5 text-accent mx-auto mb-1" />
             <p className="text-xl font-bold text-foreground">{stats.active}</p>
             <p className="text-xs text-muted-foreground">نشطة</p>
           </div>
           <div className="glass-card p-3 text-center">
-            <CheckCircle className="w-5 h-5 text-green-400 mx-auto mb-1" />
+            <CheckCircle className="w-5 h-5 text-primary mx-auto mb-1" />
             <p className="text-xl font-bold text-foreground">{stats.completed}</p>
             <p className="text-xs text-muted-foreground">مكتملة</p>
           </div>

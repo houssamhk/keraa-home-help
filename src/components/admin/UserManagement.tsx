@@ -103,6 +103,24 @@ export function UserManagement() {
     setProcessing(false);
   };
 
+  const handleQuickVerifyKyc = async (userId: string, verify: boolean) => {
+    setProcessing(true);
+    const { error } = await supabase.rpc('admin_verify_kyc', {
+      target_user_id: userId,
+      new_status: verify ? 'verified' : 'rejected',
+      reason: verify ? null : 'تم الرفض من لوحة الإدارة',
+    });
+
+    if (!error) {
+      toast.success(verify ? 'تم توثيق الحساب بنجاح ✓' : 'تم رفض التوثيق');
+      await fetchUsers();
+      if (selectedUser) setSelectedUser({ ...selectedUser, kyc_verified: verify });
+    } else {
+      toast.error('فشل: ' + error.message);
+    }
+    setProcessing(false);
+  };
+
   const handleMakeAdmin = async (userId: string) => {
     // Get user email first  
     const targetProfile = users.find(u => u.user_id === userId);
@@ -236,14 +254,27 @@ export function UserManagement() {
                   <p className="font-medium text-foreground text-sm">{profile.full_name || 'بدون اسم'}</p>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Badge variant="outline" className="text-xs px-1.5 py-0">{getRoleLabel(profile.role_type)}</Badge>
-                    {profile.kyc_verified && <Shield className="w-3 h-3 text-green-500" />}
+                    {profile.kyc_verified && <Shield className="w-3 h-3 text-primary" />}
                     {profile.avg_rating ? <span>⭐ {profile.avg_rating}</span> : null}
                   </div>
                 </div>
               </div>
-              <Button size="sm" variant="ghost" onClick={() => handleViewUser(profile)}>
-                <Eye className="w-4 h-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                {!profile.kyc_verified && (
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={() => handleQuickVerifyKyc(profile.user_id, true)}
+                    disabled={processing}
+                  >
+                    <UserCheck className="w-4 h-4 ml-1" />
+                    توثيق
+                  </Button>
+                )}
+                <Button size="sm" variant="ghost" onClick={() => handleViewUser(profile)}>
+                  <Eye className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           ))}
         </CardContent>
@@ -280,6 +311,33 @@ export function UserManagement() {
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-muted-foreground">التقييم:</span>
                   <span>{selectedUser.avg_rating || 0}/5 ({selectedUser.total_reviews || 0} تقييم)</span>
+                </div>
+
+                {/* KYC Quick Actions */}
+                <div className="flex gap-2 pt-2 border-t border-border">
+                  {!selectedUser.kyc_verified ? (
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="flex-1"
+                      onClick={() => handleQuickVerifyKyc(selectedUser.user_id, true)}
+                      disabled={processing}
+                    >
+                      <UserCheck className="w-4 h-4 ml-1" />
+                      توثيق الحساب
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="flex-1"
+                      onClick={() => handleQuickVerifyKyc(selectedUser.user_id, false)}
+                      disabled={processing}
+                    >
+                      <UserX className="w-4 h-4 ml-1" />
+                      إلغاء التوثيق
+                    </Button>
+                  )}
                 </div>
               </div>
 

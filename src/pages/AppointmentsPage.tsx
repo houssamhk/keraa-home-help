@@ -32,6 +32,27 @@ export function AppointmentsPage({ onBack, propertyId, ownerId }: AppointmentsPa
 
   useEffect(() => { if (user) { fetchAppointments(); fetchProperties(); } }, [user]);
 
+  // Realtime updates for appointments
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel('appointments-realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'appointments',
+        filter: `tenant_id=eq.${user.id}`,
+      }, () => fetchAppointments())
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'appointments',
+        filter: `owner_id=eq.${user.id}`,
+      }, () => fetchAppointments())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
   const fetchAppointments = async () => {
     if (!user) return;
     const { data, error } = await supabase.from('appointments').select('*').or(`tenant_id.eq.${user.id},owner_id.eq.${user.id}`).order('appointment_date', { ascending: true });
