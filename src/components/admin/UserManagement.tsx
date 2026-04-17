@@ -254,26 +254,27 @@ export function UserManagement() {
                   <p className="font-medium text-foreground text-sm">{profile.full_name || 'بدون اسم'}</p>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Badge variant="outline" className="text-xs px-1.5 py-0">{getRoleLabel(profile.role_type)}</Badge>
-                    {profile.kyc_verified && <Shield className="w-3 h-3 text-green-500" />}
+                    {profile.kyc_verified && <Shield className="w-3 h-3 text-primary" />}
                     {profile.avg_rating ? <span>⭐ {profile.avg_rating}</span> : null}
                   </div>
                 </div>
               </div>
-              <Button size="sm" variant="ghost" onClick={() => handleViewUser(profile)}>
-                <Eye className="w-4 h-4" />
-              </Button>
-              {!profile.kyc_verified && (
-                <Button
-                  size="sm"
-                  variant="default"
-                  onClick={() => handleQuickVerifyKyc(profile.user_id, true)}
-                  disabled={processing}
-                  className="ml-1"
-                >
-                  <UserCheck className="w-4 h-4 ml-1" />
-                  توثيق
+              <div className="flex items-center gap-1">
+                {!profile.kyc_verified && (
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={() => handleQuickVerifyKyc(profile.user_id, true)}
+                    disabled={processing}
+                  >
+                    <UserCheck className="w-4 h-4 ml-1" />
+                    توثيق
+                  </Button>
+                )}
+                <Button size="sm" variant="ghost" onClick={() => handleViewUser(profile)}>
+                  <Eye className="w-4 h-4" />
                 </Button>
-              )}
+              </div>
             </div>
           ))}
         </CardContent>
