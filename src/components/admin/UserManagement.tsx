@@ -103,6 +103,24 @@ export function UserManagement() {
     setProcessing(false);
   };
 
+  const handleQuickVerifyKyc = async (userId: string, verify: boolean) => {
+    setProcessing(true);
+    const { error } = await supabase.rpc('admin_verify_kyc', {
+      target_user_id: userId,
+      new_status: verify ? 'verified' : 'rejected',
+      reason: verify ? null : 'تم الرفض من لوحة الإدارة',
+    });
+
+    if (!error) {
+      toast.success(verify ? 'تم توثيق الحساب بنجاح ✓' : 'تم رفض التوثيق');
+      await fetchUsers();
+      if (selectedUser) setSelectedUser({ ...selectedUser, kyc_verified: verify });
+    } else {
+      toast.error('فشل: ' + error.message);
+    }
+    setProcessing(false);
+  };
+
   const handleMakeAdmin = async (userId: string) => {
     // Get user email first  
     const targetProfile = users.find(u => u.user_id === userId);
