@@ -15,6 +15,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import { useTheme } from "@/hooks/useTheme";
 import { useAdminRole } from "@/hooks/useAdminRole";
+import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 import type { UserRole } from "@/types/user";
 
 // Lazy load all pages
@@ -99,6 +100,7 @@ function AppContent() {
   const { user, profile, isLoading } = useAuth();
   const { isAdmin } = useAdminRole();
   useTheme();
+  useRealtimeNotifications();
   
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('splash');
   const [chatUserId, setChatUserId] = useState<string | undefined>();
