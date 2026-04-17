@@ -16,6 +16,7 @@ import { usePropertyViews } from '@/hooks/usePropertyViews';
 import { ReportDialog } from '@/components/common/ReportDialog';
 import { BookViewingDialog } from '@/components/property/BookViewingDialog';
 import { VerificationServiceDialog } from '@/components/premium/VerificationServiceDialog';
+import { OwnerInfoCard } from '@/components/property/OwnerInfoCard';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { toast } from 'sonner';
 
@@ -296,6 +297,9 @@ export function PropertyDetailPage({
             <p className="text-muted-foreground leading-relaxed">{property.description}</p>
           </div>
         )}
+
+        {/* Owner Info */}
+        {property.owner_id && <OwnerInfoCard ownerId={property.owner_id} />}
 
         {/* Action Cards */}
         <div className="space-y-3">

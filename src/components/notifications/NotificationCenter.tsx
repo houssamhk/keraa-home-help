@@ -110,10 +110,24 @@ export function NotificationCenter({ onNavigate }: NotificationCenterProps) {
 
   const handleNotificationClick = (notification: Notification) => {
     markAsRead(notification.id);
-    
-    if (notification.type === 'property_alert') {
+
+    const routeMap: Record<string, string> = {
+      property_alert: '/properties',
+      message: '/chat',
+      contract: '/contracts',
+      appointment: '/appointments',
+      service_request: '/service-requests',
+      payment: '/wallet',
+      bill: '/bills',
+      arrabon: '/arrabon',
+      featured: '/owner-dashboard',
+      agency: '/agency-dashboard',
+    };
+
+    const target = routeMap[notification.type];
+    if (target) {
       setOpen(false);
-      onNavigate?.('/properties');
+      onNavigate?.(target);
     }
   };
 

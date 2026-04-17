@@ -227,8 +227,8 @@ export function OwnerDashboard({ onBack, onAddProperty, onEditProperty }: OwnerD
               </div>
               <div className="glass-card p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 text-green-500" />
+                  <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center">
+                    <TrendingUp className="w-5 h-5 text-primary" />
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-foreground">{stats.availableProperties}</p>
@@ -238,8 +238,8 @@ export function OwnerDashboard({ onBack, onAddProperty, onEditProperty }: OwnerD
               </div>
               <div className="glass-card p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
-                    <Eye className="w-5 h-5 text-blue-500" />
+                  <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
+                    <Eye className="w-5 h-5 text-accent-foreground" />
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-foreground">{stats.totalViews}</p>
@@ -249,8 +249,8 @@ export function OwnerDashboard({ onBack, onAddProperty, onEditProperty }: OwnerD
               </div>
               <div className="glass-card p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
-                    <MessageSquare className="w-5 h-5 text-purple-500" />
+                  <div className="w-10 h-10 rounded-full bg-secondary/60 flex items-center justify-center">
+                    <MessageSquare className="w-5 h-5 text-secondary-foreground" />
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-foreground">{stats.totalInquiries}</p>
@@ -297,8 +297,8 @@ export function OwnerDashboard({ onBack, onAddProperty, onEditProperty }: OwnerD
                       </div>
                       <span className={`px-2 py-1 rounded-full text-xs ${
                         property.is_available 
-                          ? 'bg-green-500/20 text-green-400' 
-                          : 'bg-red-500/20 text-red-400'
+                          ? 'bg-primary/15 text-primary' 
+                          : 'bg-destructive/15 text-destructive'
                       }`}>
                         {property.is_available ? 'متاح' : 'غير متاح'}
                       </span>
@@ -360,8 +360,8 @@ export function OwnerDashboard({ onBack, onAddProperty, onEditProperty }: OwnerD
                       </div>
                       <span className={`px-2 py-1 rounded-full text-xs ${
                         property.is_available 
-                          ? 'bg-green-500/20 text-green-400' 
-                          : 'bg-red-500/20 text-red-400'
+                          ? 'bg-primary/15 text-primary' 
+                          : 'bg-destructive/15 text-destructive'
                       }`}>
                         {property.is_available ? 'متاح' : 'غير متاح'}
                       </span>
