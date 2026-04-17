@@ -312,6 +312,33 @@ export function UserManagement() {
                   <span className="text-muted-foreground">التقييم:</span>
                   <span>{selectedUser.avg_rating || 0}/5 ({selectedUser.total_reviews || 0} تقييم)</span>
                 </div>
+
+                {/* KYC Quick Actions */}
+                <div className="flex gap-2 pt-2 border-t border-border">
+                  {!selectedUser.kyc_verified ? (
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="flex-1"
+                      onClick={() => handleQuickVerifyKyc(selectedUser.user_id, true)}
+                      disabled={processing}
+                    >
+                      <UserCheck className="w-4 h-4 ml-1" />
+                      توثيق الحساب
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="flex-1"
+                      onClick={() => handleQuickVerifyKyc(selectedUser.user_id, false)}
+                      disabled={processing}
+                    >
+                      <UserX className="w-4 h-4 ml-1" />
+                      إلغاء التوثيق
+                    </Button>
+                  )}
+                </div>
               </div>
 
               {/* Role Management */}
