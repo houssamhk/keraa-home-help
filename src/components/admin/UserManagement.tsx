@@ -262,6 +262,18 @@ export function UserManagement() {
               <Button size="sm" variant="ghost" onClick={() => handleViewUser(profile)}>
                 <Eye className="w-4 h-4" />
               </Button>
+              {!profile.kyc_verified && (
+                <Button
+                  size="sm"
+                  variant="default"
+                  onClick={() => handleQuickVerifyKyc(profile.user_id, true)}
+                  disabled={processing}
+                  className="ml-1"
+                >
+                  <UserCheck className="w-4 h-4 ml-1" />
+                  توثيق
+                </Button>
+              )}
             </div>
           ))}
         </CardContent>
