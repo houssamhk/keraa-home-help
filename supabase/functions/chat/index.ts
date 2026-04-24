@@ -13,15 +13,18 @@ async function getAuthenticatedUser(req: Request) {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, supabaseKey, {
     global: { headers: { Authorization: authHeader } },
   });
 
-  const token = authHeader.replace("Bearer ", "");
-  const { data, error } = await supabase.auth.getClaims(token);
-  if (error || !data?.claims) return null;
+  const adminClient = createClient(supabaseUrl, serviceRoleKey);
+  const { data, error } = await adminClient.auth.getUser(
+    authHeader.replace("Bearer ", "")
+  );
+  if (error || !data.user) return null;
 
-  const userId = data.claims.sub as string;
+  const userId = data.user.id;
   return { userId, supabase };
 }
 
