@@ -47,7 +47,10 @@ export function RoleSelection({ onSelectRole }: RoleSelectionProps) {
 
     try {
       // Save role to profile
-      const { error } = await updateProfile({ role_type: role });
+      const { error } = await updateProfile({ 
+        role_type: role,
+        settings: { onboarding_completed: true } as any,
+      });
       
       if (error) {
         throw error;
