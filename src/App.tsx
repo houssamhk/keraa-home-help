@@ -118,10 +118,12 @@ function AppContent() {
   } | null) => {
     if (!profileData) return false;
     if (profileData.settings?.onboarding_completed) return true;
-    if (!profileData.role_type || !profileData.created_at) return false;
-
-    const profileAgeMs = Date.now() - new Date(profileData.created_at).getTime();
-    return profileAgeMs > 5 * 60 * 1000;
+    // إذا اختار المستخدم نوع حساب (غير الافتراضي tenant بدون علامة)، نعتبره مكتملاً
+    // المصدر الموثوق: وجود role_type في قاعدة البيانات
+    if (profileData.role_type && ['owner', 'tenant', 'handyman', 'provider'].includes(profileData.role_type)) {
+      return true;
+    }
+    return false;
   };
 
   const handleSplashComplete = () => {
