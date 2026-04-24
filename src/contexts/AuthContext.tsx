@@ -40,18 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (error || !data) {
-      setProfile(null);
-      return null;
-    }
-
+  const normalizeProfile = (data: any): Profile => {
     const settings = (data.settings as {
       theme?: string;
       language?: string;
@@ -59,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       onboarding_completed?: boolean;
     } | null) ?? null;
 
-    const profileData: Profile = {
+    return {
       id: data.id,
       user_id: data.user_id,
       full_name: data.full_name,
@@ -75,6 +64,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         onboarding_completed: settings?.onboarding_completed ?? false,
       }
     };
+  };
+
+  const fetchProfile = async (userId: string, authUser?: User | null) => {
+    let { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!data && authUser) {
+      const { error: createError } = await supabase
+        .from('profiles')
+        .upsert({
+          user_id: authUser.id,
+          full_name: authUser.user_metadata?.full_name ?? authUser.email?.split('@')[0] ?? null,
+          phone: authUser.user_metadata?.phone ?? null,
+        }, {
+          onConflict: 'user_id',
+          ignoreDuplicates: true,
+        });
+
+      if (!createError) {
+        const retry = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        data = retry.data;
+        error = retry.error;
+      }
+    }
+
+    if (error || !data) {
+      setProfile(null);
+      return null;
+    }
+
+    const profileData = normalizeProfile(data);
 
     setProfile(profileData);
     return profileData;
@@ -101,7 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (nextSession?.user) {
         setIsLoading(true);
         setTimeout(() => {
-          void fetchProfile(nextSession.user.id).finally(() => setIsLoading(false));
+          void fetchProfile(nextSession.user.id, nextSession.user).finally(() => setIsLoading(false));
         }, 0);
       } else {
         setProfile(null);
@@ -117,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(currentSession?.user ?? null);
 
         if (currentSession?.user) {
-          await fetchProfile(currentSession.user.id);
+          await fetchProfile(currentSession.user.id, currentSession.user);
         } else {
           setProfile(null);
         }

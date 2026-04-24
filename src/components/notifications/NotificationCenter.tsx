@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef } from 'react';
 import { Bell, Home, Check, CheckCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -23,7 +23,7 @@ interface NotificationCenterProps {
   onNavigate?: (route: string) => void;
 }
 
-export function NotificationCenter({ onNavigate }: NotificationCenterProps) {
+export const NotificationCenter = forwardRef<HTMLButtonElement, NotificationCenterProps>(function NotificationCenter({ onNavigate }, ref) {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -145,7 +145,7 @@ export function NotificationCenter({ onNavigate }: NotificationCenterProps) {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button ref={ref} variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge 
@@ -223,4 +223,4 @@ export function NotificationCenter({ onNavigate }: NotificationCenterProps) {
       </SheetContent>
     </Sheet>
   );
-}
+});

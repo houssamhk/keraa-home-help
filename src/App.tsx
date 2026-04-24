@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -110,6 +110,7 @@ function AppContent() {
   const [createContractPropertyId, setCreateContractPropertyId] = useState<string | undefined>();
   const [isInitialized, setIsInitialized] = useState(false);
   const [isNative] = useState(() => typeof window !== 'undefined' && Capacitor.isNativePlatform());
+  const isProfileReady = !user || !!profile;
 
   const hasCompletedOnboarding = (profileData?: {
     role_type?: string | null;
@@ -142,15 +143,22 @@ function AppContent() {
     determineInitialScreen();
   };
 
+  const isOnboarded = useMemo(() => {
+    if (!user || !profile) return false;
+    return !!localStorage.getItem(`onboarded_${user.id}`) || hasCompletedOnboarding(profile);
+  }, [user, profile]);
+
   const determineInitialScreen = () => {
-    if (isLoading) return;
+    if (isLoading || (user && !isProfileReady)) return;
 
     if (!user) {
       setCurrentScreen('auth');
       return;
     }
 
-    if (profile && !hasCompletedOnboarding(profile)) {
+    if (!profile) return;
+
+    if (!isOnboarded) {
       setCurrentScreen('role-selection');
       return;
     }
@@ -169,10 +177,8 @@ function AppContent() {
     if (!isInitialized || isLoading || !user || !profile) return;
 
     const localOnboarded = !!localStorage.getItem(`onboarded_${user.id}`);
-    const profileOnboarded = hasCompletedOnboarding(profile);
-    const isOnboarded = localOnboarded || profileOnboarded;
 
-    if (profileOnboarded && !localOnboarded) {
+    if (hasCompletedOnboarding(profile) && !localOnboarded) {
       localStorage.setItem(`onboarded_${user.id}`, 'true');
     }
 
@@ -187,36 +193,10 @@ function AppContent() {
     if (currentScreen === 'home' && !isOnboarded) {
       setCurrentScreen('role-selection');
     }
-  }, [profile, user, isLoading, isInitialized, currentScreen]);
+  }, [profile, user, isLoading, isInitialized, currentScreen, isOnboarded]);
 
   const handleAuthSuccess = () => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      const currentUserId = session?.user?.id || user?.id;
-      if (!currentUserId) {
-        setCurrentScreen('home');
-        return;
-      }
-
-      const localOnboarded = !!localStorage.getItem(`onboarded_${currentUserId}`);
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('role_type, settings, created_at')
-        .eq('user_id', currentUserId)
-        .maybeSingle();
-
-      const isOnboarded = localOnboarded || hasCompletedOnboarding(profileData ? {
-        role_type: profileData.role_type,
-        created_at: profileData.created_at,
-        settings: (profileData.settings as { onboarding_completed?: boolean } | null) ?? null,
-      } : null);
-
-      if (isOnboarded) {
-        localStorage.setItem(`onboarded_${currentUserId}`, 'true');
-        setCurrentScreen('home');
-      } else {
-        setCurrentScreen('role-selection');
-      }
-    });
+    setCurrentScreen('home');
   };
 
   const handleRoleSelect = async (role: UserRole) => {
@@ -393,7 +373,7 @@ function AppContent() {
       <div className={`flex-1 overflow-hidden ${showBottomNav ? 'pb-16' : ''}`}>
         <AnimatePresence mode="wait">
           <Suspense fallback={<PageLoader />}>
-            <div className="h-full overflow-auto">{renderScreen()}</div>
+            <div className="h-full overflow-auto">{isLoading || (user && !isProfileReady) ? <PageLoader /> : renderScreen()}</div>
           </Suspense>
         </AnimatePresence>
       </div>
