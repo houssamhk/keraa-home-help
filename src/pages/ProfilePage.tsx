@@ -246,10 +246,10 @@ export function ProfilePage({ userId, onBack, onSettings, onNavigate }: ProfileP
             {isOwnProfile && (
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { icon: Wallet, label: t.nav?.wallet || 'المحفظة', route: '/wallet' },
-                  { icon: FileText, label: t.nav?.myContracts || 'عقودي', route: '/contracts' },
-                  { icon: CalendarCheck, label: t.profile?.appointments || 'مواعيدي', route: '/appointments' },
-                  { icon: BellRing, label: t.profile?.alerts || 'التنبيهات', route: '/alerts' },
+                  { icon: Wallet, label: 'المحفظة', route: '/wallet' },
+                  { icon: FileText, label: t.nav.myContracts, route: '/contracts' },
+                  { icon: CalendarCheck, label: 'مواعيدي', route: '/appointments' },
+                  { icon: BellRing, label: 'التنبيهات', route: '/alerts' },
                 ].map((item) => (
                   <Card
                     key={item.route}
