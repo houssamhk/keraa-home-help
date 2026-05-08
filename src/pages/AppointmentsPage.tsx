@@ -61,9 +61,11 @@ export function AppointmentsPage({ onBack, propertyId, ownerId }: AppointmentsPa
   };
 
   const fetchProperties = async () => {
-    const { data, error } = await supabase.from('properties').select('id, title, owner_id').eq('is_available', true);
+    const { data, error } = await supabase.from('properties').select('id, title, owner_id');
     if (!error && data) setProperties(data);
   };
+
+  const propertyTitle = (id: string) => properties.find(p => p.id === id)?.title || '—';
 
   const handleCreateAppointment = async () => {
     if (!user || !newAppointment.property_id || !newAppointment.appointment_date || !newAppointment.appointment_time) { toast.error(t.requiredFields); return; }
@@ -143,6 +145,10 @@ export function AppointmentsPage({ onBack, propertyId, ownerId }: AppointmentsPa
           <div className="space-y-4">
             {appointments.map((appointment) => (
               <Card key={appointment.id}><CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2 text-sm font-semibold text-foreground">
+                  <Building className="w-4 h-4 text-primary" />
+                  <span className="line-clamp-1">{propertyTitle(appointment.property_id)}</span>
+                </div>
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2"><Calendar className="w-5 h-5 text-primary" /><span className="font-medium">{format(new Date(appointment.appointment_date), 'EEEE, dd MMMM yyyy', { locale: ar })}</span></div>
                   {getStatusBadge(appointment.status)}

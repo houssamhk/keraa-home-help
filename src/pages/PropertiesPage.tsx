@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ArrowLeft, Scale } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Scale, SearchX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { AISearchBar } from '@/components/search/AISearchBar';
@@ -166,6 +166,12 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
             <PropertyCardSkeleton />
             <PropertyCardSkeleton />
           </>
+        ) : displayProperties.length === 0 ? (
+          <div className="glass-card p-8 text-center sm:col-span-2 lg:col-span-3">
+            <SearchX className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-foreground font-medium mb-2">لا توجد نتائج</p>
+            <p className="text-sm text-muted-foreground">جرّب تعديل عوامل التصفية أو فعّل تنبيهاً للحصول على عقارات جديدة</p>
+          </div>
         ) : (
           displayProperties.map((property, index) => (
             <div key={property.id} className="relative">
