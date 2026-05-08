@@ -169,8 +169,8 @@ export function PropertiesPage({ onBack, onViewProperty }: PropertiesPageProps) 
         ) : displayProperties.length === 0 ? (
           <div className="glass-card p-8 text-center sm:col-span-2 lg:col-span-3">
             <SearchX className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-foreground font-medium mb-2">{t.propertiesPage.noResults || 'لا توجد نتائج'}</p>
-            <p className="text-sm text-muted-foreground">{t.propertiesPage.tryDifferentFilters || 'جرّب تعديل عوامل التصفية أو فعّل تنبيهاً للحصول على عقارات جديدة'}</p>
+            <p className="text-foreground font-medium mb-2">لا توجد نتائج</p>
+            <p className="text-sm text-muted-foreground">جرّب تعديل عوامل التصفية أو فعّل تنبيهاً للحصول على عقارات جديدة</p>
           </div>
         ) : (
           displayProperties.map((property, index) => (
