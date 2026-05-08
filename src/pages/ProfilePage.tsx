@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, ArrowLeft, User, Star, Settings, Shield, Phone, Calendar, Heart } from 'lucide-react';
+import { ArrowRight, ArrowLeft, User, Star, Settings, Shield, Phone, Calendar, Heart, Wallet, FileText, BellRing, CalendarCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -241,6 +241,28 @@ export function ProfilePage({ userId, onBack, onSettings, onNavigate }: ProfileP
                   </div>
                 </CardContent>
               </Card>
+            )}
+
+            {isOwnProfile && (
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { icon: Wallet, label: t.nav?.wallet || 'المحفظة', route: '/wallet' },
+                  { icon: FileText, label: t.nav?.myContracts || 'عقودي', route: '/contracts' },
+                  { icon: CalendarCheck, label: t.profile?.appointments || 'مواعيدي', route: '/appointments' },
+                  { icon: BellRing, label: t.profile?.alerts || 'التنبيهات', route: '/alerts' },
+                ].map((item) => (
+                  <Card
+                    key={item.route}
+                    className="cursor-pointer hover:bg-muted/40 transition-colors"
+                    onClick={() => onNavigate?.(item.route)}
+                  >
+                    <CardContent className="p-4 flex items-center gap-3">
+                      <item.icon className="w-5 h-5 text-primary" />
+                      <span className="font-medium text-sm">{item.label}</span>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             )}
 
             <Card>
