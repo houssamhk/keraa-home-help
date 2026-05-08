@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, ArrowLeft, Search, Star, Phone, MessageSquare, CalendarPlus } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Search, Star, Phone, MessageSquare, CalendarPlus, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { BookHandymanDialog } from '@/components/handymen/BookHandymanDialog';
@@ -158,6 +158,12 @@ export function HandymenPage({ onBack, onChat, onViewHandyman }: HandymenPagePro
             <HandymanCardSkeleton />
             <HandymanCardSkeleton />
           </>
+        ) : filteredHandymen.length === 0 ? (
+          <div className="glass-card p-8 text-center">
+            <UserX className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-foreground font-medium mb-2">لا يوجد حرفيون مطابقون</p>
+            <p className="text-sm text-muted-foreground">جرّب تغيير التخصص أو محو البحث</p>
+          </div>
         ) : (
           filteredHandymen.map((handyman, index) => (
             <motion.div
@@ -169,10 +175,14 @@ export function HandymenPage({ onBack, onChat, onViewHandyman }: HandymenPagePro
               onClick={() => onViewHandyman?.(handyman.id)}
             >
               <div className="flex gap-4">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
-                  <span className="text-primary-foreground text-xl font-bold">
-                    {handyman.profiles?.full_name?.charAt(0) || '?'}
-                  </span>
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  {handyman.profiles?.avatar_url ? (
+                    <img src={handyman.profiles.avatar_url} alt={handyman.profiles?.full_name || ''} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-primary-foreground text-xl font-bold">
+                      {handyman.profiles?.full_name?.charAt(0) || '?'}
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex-1 min-w-0">
@@ -201,13 +211,20 @@ export function HandymenPage({ onBack, onChat, onViewHandyman }: HandymenPagePro
 
                   <div className="flex items-center justify-between mt-3">
                     <span className="text-primary font-medium">
-                      {handyman.hourly_rate?.toLocaleString()} {t.perHour}
+                      {handyman.hourly_rate ? `${handyman.hourly_rate.toLocaleString()} ${t.perHour}` : '—'}
                     </span>
                     <div className="flex gap-2">
-                      <Button variant="glass" size="sm" className="gap-1">
-                        <Phone className="w-4 h-4" />
-                        <span>{t.handymenPage.call}</span>
-                      </Button>
+                      {handyman.profiles?.phone && (
+                        <Button
+                          variant="glass"
+                          size="sm"
+                          className="gap-1"
+                          onClick={(e) => { e.stopPropagation(); window.location.href = `tel:${handyman.profiles!.phone}`; }}
+                        >
+                          <Phone className="w-4 h-4" />
+                          <span className="hidden sm:inline">{t.handymenPage.call}</span>
+                        </Button>
+                      )}
                       <Button 
                         variant="outline" 
                         size="sm" 
@@ -215,7 +232,7 @@ export function HandymenPage({ onBack, onChat, onViewHandyman }: HandymenPagePro
                         onClick={(e) => { e.stopPropagation(); onChat(handyman.user_id); }}
                       >
                         <MessageSquare className="w-4 h-4" />
-                        <span>{t.handymenPage.chat}</span>
+                        <span className="hidden sm:inline">{t.handymenPage.chat}</span>
                       </Button>
                       <Button 
                         variant="gold" 
@@ -224,7 +241,7 @@ export function HandymenPage({ onBack, onChat, onViewHandyman }: HandymenPagePro
                         onClick={(e) => { e.stopPropagation(); setBookingHandyman(handyman); }}
                       >
                         <CalendarPlus className="w-4 h-4" />
-                        <span>{t.handymenPage.book}</span>
+                        <span className="hidden sm:inline">{t.handymenPage.book}</span>
                       </Button>
                     </div>
                   </div>

@@ -161,7 +161,7 @@ export function ChatPage({ onBack, conversationId: initialConversationId, otherU
       .from('conversations')
       .select('id')
       .or(`and(participant_1.eq.${user.id},participant_2.eq.${targetUserId}),and(participant_1.eq.${targetUserId},participant_2.eq.${user.id})`)
-      .single();
+      .maybeSingle();
 
     if (existing) {
       setActiveConversation(existing.id);
@@ -232,9 +232,13 @@ export function ChatPage({ onBack, conversationId: initialConversationId, otherU
                   className="w-full glass-card p-4 flex items-center gap-4 text-start"
                 >
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
-                    <span className="text-primary-foreground font-bold">
-                      {conv.other_user?.full_name?.charAt(0) || '?'}
-                    </span>
+                    {conv.other_user?.avatar_url ? (
+                      <img src={conv.other_user.avatar_url} alt="" className="w-full h-full object-cover rounded-full" />
+                    ) : (
+                      <span className="text-primary-foreground font-bold">
+                        {conv.other_user?.full_name?.charAt(0) || '?'}
+                      </span>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-medium text-foreground truncate">
@@ -270,8 +274,12 @@ export function ChatPage({ onBack, conversationId: initialConversationId, otherU
         <Button variant="glass" size="icon" onClick={() => setActiveConversation(null)}>
           <BackArrow className="w-5 h-5" />
         </Button>
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-          <span className="text-primary-foreground font-bold">{otherUserInitial}</span>
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center overflow-hidden">
+          {currentConversation?.other_user?.avatar_url ? (
+            <img src={currentConversation.other_user.avatar_url} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-primary-foreground font-bold">{otherUserInitial}</span>
+          )}
         </div>
         <div>
           <h2 className="font-medium text-foreground">{otherUserName}</h2>
