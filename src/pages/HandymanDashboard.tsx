@@ -19,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { LocationPicker } from '@/components/map/LocationPicker';
+import { HandymanAnalytics } from '@/components/dashboard/HandymanAnalytics';
 
 interface HandymanProfile {
   id: string;
@@ -418,6 +419,11 @@ export function HandymanDashboard({ onBack }: HandymanDashboardProps) {
             <p className="text-muted-foreground glass-card p-4">{handymanProfile.description}</p>
           </div>
         )}
+
+        {/* Live analytics */}
+        <div className="mt-6">
+          <HandymanAnalytics handymanId={handymanProfile.id} />
+        </div>
       </div>
     </div>
   );
